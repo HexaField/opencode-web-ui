@@ -1,19 +1,6 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
-
-interface ToolCall {
-  id: string
-  type: string
-  function: {
-    name: string
-    arguments: string
-  }
-}
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-  toolCalls?: ToolCall[]
-}
+import { Message, Session, ToolPart } from '../types'
+import ToolCall from './ToolCall'
 
 interface Props {
   folder: string
@@ -32,36 +19,9 @@ export default function ChatInterface(props: Props) {
       fetch(`/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`)
         .then((res) => res.json())
         .then((data: unknown) => {
-          if (data && typeof data === 'object') {
-            const d = data as Record<string, unknown>
-            const hist = d.history
-            if (Array.isArray(hist)) {
-              const history = hist.map((msg: unknown) => {
-                if (msg && typeof msg === 'object') {
-                  const m = msg as Record<string, unknown>
-                  let content = ''
-                  if (Array.isArray(m.parts)) {
-                    content = m.parts
-                      .filter(
-                        (p) =>
-                          p &&
-                          typeof p === 'object' &&
-                          (p as Record<string, unknown>).type === 'text' &&
-                          typeof (p as Record<string, unknown>).text === 'string'
-                      )
-                      .map((p) => String((p as Record<string, unknown>).text))
-                      .join('\n')
-                  }
-                  const roleVal =
-                    m.info && typeof m.info === 'object' && typeof (m.info as Record<string, unknown>).role === 'string'
-                      ? ((m.info as Record<string, unknown>).role as 'user' | 'assistant')
-                      : 'assistant'
-                  return { role: roleVal, content: content || JSON.stringify(msg) }
-                }
-                return { role: 'assistant', content: JSON.stringify(msg) }
-              })
-              setMessages(history as Message[])
-            }
+          const session = data as Session
+          if (session && Array.isArray(session.history)) {
+            setMessages(session.history)
           }
         })
         .catch(console.error)
@@ -75,7 +35,27 @@ export default function ChatInterface(props: Props) {
     setInput('')
     setLoading(true)
 
-    setMessages((prev) => [...prev, { role: 'user', content: text }])
+    // Optimistic update
+    const tempMessage: Message = {
+      info: {
+        id: 'temp-' + Date.now(),
+        sessionID: props.sessionId,
+        role: 'user',
+        time: { created: Date.now() },
+        agent: 'user',
+        model: { providerID: 'user', modelID: 'user' }
+      },
+      parts: [
+        {
+          id: 'temp-part-' + Date.now(),
+          sessionID: props.sessionId,
+          messageID: 'temp-' + Date.now(),
+          type: 'text',
+          text: text
+        }
+      ]
+    }
+    setMessages((prev) => [...prev, tempMessage])
 
     try {
       const res = await fetch(`/sessions/${props.sessionId}/prompt?folder=${encodeURIComponent(props.folder)}`, {
@@ -83,23 +63,17 @@ export default function ChatInterface(props: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parts: [{ type: 'text', text }] })
       })
-      const data = (await res.json()) as { parts?: { type: string; text?: string }[] }
+      const data = (await res.json()) as Message | Message[]
 
-      // Handle response structure
-      let content = ''
-      if (data.parts) {
-        content = data.parts
-          .filter((p) => p.type === 'text' && p.text)
-          .map((p) => p.text)
-          .join('\n')
+      // Append the response message(s)
+      if (Array.isArray(data)) {
+        setMessages((prev) => [...prev, ...data])
       } else {
-        content = JSON.stringify(data, null, 2)
+        setMessages((prev) => [...prev, data])
       }
-
-      setMessages((prev) => [...prev, { role: 'assistant', content }])
     } catch (err) {
       console.error(err)
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'Error: ' + String(err) }])
+      // Handle error (maybe add an error message to the list)
     } finally {
       setLoading(false)
     }
@@ -110,11 +84,12 @@ export default function ChatInterface(props: Props) {
       <div class="flex-1 overflow-y-auto p-2 md:p-4 flex flex-col space-y-4">
         <For each={messages()}>
           {(msg) => {
-            const isUser = msg.role === 'user'
+            const isUser = msg.info.role === 'user'
             return (
               <div
+                data-testid={`message-${msg.info.role}`}
                 class={`
-                  max-w-[85%] md:max-w-[75%] rounded-xl px-4 py-3 border shadow-sm
+                  max-w-[85%] md:max-w-[75%] rounded-xl px-2 py-1 border shadow-sm
                   ${
                     isUser
                       ? 'bg-[#ddf4ff] dark:bg-[#1f6feb]/15 text-gray-900 dark:text-gray-100 border-[#54aeff]/40 dark:border-[#1f6feb]/40 self-end rounded-br-sm'
@@ -122,7 +97,20 @@ export default function ChatInterface(props: Props) {
                   }
                 `}
               >
-                <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">{msg.content}</pre>
+                <For each={msg.parts}>
+                  {(part) => (
+                    <div class="mb-2 last:mb-0">
+                      <Show when={part.type === 'text'}>
+                        <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                          {(part as { text: string }).text}
+                        </pre>
+                      </Show>
+                      <Show when={part.type === 'tool'}>
+                        <ToolCall part={part as ToolPart} />
+                      </Show>
+                    </div>
+                  )}
+                </For>
               </div>
             )
           }}
@@ -159,6 +147,7 @@ export default function ChatInterface(props: Props) {
             class="bg-[#0969da] hover:bg-[#0860ca] text-white px-4 py-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             onClick={() => void sendMessage()}
             disabled={loading()}
+            title="Send"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />

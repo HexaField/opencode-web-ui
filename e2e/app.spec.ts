@@ -47,17 +47,17 @@ test.describe('OpenCode Web UI E2E', () => {
     await page.click('button:has-text("Select this folder")')
 
     // 4. Create session
-    await page.click('button:has-text("+")') // Create session button
+    await page.click('button[title="New Session"]') // Create session button
 
     // 5. Wait for session to appear in list and be selected
     await expect(page.locator('text=New Session')).toBeVisible()
 
     // 6. Send message
     await page.fill('textarea[placeholder="Type a message..."]', 'List files')
-    await page.click('button:has-text("Send")')
+    await page.click('button[title="Send"]')
 
     // 7. Verify response (Assistant should reply)
-    await expect(page.locator('text=assistant').last()).toBeVisible({ timeout: 30000 })
+    await expect(page.getByTestId('message-assistant').last()).toBeVisible({ timeout: 30000 })
 
     // 8. Check Diff View
     await page.click('button:has-text("Changes")')
