@@ -31,7 +31,7 @@ test.describe('Theme Switcher', () => {
 
   test('should switch themes correctly', async ({ page }) => {
     await page.goto('/')
-    
+
     // Enter path and go
     await page.fill('input[placeholder="Enter path..."]', testDir)
     await page.click('button:has-text("Go")')
@@ -43,10 +43,10 @@ test.describe('Theme Switcher', () => {
 
     // Switch to Dark
     await page.click('button:has-text("Dark")')
-    
+
     // Check if html has dark class
     await expect(page.locator('html')).toHaveClass(/dark/)
-    
+
     // Check background color (should be dark)
     // We check the main workspace div which has dark:bg-[#0d1117]
     const workspace = page.locator('.flex.h-screen.w-screen')
@@ -54,10 +54,10 @@ test.describe('Theme Switcher', () => {
 
     // Switch to Light
     await page.click('button:has-text("Light")')
-    
+
     // Check if html does NOT have dark class
     await expect(page.locator('html')).not.toHaveClass(/dark/)
-    
+
     // Check background color (should be white)
     await expect(workspace).toHaveCSS('background-color', 'rgb(255, 255, 255)')
   })

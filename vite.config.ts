@@ -9,7 +9,8 @@ export default defineConfig({
       '/fs': 'http://127.0.0.1:3001',
       '/sessions': 'http://127.0.0.1:3001',
       '/files': 'http://127.0.0.1:3001',
-      '/agents': 'http://127.0.0.1:3001'
+      '/agents': 'http://127.0.0.1:3001',
+      '/git': 'http://127.0.0.1:3001'
     }
   }
 })

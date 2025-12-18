@@ -1,8 +1,9 @@
-import { createEffect, createSignal, For } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 
-interface FileStatus {
+interface GitFileStatus {
   path: string
-  status: 'modified' | 'added' | 'deleted' | 'untracked'
+  x: string
+  y: string
 }
 
 interface Props {
@@ -10,37 +11,119 @@ interface Props {
 }
 
 export default function DiffView(props: Props) {
-  const [files, setFiles] = createSignal<FileStatus[]>([])
+  const [gitFiles, setGitFiles] = createSignal<GitFileStatus[]>([])
+  const [branches, setBranches] = createSignal<string[]>([])
+  const [currentBranch, setCurrentBranch] = createSignal('')
+  const [commitMessage, setCommitMessage] = createSignal('')
+  const [isGenerating, setIsGenerating] = createSignal(false)
+
   const [expanded, setExpanded] = createSignal<Record<string, boolean>>({})
   const [diffs, setDiffs] = createSignal<Record<string, string | null>>({})
-  const [summary, setSummary] = createSignal<{ filesChanged: number; added: number; removed: number } | null>(null)
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(`/git/status?folder=${encodeURIComponent(props.folder)}`)
+      const data = (await res.json()) as GitFileStatus[]
+      if (Array.isArray(data)) setGitFiles(data)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch(`/git/branches?folder=${encodeURIComponent(props.folder)}`)
+      const data = (await res.json()) as string[]
+      if (Array.isArray(data)) setBranches(data)
+
+      const res2 = await fetch(`/git/current-branch?folder=${encodeURIComponent(props.folder)}`)
+      const data2 = (await res2.json()) as { branch?: string }
+      if (data2.branch) setCurrentBranch(data2.branch)
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   createEffect(() => {
-    fetch(`/files/status?folder=${encodeURIComponent(props.folder)}`)
-      .then((res) => res.json())
-      .then((data: unknown) => {
-        if (Array.isArray(data)) {
-          const arr = data as Array<string | FileStatus>
-          const mapped = arr.map((f) => (typeof f === 'string' ? { path: f, status: 'modified' as const } : f))
-          setFiles(mapped)
-        }
-      })
-      .catch(console.error)
-    // also fetch diff summary
-    fetch(`/files/diff-summary?folder=${encodeURIComponent(props.folder)}`)
-      .then((res) => res.json())
-      .then((s: unknown) => {
-        if (s && typeof s === 'object') {
-          const st = s as Record<string, unknown>
-          setSummary({
-            filesChanged: Number(st.filesChanged ?? 0),
-            added: Number(st.added ?? 0),
-            removed: Number(st.removed ?? 0)
-          })
-        }
-      })
-      .catch(() => setSummary(null))
+    void fetchStatus()
+    void fetchBranches()
   })
+
+  const stagedFiles = () => gitFiles().filter((f) => f.x !== ' ' && f.x !== '?')
+  const unstagedFiles = () => gitFiles().filter((f) => f.y !== ' ')
+
+  const handleStage = async (path: string) => {
+    await fetch('/git/stage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: props.folder, files: [path] })
+    })
+    void fetchStatus()
+  }
+
+  const handleUnstage = async (path: string) => {
+    await fetch('/git/unstage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: props.folder, files: [path] })
+    })
+    void fetchStatus()
+  }
+
+  const handleCommit = async () => {
+    if (!commitMessage()) return
+    await fetch('/git/commit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: props.folder, message: commitMessage() })
+    })
+    setCommitMessage('')
+    void fetchStatus()
+  }
+
+  const handleGenerateMessage = async () => {
+    setIsGenerating(true)
+    try {
+      const res = await fetch('/git/generate-commit-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: props.folder })
+      })
+      const data = (await res.json()) as { message?: string }
+      if (data.message) setCommitMessage(data.message)
+    } catch (e) {
+      console.error(e)
+    }
+    setIsGenerating(false)
+  }
+
+  const handlePush = async () => {
+    await fetch('/git/push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: props.folder, remote: 'origin', branch: currentBranch() })
+    })
+  }
+
+  const handlePull = async () => {
+    await fetch('/git/pull', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: props.folder, remote: 'origin', branch: currentBranch() })
+    })
+    void fetchStatus()
+  }
+
+  const handleCheckout = async (e: Event) => {
+    const branch = (e.target as HTMLSelectElement).value
+    setCurrentBranch(branch)
+    await fetch('/git/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: props.folder, branch })
+    })
+    void fetchStatus()
+  }
 
   const toggleExpand = async (path: string) => {
     const isOpen = expanded()[path]
@@ -48,11 +131,13 @@ export default function DiffView(props: Props) {
     next[path] = !isOpen
     setExpanded(next)
     if (!isOpen && !diffs()[path]) {
-      // fetch diff or file content depending on status
-      const file = files().find((f) => f.path === path)
+      // fetch diff
       try {
-        if (file && file.status === 'added') {
-          // new file: fetch full contents
+        // Check if it's a new file (untracked or added)
+        const file = gitFiles().find((f) => f.path === path)
+        const isNew = file && (file.x === 'A' || (file.x === '?' && file.y === '?'))
+
+        if (isNew) {
           const res = await fetch(
             `/files/read?folder=${encodeURIComponent(props.folder)}&path=${encodeURIComponent(path)}`
           )
@@ -67,7 +152,6 @@ export default function DiffView(props: Props) {
           } else {
             content = JSON.stringify(body ?? '', null, 2)
           }
-          // convert to pseudo-diff with all lines as additions
           const lines = content.split(/\r?\n/)
           const pseudo = ['*** New File: ' + path, '*** Begin', ...lines.map((l) => '+' + l), '*** End'].join('\n')
           setDiffs({ ...diffs(), [path]: pseudo })
@@ -95,7 +179,6 @@ export default function DiffView(props: Props) {
     }
   }
 
-  // Parse unified diff text into structured lines with gutter numbers
   function parseUnified(diffText: string) {
     const out: Array<{
       type: 'meta' | 'context' | 'add' | 'del'
@@ -108,7 +191,6 @@ export default function DiffView(props: Props) {
     let newLine = 0
     for (const line of lines) {
       if (line.startsWith('@@')) {
-        // parse hunk header: @@ -a,b +c,d @@
         const m = /@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line)
         if (m) {
           oldLine = Number(m[1])
@@ -135,7 +217,6 @@ export default function DiffView(props: Props) {
         out.push({ type: 'meta', oldLine: null, newLine: null, text: line })
         continue
       }
-      // context or other
       out.push({
         type: 'context',
         oldLine: oldLine || null,
@@ -148,99 +229,158 @@ export default function DiffView(props: Props) {
     return out
   }
 
+  const FileList = (props: { files: GitFileStatus[]; staged: boolean }) => (
+    <For each={props.files}>
+      {(file) => (
+        <div class="border-b border-gray-200 dark:border-[#30363d]">
+          <div class="p-1 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors">
+            <div class="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={props.staged}
+                onChange={() => void (props.staged ? handleUnstage(file.path) : handleStage(file.path))}
+                class="ml-2"
+              />
+              <span
+                class={`mr-1 font-bold w-4 text-center ${
+                  (props.staged ? file.x : file.y) === 'M'
+                    ? 'text-yellow-600 dark:text-yellow-500'
+                    : (props.staged ? file.x : file.y) === 'A' || (file.x === '?' && file.y === '?')
+                      ? 'text-green-600 dark:text-green-500'
+                      : (props.staged ? file.x : file.y) === 'D'
+                        ? 'text-red-600 dark:text-red-500'
+                        : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                {(props.staged ? file.x : file.y) === 'M' && 'M'}
+                {(props.staged ? file.x : file.y) === 'A' && 'A'}
+                {(props.staged ? file.x : file.y) === 'D' && 'D'}
+                {file.x === '?' && file.y === '?' && '?'}
+              </span>
+              <span class="font-mono text-sm text-gray-700 dark:text-gray-300 truncate max-w-[60vw]">{file.path}</span>
+            </div>
+            <div>
+              <button
+                class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded"
+                onClick={() => void toggleExpand(file.path)}
+              >
+                {expanded()[file.path] ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+          </div>
+          {expanded()[file.path] && (
+            <div class="p-1 bg-white dark:bg-[#0d1117]">
+              <div class="overflow-x-auto text-sm font-mono leading-relaxed text-[13px]">
+                {diffs()[file.path] ? (
+                  (() => {
+                    const parsed = parseUnified(diffs()[file.path] || '')
+                    return (
+                      <div>
+                        {parsed.map((ln) => (
+                          <div class={`flex gap-2 w-full items-stretch ${ln.type === 'meta' ? 'text-gray-500' : ''}`}>
+                            <div class="w-auto text-right text-xs text-gray-400 select-none">
+                              {ln.oldLine ?? ln.newLine ?? ''}
+                            </div>
+                            <div
+                              class={`px-2 py-0.5 flex-1 whitespace-pre-wrap w-full text-left ${ln.type === 'add' ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ln.type === 'del' ? 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-transparent text-gray-800 dark:text-gray-200'}`}
+                            >
+                              <span class="font-mono text-[13px] block w-full text-left">
+                                {ln.type === 'add' ? '+' : ln.type === 'del' ? '-' : ' '}
+                                {ln.text}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })()
+                ) : (
+                  <pre class="whitespace-pre-wrap">Loading...</pre>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </For>
+  )
+
   return (
     <div class="h-full flex flex-col bg-white dark:bg-[#0d1117] transition-colors duration-200">
       <div class="p-4 border-b border-gray-200 dark:border-[#30363d] font-semibold bg-[#f6f8fa] dark:bg-[#010409] text-gray-900 dark:text-gray-100">
-        <div class="flex items-center justify-between">
-          <div class="font-semibold">Changes</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400">
-            {summary() ? (
-              <span>
-                {summary()!.filesChanged} files •{' '}
-                <span class="text-green-600 dark:text-green-400">+{summary()!.added}</span>{' '}
-                <span class="text-red-600 dark:text-red-400">-{summary()!.removed}</span>
-              </span>
-            ) : (
-              ''
-            )}
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">Source Control</div>
+            <div class="flex gap-2">
+              <button
+                onClick={() => void handlePull()}
+                class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-800 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+              >
+                Pull
+              </button>
+              <button
+                onClick={() => void handlePush()}
+                class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-800 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+              >
+                Push
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <select
+              value={currentBranch()}
+              onChange={(e) => void handleCheckout(e)}
+              class="text-sm p-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 w-full"
+            >
+              <For each={branches()}>{(b) => <option value={b}>{b}</option>}</For>
+            </select>
           </div>
         </div>
       </div>
+
       <div class="flex-1 overflow-y-auto">
-        <For each={files()}>
-          {(file) => (
-            <div class="border-b border-gray-200 dark:border-[#30363d]">
-              <div class="p-1 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors">
-                <div class="flex items-center gap-3">
-                  <span
-                    class={`mr-1 font-bold w-4 text-center ${
-                      file.status === 'modified'
-                        ? 'text-yellow-600 dark:text-yellow-500'
-                        : file.status === 'added'
-                          ? 'text-green-600 dark:text-green-500'
-                          : file.status === 'deleted'
-                            ? 'text-red-600 dark:text-red-500'
-                            : 'text-gray-400 dark:text-gray-500'
-                    }`}
-                  >
-                    {file.status === 'modified' && 'M'}
-                    {file.status === 'added' && 'A'}
-                    {file.status === 'deleted' && 'D'}
-                    {file.status === 'untracked' && '?'}
-                  </span>
-                  <span class="font-mono text-sm text-gray-700 dark:text-gray-300 truncate max-w-[60vw]">
-                    {file.path}
-                  </span>
-                </div>
-                <div>
-                  <button
-                    class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded"
-                    onClick={() => void toggleExpand(file.path)}
-                  >
-                    {expanded()[file.path] ? 'Collapse' : 'Expand'}
-                  </button>
-                </div>
-              </div>
-              {expanded()[file.path] && (
-                <div class="p-1 bg-white dark:bg-[#0d1117]">
-                  <div class="overflow-x-auto text-sm font-mono leading-relaxed text-[13px]">
-                    {diffs()[file.path] ? (
-                      // Render parsed diff with colored lines and gutter
-                      (() => {
-                        const parsed = parseUnified(diffs()[file.path] || '')
-                        return (
-                          <div>
-                            {parsed.map((ln) => (
-                              <div
-                                class={`flex gap-2 w-full items-stretch ${ln.type === 'meta' ? 'text-gray-500' : ''}`}
-                              >
-                                <div class="w-auto text-right text-xs text-gray-400 select-none">
-                                  {ln.oldLine ?? ln.newLine ?? ''}
-                                </div>
-                                {/* <div class="w-2 text-right text-xs text-gray-400 select-none">{ln.newLine ?? ''}</div> */}
-                                <div
-                                  class={`px-2 py-0.5 flex-1 whitespace-pre-wrap w-full text-left ${ln.type === 'add' ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ln.type === 'del' ? 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-transparent text-gray-800 dark:text-gray-200'}`}
-                                >
-                                  <span class="font-mono text-[13px] block w-full text-left">
-                                    {ln.type === 'add' ? '+' : ln.type === 'del' ? '-' : ' '}
-                                    {ln.text}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )
-                      })()
-                    ) : (
-                      <pre class="whitespace-pre-wrap">Loading...</pre>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </For>
-        {files().length === 0 && (
+        <div class="p-2">
+          <textarea
+            class="w-full p-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
+            rows={3}
+            placeholder="Message (Cmd+Enter to commit)"
+            value={commitMessage()}
+            onInput={(e) => setCommitMessage(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                void handleCommit()
+              }
+            }}
+          />
+          <div class="flex gap-2 mt-2">
+            <button
+              onClick={() => void handleCommit()}
+              disabled={!commitMessage()}
+              class="flex-1 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              Commit
+            </button>
+            <button
+              onClick={() => void handleGenerateMessage()}
+              disabled={isGenerating()}
+              class="bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-700 disabled:opacity-50"
+            >
+              {isGenerating() ? '...' : '✨'}
+            </button>
+          </div>
+        </div>
+
+        <Show when={stagedFiles().length > 0}>
+          <div class="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">Staged Changes</div>
+          <FileList files={stagedFiles()} staged={true} />
+        </Show>
+
+        <Show when={unstagedFiles().length > 0}>
+          <div class="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">Changes</div>
+          <FileList files={unstagedFiles()} staged={false} />
+        </Show>
+
+        {gitFiles().length === 0 && (
           <div class="p-8 text-center text-gray-500 dark:text-gray-400">No changes detected</div>
         )}
       </div>
