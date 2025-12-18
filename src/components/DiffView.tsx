@@ -219,7 +219,7 @@ export default function DiffView(props: Props) {
                                 </div>
                                 {/* <div class="w-2 text-right text-xs text-gray-400 select-none">{ln.newLine ?? ''}</div> */}
                                 <div
-                                  class={`px-2 py-0.5 flex-1 whitespace-pre-wrap w-full text-left ${ln.type === 'add' ? 'bg-green-50 text-green-800' : ln.type === 'del' ? 'bg-red-50 text-red-800' : 'bg-transparent text-gray-800 dark:text-gray-200'}`}
+                                  class={`px-2 py-0.5 flex-1 whitespace-pre-wrap w-full text-left ${ln.type === 'add' ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ln.type === 'del' ? 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-transparent text-gray-800 dark:text-gray-200'}`}
                                 >
                                   <span class="font-mono text-[13px] block w-full text-left">
                                     {ln.type === 'add' ? '+' : ln.type === 'del' ? '-' : ' '}
