@@ -24,9 +24,7 @@ export default function FolderBrowser(props: Props) {
     setInputPath(path)
     setError(null)
 
-    const url = path
-      ? `/fs/list?path=${encodeURIComponent(path)}`
-      : '/fs/list'
+    const url = path ? `/fs/list?path=${encodeURIComponent(path)}` : '/fs/list'
     fetch(url)
       .then((res) => {
         if (!res.ok) throw new Error(res.statusText)

@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
-import { defineConfig } from 'vitest/config'
 import { loadEnv } from 'vite'
 import solid from 'vite-plugin-solid'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')

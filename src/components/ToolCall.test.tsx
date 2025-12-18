@@ -1,7 +1,7 @@
 import { render, screen } from '@solidjs/testing-library'
 import { describe, expect, it } from 'vitest'
-import ToolCall from './ToolCall'
 import { ToolPart } from '../types'
+import ToolCall from './ToolCall'
 
 describe('ToolCall', () => {
   it('renders list tool correctly', () => {

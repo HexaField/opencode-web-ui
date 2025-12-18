@@ -1,4 +1,4 @@
-import { Component, Show, createSignal, Switch, Match } from 'solid-js'
+import { Component, createSignal, Match, Show, Switch } from 'solid-js'
 import { ToolPart } from '../types'
 
 interface Props {
@@ -26,9 +26,7 @@ const ToolCall: Component<Props> = (props) => {
         </div>
         <div class="px-2">
           <Switch
-            fallback={
-              <span class="text-yellow-600 dark:text-yellow-400 text-xs">{props.part.state?.status}</span>
-            }
+            fallback={<span class="text-yellow-600 dark:text-yellow-400 text-xs">{props.part.state?.status}</span>}
           >
             <Match when={props.part.state?.status === 'completed'}>
               <svg

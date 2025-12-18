@@ -1,6 +1,7 @@
 import { createEffect, createSignal } from 'solid-js'
 import ChatInterface from './ChatInterface'
 import DiffView from './DiffView'
+import FilesView from './FilesView'
 import SessionList from './SessionList'
 import SettingsModal from './SettingsModal'
 
@@ -12,18 +13,37 @@ interface Props {
 export default function Workspace(props: Props) {
   const params = new URLSearchParams(window.location.search)
   const [currentSessionId, setCurrentSessionId] = createSignal<string | null>(params.get('session'))
-  const [view, setView] = createSignal<'chat' | 'changes'>('chat')
+  const [view, setView] = createSignal<'chat' | 'changes' | 'files'>(
+    (params.get('view') as 'chat' | 'changes' | 'files') || 'chat'
+  )
+  const [selectedFile, setSelectedFile] = createSignal<string | null>(params.get('file'))
   const [isSidebarOpen, setIsSidebarOpen] = createSignal(false)
   const [isSettingsOpen, setIsSettingsOpen] = createSignal(false)
 
   createEffect(() => {
     const sid = currentSessionId()
+    const v = view()
+    const f = selectedFile()
     const url = new URL(window.location.href)
+
     if (sid) {
       url.searchParams.set('session', sid)
     } else {
       url.searchParams.delete('session')
     }
+
+    if (v && v !== 'chat') {
+      url.searchParams.set('view', v)
+    } else {
+      url.searchParams.delete('view')
+    }
+
+    if (f) {
+      url.searchParams.set('file', f)
+    } else {
+      url.searchParams.delete('file')
+    }
+
     window.history.replaceState({}, '', url)
   })
 
@@ -98,6 +118,16 @@ export default function Workspace(props: Props) {
               >
                 Changes
               </button>
+              <button
+                class={`px-3 py-1 rounded-sm text-sm font-medium transition-all ${
+                  view() === 'files'
+                    ? 'bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+                onClick={() => setView('files')}
+              >
+                Files
+              </button>
             </div>
 
             <div class="hidden md:block h-4 w-px bg-gray-300 dark:bg-[#30363d] mx-1"></div>
@@ -135,8 +165,8 @@ export default function Workspace(props: Props) {
           </button>
         </div>
         <div class="flex-1 overflow-hidden relative">
-          {view() === 'chat' ? (
-            currentSessionId() ? (
+          {view() === 'chat' &&
+            (currentSessionId() ? (
               <ChatInterface folder={props.folder} sessionId={currentSessionId()!} />
             ) : (
               <div class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 gap-4">
@@ -158,9 +188,10 @@ export default function Workspace(props: Props) {
                 </div>
                 <p>Select or create a session to start</p>
               </div>
-            )
-          ) : (
-            <DiffView folder={props.folder} />
+            ))}
+          {view() === 'changes' && <DiffView folder={props.folder} />}
+          {view() === 'files' && (
+            <FilesView folder={props.folder} selectedFile={selectedFile()} onSelectFile={setSelectedFile} />
           )}
         </div>
       </div>

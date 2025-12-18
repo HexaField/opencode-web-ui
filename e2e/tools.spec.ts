@@ -40,7 +40,7 @@ test.describe('Tool UI', () => {
     // Check if tool calls are rendered
     await expect(page.getByText('Tool: list')).toBeVisible()
     await expect(page.getByText('/test/path').first()).toBeVisible()
-    
+
     await expect(page.getByText('Tool: write')).toBeVisible()
     await expect(page.getByText('/test/file.txt')).toBeVisible()
     await expect(page.getByText('hello world')).toBeVisible()

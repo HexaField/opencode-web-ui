@@ -412,6 +412,36 @@ app.get('/fs/list', async (req, res) => {
   }
 })
 
+app.get('/fs/read', async (req, res) => {
+  const filePath = req.query.path as string
+  if (!filePath) {
+    res.status(400).json({ error: 'Missing path query parameter' })
+    return
+  }
+  try {
+    const content = await fs.readFile(filePath, 'utf-8')
+    res.json({ content })
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
+
+app.post('/fs/write', async (req, res) => {
+  const { path: filePath, content } = req.body as { path?: string; content?: string }
+  if (!filePath || content === undefined) {
+    res.status(400).json({ error: 'Missing path or content' })
+    return
+  }
+  try {
+    await fs.writeFile(filePath, content, 'utf-8')
+    res.json({ success: true })
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
+
 // Return unified git diff for a single file (unified=3)
 app.get('/files/diff', async (req, res) => {
   const folder = req.query.folder as string
