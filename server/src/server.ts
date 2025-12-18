@@ -1,242 +1,318 @@
-import express from "express";
-import cors from "cors";
-import bodyParser from "body-parser";
-import { OpencodeManager } from "./opencode.js";
-import { type Session } from "@opencode-ai/sdk";
-import * as fs from "fs/promises";
-import * as path from "path";
-import * as os from "os";
+import { type Session } from '@opencode-ai/sdk'
+import bodyParser from 'body-parser'
+import { exec as _exec } from 'child_process'
+import cors from 'cors'
+import express from 'express'
+import * as fs from 'fs/promises'
+import * as os from 'os'
+import * as path from 'path'
+import { promisify } from 'util'
+import { OpencodeManager } from './opencode.js'
+const exec = promisify(_exec)
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json());
+const app = express()
+app.use(cors())
+app.use(bodyParser.json())
 
-const manager = new OpencodeManager();
+const manager = new OpencodeManager()
 
 // Helper to unwrap SDK response
 function unwrap<T>(res: { data: T } | T): T {
   if (res && typeof res === 'object' && 'data' in res) {
-    return res.data;
+    return res.data
   }
-  return res;
+  return res
 }
 
 // Typed interface for SDK client
 interface TypedClient {
   session: {
-    list(): Promise<{ data: Session[] }>;
-    create(args: { body: unknown }): Promise<{ data: Session }>;
-    prompt(args: { path: { id: string }; body: unknown }): Promise<{ data: unknown }>;
-    get?(args: { path: { id: string } }): Promise<{ data: Session }>;
-    messages?(args: { path: { id: string } }): Promise<{ data: unknown[] }>;
-  };
+    list(): Promise<{ data: Session[] }>
+    create(args: { body: unknown }): Promise<{ data: Session }>
+    prompt(args: { path: { id: string }; body: unknown }): Promise<{ data: unknown }>
+    get?(args: { path: { id: string } }): Promise<{ data: Session }>
+    messages?(args: { path: { id: string } }): Promise<{ data: unknown[] }>
+  }
   file: {
-    status(): Promise<{ data: unknown }>;
-    read(args: { query: { path: string } }): Promise<{ data: unknown }>;
-  };
+    status(): Promise<{ data: unknown }>
+    read(args: { query: { path: string } }): Promise<{ data: unknown }>
+  }
 }
 
 interface AuthenticatedRequest extends express.Request {
-  opencodeClient?: TypedClient;
-  targetFolder?: string;
+  opencodeClient?: TypedClient
+  targetFolder?: string
 }
 
 // Middleware to ensure connection
 const withClient = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const folder = req.query.folder as string;
+  const folder = req.query.folder as string
   if (!folder) {
-    res.status(400).json({ error: "Missing folder query parameter" });
-    return;
+    res.status(400).json({ error: 'Missing folder query parameter' })
+    return
   }
   try {
-    const client = await manager.connect(folder);
-    (req as AuthenticatedRequest).opencodeClient = client as unknown as TypedClient;
-    (req as AuthenticatedRequest).targetFolder = folder;
-    next();
+    const client = await manager.connect(folder)
+    ;(req as AuthenticatedRequest).opencodeClient = client as unknown as TypedClient
+    ;(req as AuthenticatedRequest).targetFolder = folder
+    next()
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: `Failed to connect: ${msg}` });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: `Failed to connect: ${msg}` })
   }
-};
+}
 
-app.post("/connect", async (req, res) => {
-  const { folder } = req.body as { folder?: string };
+app.post('/connect', async (req, res) => {
+  const { folder } = req.body as { folder?: string }
   if (!folder) {
-    res.status(400).json({ error: "Missing folder in body" });
-    return;
+    res.status(400).json({ error: 'Missing folder in body' })
+    return
   }
   try {
-    await manager.connect(folder);
-    res.json({ success: true, folder });
+    await manager.connect(folder)
+    res.json({ success: true, folder })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
 
-app.get("/sessions", withClient, async (req, res) => {
+app.get('/sessions', withClient, async (req, res) => {
   try {
-    const client = (req as AuthenticatedRequest).opencodeClient!;
-    const folder = (req as AuthenticatedRequest).targetFolder!;
-    
-    let realFolder = folder;
+    const client = (req as AuthenticatedRequest).opencodeClient!
+    const folder = (req as AuthenticatedRequest).targetFolder!
+
+    let realFolder = folder
     try {
-        realFolder = await fs.realpath(folder);
-    } catch (e) {
-        // ignore
+      realFolder = await fs.realpath(folder)
+    } catch {
+      // ignore
     }
 
-    const response = await client.session.list();
-    const sessions = unwrap(response);
-    const filtered = Array.isArray(sessions) 
-      ? sessions.filter((s) => s.directory === folder || s.directory === folder + '/' || s.directory === realFolder || s.directory === realFolder + '/')
-      : sessions;
-      
-    res.json(filtered);
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
-  }
-});
+    const response = await client.session.list()
+    const sessions = unwrap(response)
+    const filtered = Array.isArray(sessions)
+      ? sessions.filter(
+          (s) =>
+            s.directory === folder ||
+            s.directory === folder + '/' ||
+            s.directory === realFolder ||
+            s.directory === realFolder + '/'
+        )
+      : sessions
 
-app.post("/sessions", withClient, async (req, res) => {
-  try {
-    const client = (req as AuthenticatedRequest).opencodeClient!;
-    const session = await client.session.create({ body: req.body });
-    const data = unwrap(session);
-    res.json(data);
+    res.json(filtered)
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
 
-app.get("/sessions/:id", withClient, async (req, res) => {
+app.post('/sessions', withClient, async (req, res) => {
   try {
-    const client = (req as AuthenticatedRequest).opencodeClient!;
-    const { id } = req.params;
-    
+    const client = (req as AuthenticatedRequest).opencodeClient!
+    const session = await client.session.create({ body: req.body })
+    const data = unwrap(session)
+    res.json(data)
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
+
+app.get('/sessions/:id', withClient, async (req, res) => {
+  try {
+    const client = (req as AuthenticatedRequest).opencodeClient!
+    const { id } = req.params
+
     // Check if 'get' method exists safely
-    const sessionClient = client.session;
+    const sessionClient = client.session
 
     if (typeof sessionClient.get === 'function') {
-        const session = await sessionClient.get({ path: { id } });
-        const data = unwrap(session) as any;
-        
-        if (typeof sessionClient.messages === 'function') {
-            const messages = await sessionClient.messages({ path: { id } });
-            data.history = unwrap(messages);
+      const session = await sessionClient.get({ path: { id } })
+      const raw = unwrap(session)
+
+      if (typeof sessionClient.messages === 'function') {
+        const messages = await sessionClient.messages({ path: { id } })
+        const msgData = unwrap(messages)
+        if (raw && typeof raw === 'object' && raw !== null) {
+          const obj = raw as Record<string, unknown>
+          obj.history = msgData
+          res.json(obj)
+          return
         }
-        
-        res.json(data);
+      }
+
+      res.json(raw)
     } else {
-        const response = await client.session.list();
-        const sessions = unwrap(response);
-        const session = sessions.find((s) => s.id === id);
-        if (session) res.json(session);
-        else res.status(404).json({ error: "Session not found" });
+      const response = await client.session.list()
+      const sessions = unwrap(response)
+      const session = sessions.find((s) => s.id === id)
+      if (session) res.json(session)
+      else res.status(404).json({ error: 'Session not found' })
     }
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
 
-app.post("/sessions/:id/prompt", withClient, async (req, res) => {
+app.post('/sessions/:id/prompt', withClient, async (req, res) => {
   try {
-    const client = (req as AuthenticatedRequest).opencodeClient!;
-    const { id } = req.params;
+    const client = (req as AuthenticatedRequest).opencodeClient!
+    const { id } = req.params
     const result = await client.session.prompt({
       path: { id },
-      body: req.body,
-    });
-    const data = unwrap(result);
-    res.json(data);
+      body: req.body
+    })
+    const data = unwrap(result)
+    res.json(data)
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
 
-app.get("/agents", withClient, async (req, res) => {
+app.get('/agents', withClient, async (req, res) => {
   try {
-    const folder = (req as AuthenticatedRequest).targetFolder!;
-    const agents = await manager.listAgents(folder);
-    res.json(agents);
+    const folder = (req as AuthenticatedRequest).targetFolder!
+    const agents = await manager.listAgents(folder)
+    res.json(agents)
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
 
-app.post("/agents", withClient, async (req, res) => {
+app.post('/agents', withClient, async (req, res) => {
   try {
-    const folder = (req as AuthenticatedRequest).targetFolder!;
-    const { name, content } = req.body as { name: string; content: string };
-    await manager.saveAgent(folder, name, content);
-    res.json({ success: true });
+    const folder = (req as AuthenticatedRequest).targetFolder!
+    const { name, content } = req.body as { name: string; content: string }
+    await manager.saveAgent(folder, name, content)
+    res.json({ success: true })
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
 
-app.get("/files/status", withClient, async (req, res) => {
+app.get('/files/status', withClient, async (req, res) => {
   try {
-    const client = (req as AuthenticatedRequest).opencodeClient!;
-    const status = await client.file.status();
-    const data = unwrap(status);
-    res.json(data);
+    const client = (req as AuthenticatedRequest).opencodeClient!
+    const status = await client.file.status()
+    const data = unwrap(status)
+    res.json(data)
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
 
-app.get("/files/read", withClient, async (req, res) => {
+app.get('/files/read', withClient, async (req, res) => {
   try {
-    const client = (req as AuthenticatedRequest).opencodeClient!;
-    const path = req.query.path as string;
+    const client = (req as AuthenticatedRequest).opencodeClient!
+    const path = req.query.path as string
     if (!path) {
-      res.status(400).json({ error: "Missing path query parameter" });
-      return;
+      res.status(400).json({ error: 'Missing path query parameter' })
+      return
     }
-    const content = await client.file.read({ query: { path } });
-    const data = unwrap(content);
-    res.json(data);
+    const content = await client.file.read({ query: { path } })
+    const data = unwrap(content)
+    res.json(data)
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
 
-app.get("/fs/list", async (req, res) => {
-  const dirPath = req.query.path as string || os.homedir();
-  console.log('Listing dir:', dirPath);
+app.get('/fs/list', async (req, res) => {
+  const dirPath = (req.query.path as string) || os.homedir()
+  console.log('Listing dir:', dirPath)
   try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const entries = await fs.readdir(dirPath, { withFileTypes: true })
     const files = entries.map((entry) => ({
       name: entry.name,
       isDirectory: entry.isDirectory(),
-      path: path.join(dirPath, entry.name),
-    }));
+      path: path.join(dirPath, entry.name)
+    }))
     // Sort directories first
     files.sort((a, b) => {
-      if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name);
-      return a.isDirectory ? -1 : 1;
-    });
-    res.setHeader('x-current-path', dirPath);
-    res.json(files);
+      if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name)
+      return a.isDirectory ? -1 : 1
+    })
+    res.setHeader('x-current-path', dirPath)
+    res.json(files)
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: msg });
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
   }
-});
+})
+
+// Return unified git diff for a single file (unified=3)
+app.get('/files/diff', async (req, res) => {
+  const folder = req.query.folder as string
+  const filePath = req.query.path as string
+  if (!folder || !filePath) {
+    res.status(400).json({ error: 'Missing folder or path' })
+    return
+  }
+  try {
+    // Run git diff for the path with 3 lines of context
+    const cmd = `git -C ${JSON.stringify(folder)} diff --unified=3 -- ${JSON.stringify(filePath)}`
+    const { stdout, stderr } = await exec(cmd)
+    if (stderr) {
+      // non-fatal, include in response
+      res.json({ diff: stdout || '', stderr })
+      return
+    }
+    res.json({ diff: stdout || '' })
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
+
+// Return summary of diffs (files changed, total added/removed lines)
+app.get('/files/diff-summary', async (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    // git diff --numstat gives: added\tremoved\tpath
+    const cmd = `git -C ${JSON.stringify(folder)} diff --numstat`
+    const { stdout } = await exec(cmd)
+    if (!stdout) {
+      res.json({ filesChanged: 0, added: 0, removed: 0, details: [] })
+      return
+    }
+    const lines = stdout.split('\n').filter(Boolean)
+    let added = 0
+    let removed = 0
+    const details: Array<{ path: string; added: number; removed: number }> = []
+    for (const line of lines) {
+      const parts = line.split('\t')
+      if (parts.length >= 3) {
+        const a = parts[0] === '-' ? 0 : parseInt(parts[0], 10) || 0
+        const r = parts[1] === '-' ? 0 : parseInt(parts[1], 10) || 0
+        const p = parts.slice(2).join('\t')
+        added += a
+        removed += r
+        details.push({ path: p, added: a, removed: r })
+      }
+    }
+    res.json({ filesChanged: details.length, added, removed, details })
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
 
 // Cleanup on exit
-process.on("SIGINT", () => {
-  manager.shutdown();
-  process.exit();
-});
+process.on('SIGINT', () => {
+  manager.shutdown()
+  process.exit()
+})
 
-export { app, manager };
+export { app, manager }

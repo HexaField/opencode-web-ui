@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
@@ -9,18 +9,18 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry',
+    trace: 'on-first-retry'
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+      use: { ...devices['Desktop Chrome'] }
+    }
   ],
   webServer: {
     command: 'npm run start:test',
     url: 'http://localhost:5173',
     reuseExistingServer: false,
-    timeout: 120 * 1000,
-  },
-});
+    timeout: 120 * 1000
+  }
+})

@@ -1,7 +1,6 @@
 # [Solid](https://solidjs.com) + [Tailwind CSS](https://tailwindcss.com) + [TypeScript](https://www.typescriptlang.org) + [Vite](https://vitejs.dev) Starter
 
-A starter template for Solid that comes preconfigured with [Vite](https://vitejs.dev),
-[TypeScript](https://www.typescriptlang.org), [Tailwind CSS](https://tailwindcss.com), [ESLint](https://eslint.org), [Prettier](https://prettier.io) and HMR.
+A starter template for Solid that comes preconfigured with [Vite](https://vitejs.dev), [TypeScript](https://www.typescriptlang.org), [Tailwind CSS](https://tailwindcss.com), [ESLint](https://eslint.org), [Prettier](https://prettier.io) and HMR.
 
 ## Features
 
@@ -49,8 +48,7 @@ When you use this template, follow the checklist to update your info properly
 npm run dev # or pnpm dev or yarn dev
 ```
 
-Runs the app in the development mode.<br>
-Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
+Runs the app in the development mode.<br> Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
 
 The page will reload automatically if you make edits.<br>
 
@@ -60,16 +58,13 @@ The page will reload automatically if you make edits.<br>
 npm run build # or pnpm build or yarn build
 ```
 
-Builds the app for production to the `dist` folder.<br>
-It correctly bundles Solid in production mode and optimizes the build for the best performance.
+Builds the app for production to the `dist` folder.<br> It correctly bundles Solid in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+The build is minified and the filenames include the hashes.<br> Your app is ready to be deployed!
 
 ## Deployment
 
 You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
-
 
 ## Variations
 
