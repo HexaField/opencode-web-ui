@@ -17,7 +17,6 @@ export default function Workspace(props: Props) {
     (params.get('view') as 'chat' | 'changes' | 'files') || 'chat'
   )
   const [selectedFile, setSelectedFile] = createSignal<string | null>(params.get('file'))
-  const [isSidebarOpen, setIsSidebarOpen] = createSignal(false)
   const [isSettingsOpen, setIsSettingsOpen] = createSignal(false)
 
   createEffect(() => {
@@ -51,51 +50,25 @@ export default function Workspace(props: Props) {
     <div class="flex h-screen w-screen overflow-hidden relative bg-white dark:bg-[#0d1117] transition-colors duration-200">
       <SettingsModal isOpen={isSettingsOpen()} onClose={() => setIsSettingsOpen(false)} onChangeFolder={props.onBack} />
 
-      {/* Mobile Sidebar Overlay */}
-      <div
-        class={`fixed inset-0 bg-black/50 z-20 md:hidden transition-opacity ${isSidebarOpen() ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={() => setIsSidebarOpen(false)}
-      />
-
-      {/* Sidebar */}
-      <div
-        class={`
-        fixed md:relative z-30 h-full bg-[#f6f8fa] dark:bg-[#010409] border-r border-gray-200 dark:border-[#30363d] w-64 transform transition-transform duration-200 ease-in-out
-        ${isSidebarOpen() ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}
-      >
-        <SessionList
-          folder={props.folder}
-          currentSessionId={currentSessionId()}
-          onSelectSession={(id) => {
-            setCurrentSessionId(id)
-            setView('chat')
-            setIsSidebarOpen(false)
-          }}
-          onOpenSettings={() => {
-            setIsSettingsOpen(true)
-            setIsSidebarOpen(false)
-          }}
-        />
-      </div>
-
       <div class="flex-1 flex flex-col h-full w-full bg-white dark:bg-[#0d1117]">
         <div class="h-14 border-b border-gray-200 dark:border-[#30363d] flex items-center px-4 bg-[#f6f8fa] dark:bg-[#010409] justify-between shrink-0 gap-2">
           <div class="flex items-center gap-3 overflow-hidden">
-            <button
-              class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            {view() === 'chat' && currentSessionId() && (
+              <button
+                class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                onClick={() => setCurrentSessionId(null)}
               >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
 
             <div class="flex bg-gray-200 dark:bg-[#21262d] rounded-md p-1">
               <button
@@ -136,10 +109,10 @@ export default function Workspace(props: Props) {
             </div>
           </div>
 
-          {/* Desktop Settings Button */}
+          {/* Settings Button */}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            class="hidden md:flex p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-[#21262d] transition-colors"
+            class="flex p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-[#21262d] transition-colors"
             title="Settings"
           >
             <svg
@@ -165,30 +138,52 @@ export default function Workspace(props: Props) {
           </button>
         </div>
         <div class="flex-1 overflow-hidden relative">
-          {view() === 'chat' &&
-            (currentSessionId() ? (
-              <ChatInterface folder={props.folder} sessionId={currentSessionId()!} />
-            ) : (
-              <div class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 gap-4">
-                <div class="p-4 bg-gray-50 dark:bg-[#161b22] rounded-full">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-12 w-12 text-gray-400 dark:text-gray-600"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                    />
-                  </svg>
-                </div>
-                <p>Select or create a session to start</p>
+          {view() === 'chat' && (
+            <div class="flex h-full w-full">
+              <div
+                class={`
+                  border-r border-gray-200 dark:border-[#30363d] shrink-0 flex flex-col
+                  ${currentSessionId() ? 'hidden md:flex md:w-64' : 'flex w-full md:w-64'}
+                `}
+              >
+                <SessionList
+                  folder={props.folder}
+                  currentSessionId={currentSessionId()}
+                  onSelectSession={setCurrentSessionId}
+                />
               </div>
-            ))}
+              <div
+                class={`
+                  flex-1 h-full overflow-hidden relative
+                  ${!currentSessionId() ? 'hidden md:block' : 'block'}
+                `}
+              >
+                {currentSessionId() ? (
+                  <ChatInterface folder={props.folder} sessionId={currentSessionId()!} />
+                ) : (
+                  <div class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 gap-4">
+                    <div class="p-4 bg-gray-50 dark:bg-[#161b22] rounded-full">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-12 w-12 text-gray-400 dark:text-gray-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.5"
+                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                        />
+                      </svg>
+                    </div>
+                    <p>Select or create a session to start</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {view() === 'changes' && <DiffView folder={props.folder} />}
           {view() === 'files' && (
             <FilesView folder={props.folder} selectedFile={selectedFile()} onSelectFile={setSelectedFile} />
