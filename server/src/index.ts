@@ -8,6 +8,10 @@ process.on('unhandledRejection', (reason, promise) => {
 })
 
 const port = process.env.PORT || 3001
-app.listen(Number(port), '0.0.0.0', () => {
+const server = app.listen(Number(port), '0.0.0.0', () => {
   console.log(`Server running on port ${port}`)
+})
+
+server.on('error', (err) => {
+  console.error('Server failed to start:', err)
 })
