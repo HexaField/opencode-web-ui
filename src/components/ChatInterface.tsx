@@ -73,7 +73,31 @@ export default function ChatInterface(props: Props) {
       }
     } catch (err) {
       console.error(err)
-      // Handle error (maybe add an error message to the list)
+      const errorMessage: Message = {
+        info: {
+          id: 'error-' + Date.now(),
+          sessionID: props.sessionId,
+          role: 'assistant',
+          time: { created: Date.now() },
+          parentID: 'error-parent',
+          modelID: 'error-model',
+          providerID: 'error-provider',
+          mode: 'chat',
+          path: { cwd: '', root: '' },
+          cost: 0,
+          tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+        },
+        parts: [
+          {
+            id: 'error-part-' + Date.now(),
+            sessionID: props.sessionId,
+            messageID: 'error-' + Date.now(),
+            type: 'text',
+            text: `Error: ${err instanceof Error ? err.message : String(err)}`
+          }
+        ]
+      }
+      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setLoading(false)
     }

@@ -20,14 +20,13 @@ export default function FolderBrowser(props: Props) {
 
   createEffect(() => {
     const path = currentPath()
-    console.log('Effect running, path:', path)
     // Sync input with current path when it changes externally (e.g. clicking folder)
     setInputPath(path)
     setError(null)
 
     const url = path
-      ? `http://127.0.0.1:3001/fs/list?path=${encodeURIComponent(path)}`
-      : 'http://127.0.0.1:3001/fs/list'
+      ? `/fs/list?path=${encodeURIComponent(path)}`
+      : '/fs/list'
     fetch(url)
       .then((res) => {
         if (!res.ok) throw new Error(res.statusText)
@@ -38,7 +37,6 @@ export default function FolderBrowser(props: Props) {
         return res.json()
       })
       .then((data) => {
-        console.log('Folder entries:', data)
         if (Array.isArray(data)) {
           setEntries(data)
         }

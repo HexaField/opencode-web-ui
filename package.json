@@ -1,7 +1,8 @@
 {
-  "name": "solid-tailwind-ts-vite-template",
-  "version": "1.1.0",
-  "author": "AR10",
+  "name": "@hexafield/opencode-web-ui",
+  "version": "0.0.1",
+  "description": "Web interface for OpenCode",
+  "author": "HexaField",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
