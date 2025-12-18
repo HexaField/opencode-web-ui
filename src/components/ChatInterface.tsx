@@ -86,29 +86,31 @@ export default function ChatInterface(props: Props) {
           {(msg) => {
             const isUser = msg.info.role === 'user'
             return (
-              <div
-                data-testid={`message-${msg.info.role}`}
-                class={`
-                  max-w-[85%] md:max-w-[75%] rounded-xl px-2 py-1 border shadow-sm
-                  ${
-                    isUser
-                      ? 'bg-[#ddf4ff] dark:bg-[#1f6feb]/15 text-gray-900 dark:text-gray-100 border-[#54aeff]/40 dark:border-[#1f6feb]/40 self-end rounded-br-sm'
-                      : 'bg-white dark:bg-[#161b22] text-gray-900 dark:text-gray-100 border-gray-200 dark:border-[#30363d] self-start rounded-bl-sm'
-                  }
-                `}
-              >
+              <div class={`flex flex-col gap-1 w-full ${isUser ? 'items-end' : 'items-start'}`}>
                 <For each={msg.parts}>
                   {(part) => (
-                    <div class="mb-2 last:mb-0">
+                    <>
                       <Show when={part.type === 'text'}>
-                        <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                          {(part as { text: string }).text}
-                        </pre>
+                        <div
+                          data-testid={`message-${msg.info.role}`}
+                          class={`
+                            max-w-[85%] md:max-w-[75%] rounded-xl px-2 py-1 border shadow-sm
+                            ${
+                              isUser
+                                ? 'bg-[#ddf4ff] dark:bg-[#1f6feb]/15 text-gray-900 dark:text-gray-100 border-[#54aeff]/40 dark:border-[#1f6feb]/40 rounded-br-sm'
+                                : 'bg-white dark:bg-[#161b22] text-gray-900 dark:text-gray-100 border-gray-200 dark:border-[#30363d] rounded-bl-sm'
+                            }
+                          `}
+                        >
+                          <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                            {(part as { text: string }).text}
+                          </pre>
+                        </div>
                       </Show>
                       <Show when={part.type === 'tool'}>
                         <ToolCall part={part as ToolPart} />
                       </Show>
-                    </div>
+                    </>
                   )}
                 </For>
               </div>
