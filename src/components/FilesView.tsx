@@ -39,6 +39,10 @@ export default function FilesView(props: Props) {
   const [isDirty, setIsDirty] = createSignal(false)
   const [isPaletteOpen, setIsPaletteOpen] = createSignal(true)
   const [editor, setEditor] = createSignal<monaco.editor.IStandaloneCodeEditor | undefined>(undefined)
+  const [isCreatingFile, setIsCreatingFile] = createSignal(false)
+  const [newFileName, setNewFileName] = createSignal('')
+  const [lastUpdated, setLastUpdated] = createSignal(Date.now())
+  const [fileToDelete, setFileToDelete] = createSignal<string | null>(null)
 
   let editorContainer: HTMLDivElement | undefined
   const { isDark } = useTheme()
@@ -135,15 +139,130 @@ export default function FilesView(props: Props) {
     editor()?.trigger('keyboard', 'redo', null)
   }
 
+  const createFile = async () => {
+    if (!newFileName().trim()) return
+    // Ensure we don't double slash if folder ends with /
+    const folder = props.folder.endsWith('/') ? props.folder.slice(0, -1) : props.folder
+    const path = folder + '/' + newFileName().trim()
+    try {
+      const res = await fetch('/fs/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path, content: '' })
+      })
+      if (res.ok) {
+        setLastUpdated(Date.now())
+        setIsCreatingFile(false)
+        setNewFileName('')
+        props.onSelectFile(path)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const deleteFile = async () => {
+    const path = fileToDelete()
+    if (!path) return
+    try {
+      const res = await fetch('/fs/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path })
+      })
+      if (res.ok) {
+        setLastUpdated(Date.now())
+        setFileToDelete(null)
+        if (props.selectedFile === path) {
+          props.onSelectFile(null)
+          editor()?.setValue('')
+        }
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   return (
     <div class="flex h-full w-full relative">
+      <Show when={fileToDelete()}>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div class="bg-white dark:bg-[#161b22] p-4 rounded-lg shadow-xl border border-gray-200 dark:border-[#30363d] w-96">
+            <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Delete File</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+              Are you sure you want to delete <span class="font-mono text-sm">{fileToDelete()?.split('/').pop()}</span>?
+            </p>
+            <div class="flex justify-end gap-2">
+              <button
+                onClick={() => setFileToDelete(null)}
+                class="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#21262d] rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void deleteFile()}
+                class="px-3 py-1 text-sm bg-red-600 text-white hover:bg-red-700 rounded"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
+      <Show when={isCreatingFile()}>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div class="bg-white dark:bg-[#161b22] p-4 rounded-lg shadow-xl border border-gray-200 dark:border-[#30363d] w-80">
+            <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">New File</h3>
+            <input
+              class="w-full border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 rounded px-2 py-1 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="filename.ext"
+              value={newFileName()}
+              onInput={(e) => setNewFileName(e.currentTarget.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void createFile()
+                if (e.key === 'Escape') setIsCreatingFile(false)
+              }}
+              autofocus
+            />
+            <div class="flex justify-end gap-2">
+              <button
+                onClick={() => setIsCreatingFile(false)}
+                class="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#21262d] rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void createFile()}
+                class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      </Show>
       <div
         class={`${
           isSidebarOpen() ? 'w-64' : 'w-0'
         } border-r border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] flex flex-col shrink-0 transition-all duration-200 overflow-hidden`}
       >
         <div class="p-2 font-medium text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#30363d] flex items-center justify-between">
-          <span>Files</span>
+          <div class="flex items-center gap-2">
+            <span>Files</span>
+            <button
+              onClick={() => setIsCreatingFile(true)}
+              class="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded hover:bg-gray-200 dark:hover:bg-[#21262d]"
+              title="New File"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
             class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-[#21262d]"
@@ -161,7 +280,12 @@ export default function FilesView(props: Props) {
           </button>
         </div>
         <div class="flex-1 overflow-hidden">
-          <FileTree rootPath={props.folder} onSelectFile={props.onSelectFile} selectedPath={props.selectedFile} />
+          <FileTree
+            rootPath={props.folder}
+            onSelectFile={props.onSelectFile}
+            selectedPath={props.selectedFile}
+            lastUpdated={lastUpdated()}
+          />
         </div>
       </div>
       <div class="flex-1 h-full overflow-hidden relative group">
@@ -250,6 +374,20 @@ export default function FilesView(props: Props) {
               </button>
 
               <div class="w-px h-4 bg-gray-200 dark:bg-[#30363d] mx-1" />
+
+              <button
+                onClick={() => props.selectedFile && setFileToDelete(props.selectedFile)}
+                class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                title="Delete File"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fill-rule="evenodd"
+                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
 
               <button
                 onClick={() => void saveFile()}

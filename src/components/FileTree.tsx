@@ -10,6 +10,7 @@ interface Props {
   rootPath: string
   onSelectFile: (path: string) => void
   selectedPath: string | null
+  lastUpdated?: number
 }
 
 export default function FileTree(props: Props) {
@@ -17,6 +18,9 @@ export default function FileTree(props: Props) {
   const [expandedPaths, setExpandedPaths] = createSignal<Set<string>>(new Set())
 
   createEffect(() => {
+    // Depend on lastUpdated to trigger refresh
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    props.lastUpdated
     void fetchEntries(props.rootPath).then(setEntries)
   })
 

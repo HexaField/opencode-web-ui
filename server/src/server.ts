@@ -442,6 +442,21 @@ app.post('/fs/write', async (req, res) => {
   }
 })
 
+app.post('/fs/delete', async (req, res) => {
+  const { path: filePath } = req.body as { path?: string }
+  if (!filePath) {
+    res.status(400).json({ error: 'Missing path' })
+    return
+  }
+  try {
+    await fs.rm(filePath, { recursive: true, force: true })
+    res.json({ success: true })
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
+
 // Return unified git diff for a single file (unified=3)
 app.get('/files/diff', async (req, res) => {
   const folder = req.query.folder as string
