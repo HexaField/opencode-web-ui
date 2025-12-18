@@ -15,7 +15,14 @@ interface Props {
 
 export default function FileTree(props: Props) {
   const [entries, setEntries] = createSignal<Entry[]>([])
-  const [expandedPaths, setExpandedPaths] = createSignal<Set<string>>(new Set())
+  const [expandedPaths, setExpandedPaths] = createSignal<Set<string>>((() => {
+    try {
+      const stored = localStorage.getItem('opencode_expanded_paths')
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })())
 
   createEffect(() => {
     // Depend on lastUpdated to trigger refresh
@@ -43,6 +50,7 @@ export default function FileTree(props: Props) {
       newExpanded.add(path)
     }
     setExpandedPaths(newExpanded)
+    localStorage.setItem('opencode_expanded_paths', JSON.stringify(Array.from(newExpanded)))
   }
 
   return (

@@ -35,7 +35,9 @@ interface Props {
 }
 
 export default function FilesView(props: Props) {
-  const [isSidebarOpen, setIsSidebarOpen] = createSignal(true)
+  const [isSidebarOpen, setIsSidebarOpen] = createSignal(
+    localStorage.getItem('opencode_sidebar_open') !== 'false'
+  )
   const [isDirty, setIsDirty] = createSignal(false)
   const [isPaletteOpen, setIsPaletteOpen] = createSignal(true)
   const [editor, setEditor] = createSignal<monaco.editor.IStandaloneCodeEditor | undefined>(undefined)
@@ -46,6 +48,10 @@ export default function FilesView(props: Props) {
 
   let editorContainer: HTMLDivElement | undefined
   const { isDark } = useTheme()
+
+  createEffect(() => {
+    localStorage.setItem('opencode_sidebar_open', String(isSidebarOpen()))
+  })
 
   // Update theme
   createEffect(() => {
