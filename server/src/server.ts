@@ -4,8 +4,10 @@ import { exec as _exec } from 'child_process'
 import cors from 'cors'
 import express from 'express'
 import * as fs from 'fs/promises'
+import * as http from 'http'
 import * as os from 'os'
 import * as path from 'path'
+import { fileURLToPath } from 'url'
 import { promisify } from 'util'
 import { getCurrentBranch, getGitStatus, listGitBranches, runCopilotPrompt, runGitCommand } from './git.js'
 import { OpencodeManager } from './opencode.js'
@@ -515,6 +517,62 @@ app.get('/files/diff-summary', async (req, res) => {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
+  }
+})
+
+// Serve static files
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const distPath = path.join(__dirname, '../../dist')
+
+app.use(express.static(distPath))
+
+// SPA fallback
+app.get(/(.*)/, async (req, res) => {
+  if (
+    req.path.startsWith('/fs') ||
+    req.path.startsWith('/sessions') ||
+    req.path.startsWith('/connect') ||
+    req.path.startsWith('/files') ||
+    req.path.startsWith('/agents') ||
+    req.path.startsWith('/git')
+  ) {
+    res.status(404).json({ error: 'Not found' })
+    return
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    const clientPort = process.env.CLIENT_PORT || 5173
+    const clientHost = process.env.CLIENT_HOST || '127.0.0.1'
+
+    const options = {
+      hostname: clientHost,
+      port: clientPort,
+      path: req.url,
+      method: req.method,
+      headers: req.headers
+    }
+
+    const proxyReq = http.request(options, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode || 500, proxyRes.headers)
+      proxyRes.pipe(res, { end: true })
+    })
+
+    proxyReq.on('error', (e) => {
+      console.error('Proxy error:', e)
+      res.status(502).send('Bad Gateway')
+    })
+
+    req.pipe(proxyReq, { end: true })
+    return
+  }
+
+  const indexHtml = path.join(distPath, 'index.html')
+  try {
+    await fs.access(indexHtml)
+    res.sendFile(indexHtml)
+  } catch {
+    res.status(404).send('Not found')
   }
 })
 
