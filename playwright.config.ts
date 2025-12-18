@@ -1,4 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
+import { loadEnv } from 'vite'
+
+const env = loadEnv('', process.cwd(), '')
+const PORT = env.CLIENT_PORT || '5173'
+const HOST = env.CLIENT_HOST || 'localhost'
+const BASE_URL = `http://${HOST}:${PORT}`
 
 export default defineConfig({
   testDir: './e2e',
@@ -8,7 +14,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: BASE_URL,
     trace: 'on-first-retry'
   },
   projects: [
@@ -19,7 +25,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run start:test',
-    url: 'http://localhost:5173',
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000
   }

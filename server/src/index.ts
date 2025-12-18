@@ -7,8 +7,9 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason)
 })
 
-const port = process.env.PORT || 3001
-const server = app.listen(Number(port), '0.0.0.0', () => {
+const port = process.env.SERVER_PORT || process.env.PORT || 3001
+const host = process.env.SERVER_HOST || '0.0.0.0'
+const server = app.listen(Number(port), host, () => {
   console.log(`Server running on port ${port}`)
 })
 
