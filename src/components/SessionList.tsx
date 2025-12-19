@@ -1,8 +1,14 @@
-import { createEffect, createSignal, For } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
+import AgentManager from './AgentManager'
 
 interface Session {
   id: string
   title: string
+}
+
+interface Agent {
+  name: string
+  content: string
 }
 
 interface Props {
@@ -13,7 +19,10 @@ interface Props {
 
 export default function SessionList(props: Props) {
   const [sessions, setSessions] = createSignal<Session[]>([])
+  const [agents, setAgents] = createSignal<Agent[]>([])
+  const [selectedAgent, setSelectedAgent] = createSignal<string>('')
   const [error, setError] = createSignal<string | null>(null)
+  const [isAgentManagerOpen, setIsAgentManagerOpen] = createSignal(false)
 
   const fetchSessions = () => {
     setError(null)
@@ -25,17 +34,32 @@ export default function SessionList(props: Props) {
       .catch((err) => setError(String(err)))
   }
 
+  const fetchAgents = () => {
+    fetch(`/agents?folder=${encodeURIComponent(props.folder)}`)
+      .then((res) => res.json())
+      .then((data) => setAgents(data as Agent[]))
+      .catch((err) => console.error('Failed to fetch agents:', err))
+  }
+
   createEffect(() => {
-    if (props.folder) fetchSessions()
+    if (props.folder) {
+      fetchSessions()
+      fetchAgents()
+    }
   })
 
   const createSession = async () => {
     setError(null)
     try {
+      const body: { title: string; agent?: string } = { title: 'New Session' }
+      if (selectedAgent()) {
+        body.agent = selectedAgent()
+      }
+
       const res = await fetch(`/sessions?folder=${encodeURIComponent(props.folder)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'New Session' })
+        body: JSON.stringify(body)
       })
       if (!res.ok) {
         const text = await res.text()
@@ -58,21 +82,56 @@ export default function SessionList(props: Props) {
 
   return (
     <div class="w-full border-r border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] flex flex-col h-full transition-colors duration-200">
-      <div class="p-3 border-b border-gray-200 dark:border-[#30363d] flex justify-between items-center">
-        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100">Sessions</h3>
-        <button
-          onClick={() => void createSession()}
-          class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-gray-200 dark:hover:bg-[#21262d]"
-          title="New Session"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fill-rule="evenodd"
-              d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-              clip-rule="evenodd"
-            />
-          </svg>
-        </button>
+      <Show when={isAgentManagerOpen()}>
+        <AgentManager folder={props.folder} onClose={() => {
+          setIsAgentManagerOpen(false)
+          fetchAgents() // Refresh agents list after closing manager
+        }} />
+      </Show>
+
+      <div class="p-3 border-b border-gray-200 dark:border-[#30363d] flex justify-between items-center gap-2">
+        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100 shrink-0 hidden sm:block">Sessions</h3>
+        <div class="flex items-center gap-1 min-w-0 flex-1 sm:flex-none justify-end">
+          <button
+            onClick={() => setIsAgentManagerOpen(true)}
+            class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-gray-200 dark:hover:bg-[#21262d]"
+            title="Manage Agents"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          
+          <div class="relative flex-1 min-w-[100px] max-w-[150px]">
+            <select
+              value={selectedAgent()}
+              onChange={(e) => setSelectedAgent(e.currentTarget.value)}
+              class="w-full text-xs py-1.5 pl-2 pr-6 border border-gray-200 dark:border-[#30363d] rounded bg-white dark:bg-[#0d1117] text-gray-700 dark:text-gray-300 focus:ring-1 focus:ring-blue-500 outline-none appearance-none truncate"
+            >
+              <option value="">Default</option>
+              <For each={agents()}>
+                {(agent) => <option value={agent.name}>{agent.name}</option>}
+              </For>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-1 pointer-events-none text-gray-500">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+          </div>
+
+          <button
+            onClick={() => void createSession()}
+            class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-gray-200 dark:hover:bg-[#21262d] shrink-0"
+            title="New Session"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
       {error() && (
         <div class="p-2 text-red-500 text-xs bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900">

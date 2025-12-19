@@ -47,6 +47,7 @@ export default function FilesView(props: Props) {
   const [fileToDelete, setFileToDelete] = createSignal<string | null>(null)
 
   let editorContainer: HTMLDivElement | undefined
+  let cleanupListeners: (() => void) | undefined
   const { isDark } = useTheme()
 
   createEffect(() => {
@@ -109,10 +110,68 @@ export default function FilesView(props: Props) {
       })
 
       setEditor(ed)
+
+      // Fix for keyboard popping up on drag (scrolling)
+      let isDragging = false
+      let startX = 0
+      let startY = 0
+
+      const onDown = (e: MouseEvent | TouchEvent) => {
+        isDragging = false
+        const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX
+        const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY
+        startX = clientX
+        startY = clientY
+      }
+
+      const onMove = (e: MouseEvent | TouchEvent) => {
+        const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX
+        const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY
+        if (!isDragging && (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5)) {
+          isDragging = true
+          const selection = ed.getSelection()
+          if (selection && selection.isEmpty()) {
+            if (document.activeElement?.tagName === 'TEXTAREA') {
+              ;(document.activeElement as HTMLElement).blur()
+            }
+          }
+        }
+      }
+
+      const onUp = () => {
+        if (isDragging) {
+          const selection = ed.getSelection()
+          if (selection && selection.isEmpty()) {
+            setTimeout(() => {
+              if (document.activeElement?.tagName === 'TEXTAREA') {
+                ;(document.activeElement as HTMLElement).blur()
+              }
+            }, 10)
+          }
+        }
+        isDragging = false
+      }
+
+      editorContainer.addEventListener('mousedown', onDown)
+      editorContainer.addEventListener('touchstart', onDown)
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('touchmove', onMove)
+      window.addEventListener('mouseup', onUp)
+      window.addEventListener('touchend', onUp)
+
+      cleanupListeners = () => {
+        editorContainer.removeEventListener('mousedown', onDown)
+        editorContainer.removeEventListener('touchstart', onDown)
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('touchmove', onMove)
+        window.removeEventListener('mouseup', onUp)
+        window.removeEventListener('touchend', onUp)
+      }
     }
   })
 
   onCleanup(() => {
+    cleanupListeners?.()
     editor()?.dispose()
     monaco.editor.getModels().forEach((model) => model.dispose())
   })

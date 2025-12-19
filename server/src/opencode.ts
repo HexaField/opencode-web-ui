@@ -1,8 +1,11 @@
 import { createOpencode, createOpencodeClient } from '@opencode-ai/sdk'
-import { spawn, type ChildProcess } from 'child_process'
+import { spawn, type ChildProcess, exec as _exec } from 'child_process'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
+import { promisify } from 'util'
+
+const exec = promisify(_exec)
 
 export type OpencodeClient = ReturnType<typeof createOpencodeClient>
 
@@ -35,6 +38,61 @@ if (process.env.OPENCODE_WORKER_DIR) {
     process.exit(1)
   })
 }
+
+const DEFAULT_AGENTS = [
+  {
+    name: 'build',
+    content: `---
+description: The default primary agent with all tools enabled.
+mode: primary
+tools:
+  write: true
+  edit: true
+  bash: true
+  webfetch: true
+---
+You are the default build agent. You have full access to the system.`
+  },
+  {
+    name: 'plan',
+    content: `---
+description: A restricted agent designed for planning and analysis.
+mode: primary
+tools:
+  write: false
+  edit: false
+  bash: false
+  webfetch: true
+---
+You are a planning agent. Analyze the request and provide a plan. Do not modify files.`
+  },
+  {
+    name: 'general',
+    content: `---
+description: A general-purpose agent for researching complex questions.
+mode: subagent
+tools:
+  write: true
+  edit: true
+  bash: true
+  webfetch: true
+---
+You are a general purpose subagent.`
+  },
+  {
+    name: 'explore',
+    content: `---
+description: A fast agent specialized for exploring codebases.
+mode: subagent
+tools:
+  write: false
+  edit: false
+  bash: true
+  webfetch: false
+---
+You are an exploration agent. Help the user find files and understand the codebase.`
+  }
+]
 
 // Manager Logic
 export class OpencodeManager {
@@ -101,6 +159,17 @@ export class OpencodeManager {
     const agentsDir = path.join(folder, '.opencode', 'agent')
     try {
       await fs.mkdir(agentsDir, { recursive: true })
+
+      // Seed default agents
+      for (const agent of DEFAULT_AGENTS) {
+        const agentPath = path.join(agentsDir, `${agent.name}.md`)
+        try {
+          await fs.access(agentPath)
+        } catch {
+          await fs.writeFile(agentPath, agent.content)
+        }
+      }
+
       const files = await fs.readdir(agentsDir)
       const agents = []
       for (const file of files) {
@@ -124,6 +193,16 @@ export class OpencodeManager {
   async deleteAgent(folder: string, name: string) {
     const agentPath = path.join(folder, '.opencode', 'agent', `${name}.md`)
     await fs.unlink(agentPath)
+  }
+
+  async listModels() {
+    try {
+      const { stdout } = await exec('opencode models')
+      return stdout.split('\n').filter(Boolean).map(m => m.trim())
+    } catch (error) {
+      console.error('Failed to list models:', error)
+      return []
+    }
   }
 
   shutdown() {

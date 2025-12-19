@@ -199,6 +199,28 @@ app.post('/agents', withClient, async (req, res) => {
   }
 })
 
+app.delete('/agents/:name', withClient, async (req, res) => {
+  try {
+    const folder = (req as AuthenticatedRequest).targetFolder!
+    const { name } = req.params
+    await manager.deleteAgent(folder, name)
+    res.json({ success: true })
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
+
+app.get('/models', async (_req, res) => {
+  try {
+    const models = await manager.listModels()
+    res.json(models)
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
+
 app.get('/git/status', async (req, res) => {
   const folder = req.query.folder as string
   if (!folder) {
