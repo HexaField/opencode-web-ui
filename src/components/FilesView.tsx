@@ -118,15 +118,15 @@ export default function FilesView(props: Props) {
 
       const onDown = (e: MouseEvent | TouchEvent) => {
         isDragging = false
-        const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX
-        const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
         startX = clientX
         startY = clientY
       }
 
       const onMove = (e: MouseEvent | TouchEvent) => {
-        const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX
-        const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
         if (!isDragging && (Math.abs(clientX - startX) > 5 || Math.abs(clientY - startY) > 5)) {
           isDragging = true
           const selection = ed.getSelection()

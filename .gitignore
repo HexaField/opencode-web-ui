@@ -1,5 +1,7 @@
 node_modules
 dist
+.playwright-report
+.coverage
 playwright-report
 test-results
 .DS_Store

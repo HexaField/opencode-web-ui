@@ -14,6 +14,8 @@ export default tseslint.config(
       'dist',
       'e2e',
       'playwright-report',
+      '.playwright-report',
+      '.coverage',
       'test-results'
     ]
   },

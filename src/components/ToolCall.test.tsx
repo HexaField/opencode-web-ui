@@ -23,7 +23,11 @@ describe('ToolCall', () => {
     }
     render(() => <ToolCall part={part} />)
     expect(screen.getByText('Tool: list')).toBeTruthy()
-    expect(screen.getAllByText(/\/test\/path/).length).toBeGreaterThan(0)
+    // The content is inside a code block which is only visible when expanded
+    // We need to click to expand first
+    const toggle = screen.getByText('Tool: list')
+    toggle.click()
+    expect(screen.getAllByText((content) => content.includes('/test/path')).length).toBeGreaterThan(0)
   })
 
   it('renders write tool correctly', () => {
@@ -45,7 +49,10 @@ describe('ToolCall', () => {
     }
     render(() => <ToolCall part={part} />)
     expect(screen.getByText('Tool: write')).toBeTruthy()
-    expect(screen.getByText('/test/file.txt')).toBeTruthy()
-    expect(screen.getByText('hello world')).toBeTruthy()
+    // Expand to see details
+    const toggle = screen.getByText('Tool: write')
+    toggle.click()
+    expect(screen.getByText((content) => content.includes('/test/file.txt'))).toBeTruthy()
+    expect(screen.getByText((content) => content.includes('hello world'))).toBeTruthy()
   })
 })
