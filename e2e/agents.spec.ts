@@ -58,6 +58,16 @@ test.describe('Agent Management', () => {
     // Fill form
     await page.getByLabel('Name').fill(agentName)
     await page.getByLabel('Description').fill(agentDesc)
+
+    // Check model dropdown has options (fetched from backend)
+    const modelSelect = page.getByLabel('Model')
+    await expect(modelSelect).toBeVisible()
+    // Wait for models to load (fetch) - should have more than just "Default"
+    // We use toPass() to retry until the fetch completes and populates the dropdown
+    await expect(async () => {
+      const count = await modelSelect.locator('option').count()
+      expect(count).toBeGreaterThan(1)
+    }).toPass()
     
     // Save
     await page.getByRole('button', { name: 'Save Agent' }).click()

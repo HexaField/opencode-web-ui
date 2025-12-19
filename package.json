@@ -11,7 +11,7 @@
     "start:server": "tsx --env-file=.env server/src/index.ts",
     "start:test": "concurrently \"npm run start:server\" \"npm run dev:client\"",
     "start": "npm run build && tsx --env-file=.env server/src/index.ts",
-    "test": "vitest",
+    "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "build": "vite build",

@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
         '/sessions': serverUrl,
         '/files': serverUrl,
         '/agents': serverUrl,
+        '/models': serverUrl,
         '/git': serverUrl
       }
     },
