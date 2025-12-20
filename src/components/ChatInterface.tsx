@@ -18,14 +18,12 @@ export default function ChatInterface(props: Props) {
 
   const fetchSession = async () => {
     try {
-      const res = await fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`)
+      const res = await fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}&t=${Date.now()}`)
       const data = (await res.json()) as unknown
       const session = data as Session
       if (session) {
-        // @ts-expect-error - SdkSession might not have agent/model typed yet
-        if (session.agent) setCurrentAgent(session.agent)
-        // @ts-expect-error - SdkSession might not have agent/model typed yet
-        if (session.model) setCurrentModel(session.model)
+        setCurrentAgent(session.agent || '')
+        setCurrentModel(session.model || '')
 
         if (Array.isArray(session.history)) {
           setMessages((prev) => {
@@ -69,25 +67,30 @@ export default function ChatInterface(props: Props) {
       eventSource.onmessage = (event) => {
         try {
           const session = JSON.parse(event.data as string) as Session
-          if (session && Array.isArray(session.history)) {
-            setMessages((prev) => {
-              const newHistory = session.history
-              // Check if we need to preserve the temp message
-              const lastPrev = prev[prev.length - 1]
-              if (lastPrev?.info.id.startsWith('temp-')) {
-                // Check if newHistory contains this message (by content)
-                const found = newHistory.find(
-                  (m) =>
-                    m.info.role === 'user' &&
-                    m.parts[0].type === 'text' &&
-                    (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
-                )
-                if (!found) {
-                  return [...newHistory, lastPrev]
+          if (session) {
+            if (session.agent !== undefined) setCurrentAgent(session.agent || '')
+            if (session.model !== undefined) setCurrentModel(session.model || '')
+
+            if (Array.isArray(session.history)) {
+              setMessages((prev) => {
+                const newHistory = session.history
+                // Check if we need to preserve the temp message
+                const lastPrev = prev[prev.length - 1]
+                if (lastPrev?.info.id.startsWith('temp-')) {
+                  // Check if newHistory contains this message (by content)
+                  const found = newHistory.find(
+                    (m) =>
+                      m.info.role === 'user' &&
+                      m.parts[0].type === 'text' &&
+                      (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
+                  )
+                  if (!found) {
+                    return [...newHistory, lastPrev]
+                  }
                 }
-              }
-              return newHistory
-            })
+                return newHistory
+              })
+            }
           }
         } catch (error) {
           console.error('SSE Parse Error:', error)

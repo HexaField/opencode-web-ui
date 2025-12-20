@@ -16,6 +16,8 @@ export type Message = {
 
 export type Session = SdkSession & {
   history: Message[]
+  agent?: string
+  model?: string
 }
 
 export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'done'

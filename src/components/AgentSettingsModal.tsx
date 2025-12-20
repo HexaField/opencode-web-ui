@@ -13,6 +13,8 @@ interface Props {
 export default function AgentSettingsModal(props: Props) {
   const [agents, setAgents] = createSignal<{ name: string }[]>([])
   const [models, setModels] = createSignal<string[]>([])
+  const [loadingAgents, setLoadingAgents] = createSignal(false)
+  const [loadingModels, setLoadingModels] = createSignal(false)
   const [selectedAgent, setSelectedAgent] = createSignal(props.currentAgent || '')
   const [selectedModel, setSelectedModel] = createSignal(props.currentModel || '')
 
@@ -31,22 +33,28 @@ export default function AgentSettingsModal(props: Props) {
   )
 
   const fetchAgents = async () => {
+    setLoadingAgents(true)
     try {
       const res = await fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`)
       const data = (await res.json()) as { name: string }[]
       setAgents(data)
     } catch (err) {
       console.error(err)
+    } finally {
+      setLoadingAgents(false)
     }
   }
 
   const fetchModels = async () => {
+    setLoadingModels(true)
     try {
       const res = await fetch('/api/models')
       const data = (await res.json()) as string[]
       setModels(data)
     } catch (err) {
       console.error(err)
+    } finally {
+      setLoadingModels(false)
     }
   }
 
@@ -78,26 +86,30 @@ export default function AgentSettingsModal(props: Props) {
           <div class="p-4 space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Agent</label>
-              <select
-                value={selectedAgent()}
-                onChange={(e) => setSelectedAgent(e.currentTarget.value)}
-                class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">Default</option>
-                <For each={agents()}>{(agent) => <option value={agent.name}>{agent.name}</option>}</For>
-              </select>
+              <Show when={!loadingAgents()} fallback={<div class="text-sm text-gray-500 dark:text-gray-400 py-2">Loading agents...</div>}>
+                <select
+                  value={selectedAgent()}
+                  onChange={(e) => setSelectedAgent(e.currentTarget.value)}
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Default</option>
+                  <For each={agents()}>{(agent) => <option value={agent.name}>{agent.name}</option>}</For>
+                </select>
+              </Show>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Model</label>
-              <select
-                value={selectedModel()}
-                onChange={(e) => setSelectedModel(e.currentTarget.value)}
-                class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">Default</option>
-                <For each={models()}>{(model) => <option value={model}>{model}</option>}</For>
-              </select>
+              <Show when={!loadingModels()} fallback={<div class="text-sm text-gray-500 dark:text-gray-400 py-2">Loading models...</div>}>
+                <select
+                  value={selectedModel()}
+                  onChange={(e) => setSelectedModel(e.currentTarget.value)}
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Default</option>
+                  <For each={models()}>{(model) => <option value={model}>{model}</option>}</For>
+                </select>
+              </Show>
             </div>
 
             <div class="pt-2 flex justify-end gap-2">

@@ -68,7 +68,7 @@ describe('Server Integration Tests', () => {
   it('should create a session', async () => {
     const res = await request(app)
       .post(`/api/sessions?folder=${encodeURIComponent(tempDir)}`)
-      .send({ body: { title: 'Test Session' } })
+      .send({ title: 'Test Session' })
 
     expect(res.status).toBe(200)
     expect((res.body as { id: string }).id).toBeDefined()
@@ -265,7 +265,7 @@ describe('Server Integration Tests', () => {
     // Create session first
     const createRes = await request(app)
       .post(`/api/sessions?folder=${encodeURIComponent(tempDir)}`)
-      .send({ body: { title: 'Detail Session' } })
+      .send({ title: 'Detail Session' })
 
     interface SessionResponse {
       id: string
@@ -283,7 +283,7 @@ describe('Server Integration Tests', () => {
     // 1. Create session
     const createRes = await request(app)
       .post(`/api/sessions?folder=${encodeURIComponent(tempDir)}`)
-      .send({ body: { title: 'Chat Session' } })
+      .send({ title: 'Chat Session' })
 
     interface SessionResponse {
       id: string

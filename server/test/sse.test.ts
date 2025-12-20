@@ -40,7 +40,7 @@ describe('SSE Integration Tests', () => {
     // Create a session
     const res = await request(app)
       .post(`/api/sessions?folder=${encodeURIComponent(tempDir)}`)
-      .send({ body: { title: 'SSE Test Session' } })
+      .send({ title: 'SSE Test Session' })
 
     sessionId = (res.body as { id: string }).id
   })

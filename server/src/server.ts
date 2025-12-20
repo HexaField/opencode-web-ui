@@ -1,4 +1,4 @@
-import { type Event, type Message, type Session } from '@opencode-ai/sdk'
+import { type Message, type OpencodeClient, type Part, type Session, type SessionPromptData } from '@opencode-ai/sdk'
 import bodyParser from 'body-parser'
 import { exec as _exec } from 'child_process'
 import cors from 'cors'
@@ -21,7 +21,7 @@ app.use(bodyParser.json())
 const manager = new OpencodeManager()
 
 interface SessionWithHistory extends Session {
-  history?: Message[]
+  history?: { info: Message; parts: Part[] }[]
 }
 
 // Helper to unwrap SDK response
@@ -32,28 +32,8 @@ function unwrap<T>(res: { data: T } | T): T {
   return res
 }
 
-// Typed interface for SDK client
-interface TypedClient {
-  session: {
-    list(): Promise<{ data: Session[] }>
-    create(args: { body: unknown }): Promise<{ data: Session }>
-    prompt(args: { path: { id: string }; body: unknown }): Promise<{ data: unknown }>
-    get?(args: { path: { id: string } }): Promise<{ data: Session }>
-    messages?(args: { path: { id: string } }): Promise<{ data: Message[] }>
-  }
-  file: {
-    status(): Promise<{ data: unknown }>
-    read(args: { query: { path: string } }): Promise<{ data: unknown }>
-  }
-  event?: {
-    subscribe(args?: { query?: { directory?: string } }): Promise<{
-      stream: AsyncGenerator<unknown, void, unknown>
-    }>
-  }
-}
-
 interface AuthenticatedRequest extends express.Request {
-  opencodeClient?: TypedClient
+  opencodeClient?: OpencodeClient
   targetFolder?: string
 }
 
@@ -66,7 +46,7 @@ const withClient = async (req: express.Request, res: express.Response, next: exp
   }
   try {
     const client = await manager.connect(folder)
-    ;(req as AuthenticatedRequest).opencodeClient = client as unknown as TypedClient
+    ;(req as AuthenticatedRequest).opencodeClient = client
     ;(req as AuthenticatedRequest).targetFolder = folder
     next()
   } catch (error) {
@@ -107,13 +87,15 @@ app.get('/api/sessions', withClient, async (req, res) => {
     const allMetadata = await manager.getAllSessionMetadata(folder)
 
     const filtered = Array.isArray(sessions)
-      ? sessions.filter(
-          (s) =>
-            s.directory === folder ||
-            s.directory === folder + '/' ||
-            s.directory === realFolder ||
-            s.directory === realFolder + '/'
-        ).map(s => ({ ...s, ...(allMetadata[s.id] || {}) }))
+      ? sessions
+          .filter(
+            (s) =>
+              s.directory === folder ||
+              s.directory === folder + '/' ||
+              s.directory === realFolder ||
+              s.directory === realFolder + '/'
+          )
+          .map((s) => ({ ...s, ...(allMetadata[s.id] || {}) }))
       : sessions
 
     res.json(filtered)
@@ -127,11 +109,13 @@ app.post('/api/sessions', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
     const folder = (req as AuthenticatedRequest).targetFolder!
-    const session = await client.session.create({ body: req.body })
+
+    const { agent, model, ...sessionData } = req.body as { agent?: string; model?: string; [key: string]: unknown }
+
+    const session = await client.session.create({ body: sessionData })
     const data = unwrap(session)
 
-    const { agent, model } = req.body as { agent?: string; model?: string }
-    if (agent || model) {
+    if (data && (agent || model)) {
       await manager.saveSessionMetadata(folder, data.id, { agent, model })
       Object.assign(data, { agent, model })
     }
@@ -149,42 +133,20 @@ app.get('/api/sessions/:id', withClient, async (req, res) => {
     const folder = (req as AuthenticatedRequest).targetFolder!
     const { id } = req.params
 
-    // Check if 'get' method exists safely
-    const sessionClient = client.session
+    const session = await client.session.get({ path: { id } })
+    const raw = unwrap(session)
+    const metadata = await manager.getSessionMetadata(folder, id)
 
-    if (typeof sessionClient.get === 'function') {
-      const session = await sessionClient.get({ path: { id } })
-      const raw = unwrap(session)
-      const metadata = await manager.getSessionMetadata(folder, id)
+    const messages = await client.session.messages({ path: { id } })
+    const msgData = unwrap(messages)
 
-      if (typeof sessionClient.messages === 'function') {
-        const messages = await sessionClient.messages({ path: { id } })
-        const msgData = unwrap(messages)
-        if (raw && typeof raw === 'object' && raw !== null) {
-          const obj = raw as Record<string, unknown>
-          obj.history = msgData
-          Object.assign(obj, metadata)
-          res.json(obj)
-          return
-        }
-      } else {
-        console.log('sessionClient.messages is not a function')
-      }
-
-      if (raw && typeof raw === 'object' && raw !== null) {
-        Object.assign(raw, metadata)
-      }
-      res.json(raw)
+    if (raw && typeof raw === 'object' && raw !== null) {
+      const obj = raw as Record<string, unknown>
+      obj.history = msgData
+      Object.assign(obj, metadata)
+      res.json(obj)
     } else {
-      const response = await client.session.list()
-      const sessions = unwrap(response)
-      const session = sessions.find((s) => s.id === id)
-      if (session) {
-        const metadata = await manager.getSessionMetadata(folder, id)
-        Object.assign(session, metadata)
-        res.json(session)
-      }
-      else res.status(404).json({ error: 'Session not found' })
+      res.status(404).json({ error: 'Session not found' })
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
@@ -197,34 +159,24 @@ app.patch('/api/sessions/:id', withClient, async (req, res) => {
     const client = (req as AuthenticatedRequest).opencodeClient!
     const folder = (req as AuthenticatedRequest).targetFolder!
     const { id } = req.params
-    const { agent, model } = req.body as { agent?: string; model?: string }
+    const { agent, model, title } = req.body as { agent?: string; model?: string; title?: string }
 
     // Save metadata
     if (agent || model) {
       await manager.saveSessionMetadata(folder, id, { agent, model })
     }
 
-    // Check if client.session.update exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-    const sessionClient = client.session as any
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (typeof sessionClient.update === 'function') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      const result = await sessionClient.update({
-        path: { id },
-        body: { agent, model }
-      })
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const data = unwrap(result)
-      
-      // Merge metadata
-      const metadata = await manager.getSessionMetadata(folder, id)
-      const merged = { ...(data as object), ...metadata }
-      
-      res.json(merged)
-    } else {
-      res.status(501).json({ error: 'Session update not supported by SDK' })
-    }
+    const result = await client.session.update({
+      path: { id },
+      body: { title }
+    })
+    const data = unwrap(result)
+
+    // Merge metadata
+    const metadata = await manager.getSessionMetadata(folder, id)
+    const merged = { ...(data as object), ...metadata }
+
+    res.json(merged)
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
@@ -248,26 +200,21 @@ app.get('/api/sessions/:id/events', withClient, async (req, res) => {
   })
 
   const fetchSession = async (): Promise<SessionWithHistory | undefined> => {
-    const sessionClient = client.session
-    if (typeof sessionClient.get === 'function') {
-      const session = await sessionClient.get({ path: { id } })
-      const raw = unwrap(session)
+    const session = await client.session.get({ path: { id } })
+    const raw = unwrap(session) as SessionWithHistory
 
-      if (typeof sessionClient.messages === 'function') {
-        const messages = await sessionClient.messages({ path: { id } })
-        const msgData = unwrap(messages)
-        if (raw && typeof raw === 'object' && raw !== null) {
-          const obj = raw as SessionWithHistory
-          obj.history = msgData
-          return obj
-        }
-      }
-      return raw as SessionWithHistory
-    } else {
-      const response = await client.session.list()
-      const sessions = unwrap(response)
-      return sessions.find((s) => s.id === id)
+    const messages = await client.session.messages({ path: { id } })
+    const msgData = unwrap(messages)
+    if (raw && typeof raw === 'object' && raw !== null) {
+      raw.history = msgData
     }
+
+    if (raw) {
+      const metadata = await manager.getSessionMetadata(folder, id)
+      Object.assign(raw, metadata)
+    }
+
+    return raw
   }
 
   // Initial fetch
@@ -280,58 +227,34 @@ app.get('/api/sessions/:id/events', withClient, async (req, res) => {
     console.error('Initial fetch error:', error)
   }
 
-  // Use SDK event stream if available
-  if (client.event && typeof client.event.subscribe === 'function') {
-    try {
-      const { stream } = await client.event.subscribe({ query: { directory: folder } })
+  // Use SDK event stream
+  try {
+    const { stream } = await client.event.subscribe({ query: { directory: folder } })
 
-      for await (const event of stream) {
-        if (!isActive) break
+    for await (const event of stream) {
+      if (!isActive) break
 
-        // Check if event is relevant to this session
-        const e = event as Event
-        let isRelevant = false
+      let isRelevant = false
 
-        if (e.type === 'session.updated' && e.properties?.info?.id === id) isRelevant = true
-        if (e.type === 'message.updated' && e.properties?.info?.sessionID === id) isRelevant = true
-        if (e.type === 'message.part.updated' && e.properties?.part?.sessionID === id) isRelevant = true
-        if (e.type === 'message.part.removed' && e.properties?.sessionID === id) isRelevant = true
-        if (e.type === 'message.removed' && e.properties?.sessionID === id) isRelevant = true
+      if (event.type === 'session.updated' && event.properties?.info?.id === id) isRelevant = true
+      if (event.type === 'message.updated' && event.properties?.info?.sessionID === id) isRelevant = true
+      if (event.type === 'message.part.updated' && event.properties?.part?.sessionID === id) isRelevant = true
+      if (event.type === 'message.part.removed' && event.properties?.sessionID === id) isRelevant = true
+      if (event.type === 'message.removed' && event.properties?.sessionID === id) isRelevant = true
 
-        if (isRelevant) {
-          try {
-            const session = await fetchSession()
-            if (session) {
-              res.write(`data: ${JSON.stringify(session)}\n\n`)
-            }
-          } catch (err) {
-            console.error('Error fetching session update:', err)
-          }
-        }
-      }
-    } catch (error) {
-      console.error('SDK Event Stream Error:', error)
-      // Fallback to polling if stream fails?
-      // For now, just log error.
-    }
-  } else {
-    // Fallback to polling if event API is not available
-    let lastHistoryLength = 0
-    while (isActive) {
-      try {
-        const session = await fetchSession()
-        if (session && Array.isArray(session.history)) {
-          const currentLength = JSON.stringify(session.history).length
-          if (currentLength !== lastHistoryLength) {
+      if (isRelevant) {
+        try {
+          const session = await fetchSession()
+          if (session) {
             res.write(`data: ${JSON.stringify(session)}\n\n`)
-            lastHistoryLength = currentLength
           }
+        } catch (err) {
+          console.error('Error fetching session update:', err)
         }
-      } catch (error) {
-        console.error('Polling Error:', error)
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000))
     }
+  } catch (error) {
+    console.error('SDK Event Stream Error:', error)
   }
 })
 
@@ -341,7 +264,7 @@ app.post('/api/sessions/:id/prompt', withClient, async (req, res) => {
     const { id } = req.params
     const result = await client.session.prompt({
       path: { id },
-      body: req.body
+      body: req.body as SessionPromptData['body']
     })
     const data = unwrap(result)
     res.json(data)
