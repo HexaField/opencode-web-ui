@@ -80,8 +80,13 @@ test.describe('Plan Tab', () => {
     // Switch to DAG view
     await page.click('button:has-text("DAG")')
 
-    // Verify DAG view loads (canvas exists)
-    await expect(page.locator('canvas')).toBeVisible()
+    // Verify DAG view loads (SVG exists)
+    await expect(page.getByTestId('dag-svg')).toBeVisible()
+    // Verify tasks are rendered as nodes
+    await expect(page.getByTestId(`node-${taskTitle}`)).toBeVisible()
+    
+    // Verify subtask is nested inside parent
+    await expect(page.getByTestId(`node-${taskTitle}`).getByTestId(`node-${subtaskTitle}`)).toBeVisible()
   })
 
   test('should allow managing tags', async ({ page }) => {
