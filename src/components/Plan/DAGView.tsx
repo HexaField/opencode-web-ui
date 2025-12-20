@@ -72,7 +72,7 @@ export default function DAGView(props: Props) {
           ctx.fillStyle = '#ffffff'
         }
         ctx.font = '12px sans-serif'
-        
+
         const taskTitle = node.task?.title || 'Untitled'
         const title = taskTitle.length > 15 ? taskTitle.substring(0, 15) + '...' : taskTitle
         ctx.fillText(title, node.x + 10, node.y + 25)
