@@ -150,7 +150,19 @@ export default function DiffView(props: Props) {
     // 2. Merge to default branch
     const defaultBranch = branches().includes('main') ? 'main' : 'master'
     const branchToMerge = currentBranch()
-
+    // Update task status if it's an issue branch
+    if (branchToMerge.startsWith('issue/')) {
+      const taskId = branchToMerge.replace('issue/', '')
+      try {
+        await fetch(`/api/tasks/${taskId}?folder=${encodeURIComponent(props.folder)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'done' })
+        })
+      } catch (e) {
+        console.error('Failed to update task status', e)
+      }
+    }
     // Checkout default branch
     await fetch('/api/git/checkout', {
       method: 'POST',

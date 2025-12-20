@@ -8,7 +8,9 @@ const execPromise = promisify(_exec) as (
 ) => Promise<{ stdout: string; stderr: string }>
 
 async function exec(command: string, options?: ExecOptions): Promise<{ stdout: string; stderr: string }> {
-  return execPromise(command, options)
+  // Default timeout 10s
+  const opts = { timeout: 10000, ...options }
+  return execPromise(command, opts)
 }
 
 export interface Task {
@@ -239,18 +241,31 @@ export class RadicleService {
     }
 
     if (updates.status) {
-      if (updates.status === 'done') {
-        await exec(`rad issue state ${id} --closed --no-announce`, { cwd: folder })
-      } else {
-        // Ensure open
-        await exec(`rad issue state ${id} --open --no-announce`, { cwd: folder })
-
-        if (updates.status === 'in-progress') {
-          await exec(`rad issue label ${id} --add status:in-progress --no-announce`, { cwd: folder })
+      try {
+        if (updates.status === 'done') {
+          await exec(`rad issue state ${id} --closed --no-announce`, { cwd: folder })
         } else {
-          // todo: remove in-progress label
-          await exec(`rad issue label ${id} --delete status:in-progress --no-announce`, { cwd: folder })
+          // Ensure open
+          try {
+            await exec(`rad issue state ${id} --open --no-announce`, { cwd: folder })
+          } catch (e) {
+            console.warn('Failed to set issue state to open (might be already open)', e)
+          }
+
+          if (updates.status === 'in-progress') {
+            await exec(`rad issue label ${id} --add status:in-progress --no-announce`, { cwd: folder })
+          } else {
+            // todo: remove in-progress label
+            try {
+              await exec(`rad issue label ${id} --delete status:in-progress --no-announce`, { cwd: folder })
+            } catch (e) {
+              // ignore if label doesn't exist
+            }
+          }
         }
+      } catch (e) {
+        console.error('Failed to update task status in Radicle', e)
+        throw e
       }
     }
   }

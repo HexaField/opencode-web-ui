@@ -337,6 +337,7 @@ app.get('/api/git/status', async (req, res) => {
     const status = await getGitStatus(folder)
     res.json(status)
   } catch (err) {
+    console.error('Failed to get git status:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -351,6 +352,7 @@ app.get('/api/git/current-branch', async (req, res) => {
     const branch = await getCurrentBranch(folder)
     res.json({ branch })
   } catch (err) {
+    console.error('Failed to get current branch:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -365,6 +367,7 @@ app.get('/api/git/branches', async (req, res) => {
     const branches = await listGitBranches(folder)
     res.json(branches)
   } catch (err) {
+    console.error('Failed to list branches:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -379,6 +382,7 @@ app.post('/api/git/stage', async (req, res) => {
     await runGitCommand(['add', ...files], folder)
     res.json({ success: true })
   } catch (err) {
+    console.error('Failed to stage files:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -393,6 +397,7 @@ app.post('/api/git/unstage', async (req, res) => {
     await runGitCommand(['reset', 'HEAD', ...files], folder)
     res.json({ success: true })
   } catch (err) {
+    console.error('Failed to unstage files:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -407,6 +412,7 @@ app.post('/api/git/commit', async (req, res) => {
     await runGitCommand(['commit', '-m', message], folder)
     res.json({ success: true })
   } catch (err) {
+    console.error('Failed to commit:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -438,6 +444,7 @@ app.post('/api/git/generate-commit-message', async (req, res) => {
     const message = await runCopilotPrompt(prompt, folder)
     res.json({ message })
   } catch (err) {
+    console.error('Failed to generate commit message:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -455,6 +462,7 @@ app.post('/api/git/push', async (req, res) => {
     await runGitCommand(args, folder)
     res.json({ success: true })
   } catch (err) {
+    console.error('Failed to push:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -472,6 +480,7 @@ app.post('/api/git/pull', async (req, res) => {
     await runGitCommand(args, folder)
     res.json({ success: true })
   } catch (err) {
+    console.error('Failed to pull:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -486,6 +495,7 @@ app.post('/api/git/checkout', async (req, res) => {
     await runGitCommand(['checkout', branch], folder)
     res.json({ success: true })
   } catch (err) {
+    console.error('Failed to checkout branch:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -502,6 +512,7 @@ app.post('/api/git/branch', async (req, res) => {
     await runGitCommand(args, folder)
     res.json({ success: true })
   } catch (err) {
+    console.error('Failed to create branch:', err)
     res.status(500).json({ error: String(err) })
   }
 })
@@ -516,6 +527,7 @@ app.post('/api/git/merge', async (req, res) => {
     await runGitCommand(['merge', branch], folder)
     res.json({ success: true })
   } catch (err) {
+    console.error('Failed to merge branch:', err)
     res.status(500).json({ error: String(err) })
   }
 })

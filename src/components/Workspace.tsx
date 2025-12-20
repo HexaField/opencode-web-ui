@@ -88,18 +88,18 @@ export default function Workspace(props: Props) {
     }
     const session = (await res.json()) as { id: string }
 
+    // 3. Navigate
+    setCurrentSessionId(session.id)
+    setView('chat')
+
     // 2. Send prompt
     if (prompt.trim()) {
-      await fetch(`/api/sessions/${session.id}/prompt?folder=${encodeURIComponent(props.folder)}`, {
+      void fetch(`/api/sessions/${session.id}/prompt?folder=${encodeURIComponent(props.folder)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parts: [{ type: 'text', text: prompt }] })
       })
     }
-
-    // 3. Navigate
-    setCurrentSessionId(session.id)
-    setView('chat')
   }
 
   return (
