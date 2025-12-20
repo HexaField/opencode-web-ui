@@ -8,3 +8,5 @@ test-results
 .env
 .env.local
 npm-debug.log
+.opencode
+.agent/tasks/tasks.*

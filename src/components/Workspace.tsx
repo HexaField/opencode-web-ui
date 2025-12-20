@@ -2,6 +2,7 @@ import { createEffect, createSignal } from 'solid-js'
 import ChatInterface from './ChatInterface'
 import DiffView from './DiffView'
 import FilesView from './FilesView'
+import PlanView from './Plan/PlanView'
 import SessionList from './SessionList'
 import SettingsModal from './SettingsModal'
 
@@ -13,8 +14,8 @@ interface Props {
 export default function Workspace(props: Props) {
   const params = new URLSearchParams(window.location.search)
   const [currentSessionId, setCurrentSessionId] = createSignal<string | null>(params.get('session'))
-  const [view, setView] = createSignal<'chat' | 'changes' | 'files'>(
-    (params.get('view') as 'chat' | 'changes' | 'files') || 'chat'
+  const [view, setView] = createSignal<'chat' | 'changes' | 'files' | 'plan'>(
+    (params.get('view') as 'chat' | 'changes' | 'files' | 'plan') || 'chat'
   )
   const [selectedFile, setSelectedFile] = createSignal<string | null>(params.get('file'))
   const [isSettingsOpen, setIsSettingsOpen] = createSignal(false)
@@ -22,6 +23,7 @@ export default function Workspace(props: Props) {
   createEffect(() => {
     const sid = currentSessionId()
     const v = view()
+    console.log('Current View:', v)
     const f = selectedFile()
     const url = new URL(window.location.href)
 
@@ -100,6 +102,16 @@ export default function Workspace(props: Props) {
                 onClick={() => setView('files')}
               >
                 Files
+              </button>
+              <button
+                class={`px-3 py-1 rounded-sm text-sm font-medium transition-all ${
+                  view() === 'plan'
+                    ? 'bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+                onClick={() => setView('plan')}
+              >
+                Plan
               </button>
             </div>
 
@@ -188,6 +200,7 @@ export default function Workspace(props: Props) {
           {view() === 'files' && (
             <FilesView folder={props.folder} selectedFile={selectedFile()} onSelectFile={setSelectedFile} />
           )}
+          {view() === 'plan' && <PlanView />}
         </div>
       </div>
     </div>

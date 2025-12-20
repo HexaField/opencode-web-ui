@@ -2,6 +2,7 @@ import { type Session } from '@opencode-ai/sdk'
 import bodyParser from 'body-parser'
 import { exec as _exec } from 'child_process'
 import cors from 'cors'
+import * as crypto from 'crypto'
 import express from 'express'
 import * as fs from 'fs/promises'
 import * as http from 'http'
@@ -9,6 +10,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { promisify } from 'util'
+import { getDb } from './db.js'
 import { getCurrentBranch, getGitStatus, listGitBranches, runCopilotPrompt, runGitCommand } from './git.js'
 import { OpencodeManager } from './opencode.js'
 const exec = promisify(_exec)
@@ -548,6 +550,218 @@ app.get('/api/files/diff-summary', async (req, res) => {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const distPath = path.join(__dirname, '../../dist')
+
+interface DbTask {
+  id: string
+  title: string
+  description: string
+  status: string
+  parent_id: string | null
+  position: number
+  created_at: number
+  updated_at: number
+}
+
+interface DbTag {
+  id: string
+  name: string
+  color: string
+}
+
+interface DbTaskTag {
+  task_id: string
+  tag_id: string
+}
+
+interface DbDependency {
+  source_task_id: string
+  target_task_id: string
+}
+
+// Tasks API
+app.get('/api/tasks', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    const db = getDb(folder)
+    const tasks = db.prepare('SELECT * FROM tasks ORDER BY position ASC, created_at DESC').all() as DbTask[]
+    const tags = db.prepare('SELECT * FROM tags').all() as DbTag[]
+    const taskTags = db.prepare('SELECT * FROM task_tags').all() as DbTaskTag[]
+    const dependencies = db.prepare('SELECT * FROM dependencies').all() as DbDependency[]
+
+    // Enrich tasks with tags and dependencies
+    const enrichedTasks = tasks.map((task) => ({
+      ...task,
+      tags: taskTags
+        .filter((tt) => tt.task_id === task.id)
+        .map((tt) => tags.find((t) => t.id === tt.tag_id)),
+      dependencies: dependencies.filter((d) => d.source_task_id === task.id).map((d) => d.target_task_id)
+    }))
+
+    res.json(enrichedTasks)
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.post('/api/tasks', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    const db = getDb(folder)
+    const { title, description, parent_id, status } = req.body as {
+      title: string
+      description?: string
+      parent_id?: string
+      status?: string
+    }
+    const id = crypto.randomUUID()
+    const stmt = db.prepare('INSERT INTO tasks (id, title, description, parent_id, status) VALUES (?, ?, ?, ?, ?)')
+    stmt.run(id, title, description || '', parent_id || null, status || 'todo')
+    res.json({ id, title, description, parent_id, status })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.put('/api/tasks/:id', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    const db = getDb(folder)
+    const { id } = req.params
+    const { title, description, status, parent_id, position } = req.body as {
+      title?: string
+      description?: string
+      status?: string
+      parent_id?: string
+      position?: number
+    }
+
+    const updates: string[] = []
+    const values: (string | number)[] = []
+
+    if (title !== undefined) {
+      updates.push('title = ?')
+      values.push(title)
+    }
+    if (description !== undefined) {
+      updates.push('description = ?')
+      values.push(description)
+    }
+    if (status !== undefined) {
+      updates.push('status = ?')
+      values.push(status)
+    }
+    if (parent_id !== undefined) {
+      updates.push('parent_id = ?')
+      values.push(parent_id)
+    }
+    if (position !== undefined) {
+      updates.push('position = ?')
+      values.push(position)
+    }
+
+    updates.push('updated_at = unixepoch()')
+    values.push(id)
+
+    const stmt = db.prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`)
+    stmt.run(...values)
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.delete('/api/tasks/:id', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    const db = getDb(folder)
+    const { id } = req.params
+    db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.get('/api/tags', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    const db = getDb(folder)
+    const tags = db.prepare('SELECT * FROM tags').all()
+    res.json(tags)
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.post('/api/tags', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    const db = getDb(folder)
+    const { name, color } = req.body as { name: string; color: string }
+    const id = crypto.randomUUID()
+    db.prepare('INSERT INTO tags (id, name, color) VALUES (?, ?, ?)').run(id, name, color)
+    res.json({ id, name, color })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.post('/api/tasks/:id/tags', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    const db = getDb(folder)
+    const { id } = req.params
+    const { tag_id } = req.body as { tag_id: string }
+    db.prepare('INSERT OR IGNORE INTO task_tags (task_id, tag_id) VALUES (?, ?)').run(id, tag_id)
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
+
+app.delete('/api/tasks/:id/tags/:tagId', (req, res) => {
+  const folder = req.query.folder as string
+  if (!folder) {
+    res.status(400).json({ error: 'Missing folder' })
+    return
+  }
+  try {
+    const db = getDb(folder)
+    const { id, tagId } = req.params
+    db.prepare('DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?').run(id, tagId)
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ error: String(error) })
+  }
+})
 
 app.use(express.static(distPath))
 

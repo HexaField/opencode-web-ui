@@ -17,3 +17,24 @@ export type Message = {
 export type Session = SdkSession & {
   history: Message[]
 }
+
+export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'done'
+
+export interface Tag {
+  id: string
+  name: string
+  color: string
+}
+
+export interface Task {
+  id: string
+  title: string
+  description: string
+  status: TaskStatus
+  parent_id: string | null
+  position: number
+  created_at: number
+  updated_at: number
+  tags: Tag[]
+  dependencies: string[] // array of task IDs
+}

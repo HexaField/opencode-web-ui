@@ -2,8 +2,8 @@ import { exec } from 'child_process'
 import * as fs from 'fs/promises'
 import * as os from 'os'
 import * as path from 'path'
-import { promisify } from 'util'
 import request from 'supertest'
+import { promisify } from 'util'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { app, manager } from '../src/server.js'
 
@@ -134,7 +134,7 @@ describe('Server Integration Tests', () => {
     const res = await request(app).get(`/api/files/status?folder=${encodeURIComponent(tempDir)}`)
 
     if (!Array.isArray(res.body)) {
-        console.log('File status response:', res.status, res.text)
+      console.log('File status response:', res.status, res.text)
     }
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body)).toBe(true)
@@ -244,10 +244,8 @@ describe('Server Integration Tests', () => {
     expect(stageRes.status).toBe(200)
 
     // 6. Commit
-    const commitRes = await request(app)
-      .post('/api/git/commit')
-      .send({ folder: tempDir, message: 'Update test.txt' })
-    
+    const commitRes = await request(app).post('/api/git/commit').send({ folder: tempDir, message: 'Update test.txt' })
+
     expect(commitRes.status).toBe(200)
 
     // 7. Check status (should be clean)
