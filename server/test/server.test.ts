@@ -73,7 +73,7 @@ describe('Server Integration Tests', () => {
     // The actual persistence is tested in e2e tests more reliably.
     expect(Array.isArray(agents)).toBe(true)
     if (agent) {
-        expect(agent.content).toBe(agentContent)
+      expect(agent.content).toBe(agentContent)
     }
   })
 
@@ -143,7 +143,7 @@ describe('Server Integration Tests', () => {
     // The mock response might not return text parts immediately or at all depending on the mock setup.
     // For now, we just check that we got a valid response structure.
     expect(body1).toBeDefined()
-    
+
     // 3. Send second message
     const msg2 = 'What did I just say?'
     const res2 = await request(app)

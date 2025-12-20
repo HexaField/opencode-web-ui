@@ -34,7 +34,7 @@ test.describe('Agent Management', () => {
   test('should list default agents', async ({ page }) => {
     // Open Agent Manager
     await page.getByTitle('Manage Agents').click()
-    
+
     // Check for default agents using specific locator
     // The list is in a div with space-y-1
     const agentList = page.locator('div.space-y-1 > div > span.truncate')
@@ -54,7 +54,7 @@ test.describe('Agent Management', () => {
 
     // Create new agent
     await page.getByRole('button', { name: 'New Agent' }).click()
-    
+
     // Fill form
     await page.getByLabel('Name').fill(agentName)
     await page.getByLabel('Description').fill(agentDesc)
@@ -68,7 +68,7 @@ test.describe('Agent Management', () => {
       const count = await modelSelect.locator('option').count()
       expect(count).toBeGreaterThan(1)
     }).toPass()
-    
+
     // Save
     await page.getByRole('button', { name: 'Save Agent' }).click()
 
@@ -79,7 +79,7 @@ test.describe('Agent Management', () => {
     // Edit agent
     await agentList.getByText(agentName).click()
     await expect(page.getByLabel('Description')).toHaveValue(agentDesc)
-    
+
     await page.getByLabel('Description').fill(updatedDesc)
     await page.getByRole('button', { name: 'Save Agent' }).click()
 
@@ -100,18 +100,18 @@ test.describe('Agent Management', () => {
 
     // Delete agent
     await page.getByTitle('Manage Agents').click()
-    
+
     // Trigger delete
     // We need to hover over the list item to see the delete button
     const agentItem = page.locator('div.space-y-1 > div').filter({ hasText: agentName })
     await agentItem.hover()
-    
+
     // Handle confirm dialog
-    page.on('dialog', dialog => dialog.accept())
-    
+    page.on('dialog', (dialog) => dialog.accept())
+
     // Click the delete button (trash icon)
     await agentItem.locator('button').click()
-    
+
     // Verify agent is gone
     await expect(agentList.getByText(agentName)).not.toBeVisible()
   })

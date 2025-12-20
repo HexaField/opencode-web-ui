@@ -22,7 +22,7 @@ export default function DiffView(props: Props) {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`/git/status?folder=${encodeURIComponent(props.folder)}`)
+      const res = await fetch(`/api/git/status?folder=${encodeURIComponent(props.folder)}`)
       const data = (await res.json()) as GitFileStatus[]
       if (Array.isArray(data)) setGitFiles(data)
     } catch (e) {
@@ -32,11 +32,11 @@ export default function DiffView(props: Props) {
 
   const fetchBranches = async () => {
     try {
-      const res = await fetch(`/git/branches?folder=${encodeURIComponent(props.folder)}`)
+      const res = await fetch(`/api/git/branches?folder=${encodeURIComponent(props.folder)}`)
       const data = (await res.json()) as string[]
       if (Array.isArray(data)) setBranches(data)
 
-      const res2 = await fetch(`/git/current-branch?folder=${encodeURIComponent(props.folder)}`)
+      const res2 = await fetch(`/api/git/current-branch?folder=${encodeURIComponent(props.folder)}`)
       const data2 = (await res2.json()) as { branch?: string }
       if (data2.branch) setCurrentBranch(data2.branch)
     } catch (e) {
@@ -53,7 +53,7 @@ export default function DiffView(props: Props) {
   const unstagedFiles = () => gitFiles().filter((f) => f.y !== ' ')
 
   const handleStage = async (path: string) => {
-    await fetch('/git/stage', {
+    await fetch('/api/git/stage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: props.folder, files: [path] })
@@ -62,7 +62,7 @@ export default function DiffView(props: Props) {
   }
 
   const handleUnstage = async (path: string) => {
-    await fetch('/git/unstage', {
+    await fetch('/api/git/unstage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: props.folder, files: [path] })
@@ -72,7 +72,7 @@ export default function DiffView(props: Props) {
 
   const handleCommit = async () => {
     if (!commitMessage()) return
-    await fetch('/git/commit', {
+    await fetch('/api/git/commit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: props.folder, message: commitMessage() })
@@ -84,7 +84,7 @@ export default function DiffView(props: Props) {
   const handleGenerateMessage = async () => {
     setIsGenerating(true)
     try {
-      const res = await fetch('/git/generate-commit-message', {
+      const res = await fetch('/api/git/generate-commit-message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder: props.folder })
@@ -98,7 +98,7 @@ export default function DiffView(props: Props) {
   }
 
   const handlePush = async () => {
-    await fetch('/git/push', {
+    await fetch('/api/git/push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: props.folder, remote: 'origin', branch: currentBranch() })
@@ -106,7 +106,7 @@ export default function DiffView(props: Props) {
   }
 
   const handlePull = async () => {
-    await fetch('/git/pull', {
+    await fetch('/api/git/pull', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: props.folder, remote: 'origin', branch: currentBranch() })
@@ -117,7 +117,7 @@ export default function DiffView(props: Props) {
   const handleCheckout = async (e: Event) => {
     const branch = (e.target as HTMLSelectElement).value
     setCurrentBranch(branch)
-    await fetch('/git/checkout', {
+    await fetch('/api/git/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder: props.folder, branch })
@@ -139,7 +139,7 @@ export default function DiffView(props: Props) {
 
         if (isNew) {
           const res = await fetch(
-            `/files/read?folder=${encodeURIComponent(props.folder)}&path=${encodeURIComponent(path)}`
+            `/api/files/read?folder=${encodeURIComponent(props.folder)}&path=${encodeURIComponent(path)}`
           )
           const body: unknown = await res.json()
           let content = ''
@@ -157,7 +157,7 @@ export default function DiffView(props: Props) {
           setDiffs({ ...diffs(), [path]: pseudo })
         } else {
           const res = await fetch(
-            `/files/diff?folder=${encodeURIComponent(props.folder)}&path=${encodeURIComponent(path)}`
+            `/api/files/diff?folder=${encodeURIComponent(props.folder)}&path=${encodeURIComponent(path)}`
           )
           const body: unknown = await res.json()
           let diffText = ''

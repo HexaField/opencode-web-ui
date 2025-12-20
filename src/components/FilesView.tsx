@@ -35,9 +35,7 @@ interface Props {
 }
 
 export default function FilesView(props: Props) {
-  const [isSidebarOpen, setIsSidebarOpen] = createSignal(
-    localStorage.getItem('opencode_sidebar_open') !== 'false'
-  )
+  const [isSidebarOpen, setIsSidebarOpen] = createSignal(localStorage.getItem('opencode_sidebar_open') !== 'false')
   const [isDirty, setIsDirty] = createSignal(false)
   const [isPaletteOpen, setIsPaletteOpen] = createSignal(true)
   const [editor, setEditor] = createSignal<monaco.editor.IStandaloneCodeEditor | undefined>(undefined)
@@ -64,7 +62,7 @@ export default function FilesView(props: Props) {
     const file = props.selectedFile
     const ed = editor()
     if (file && ed) {
-      fetch(`/fs/read?path=${encodeURIComponent(file)}`)
+      fetch(`/api/fs/read?path=${encodeURIComponent(file)}`)
         .then((res) => res.json())
         .then((data: { content: string }) => {
           if (data.content !== undefined) {
@@ -183,7 +181,7 @@ export default function FilesView(props: Props) {
 
     const content = ed.getValue()
     try {
-      const res = await fetch('/fs/write', {
+      const res = await fetch('/api/fs/write', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: file, content })
@@ -210,7 +208,7 @@ export default function FilesView(props: Props) {
     const folder = props.folder.endsWith('/') ? props.folder.slice(0, -1) : props.folder
     const path = folder + '/' + newFileName().trim()
     try {
-      const res = await fetch('/fs/write', {
+      const res = await fetch('/api/fs/write', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path, content: '' })
@@ -230,7 +228,7 @@ export default function FilesView(props: Props) {
     const path = fileToDelete()
     if (!path) return
     try {
-      const res = await fetch('/fs/delete', {
+      const res = await fetch('/api/fs/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path })

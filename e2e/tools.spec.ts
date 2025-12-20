@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test.describe('Tool UI', () => {
   test('renders tool calls correctly', async ({ page }) => {
     // Mock the session response
-    await page.route('**/sessions/test-session*', async (route) => {
+    await page.route('**/api/sessions/test-session*', async (route) => {
       const json = {
         id: 'test-session',
         history: [
@@ -39,9 +39,11 @@ test.describe('Tool UI', () => {
 
     // Check if tool calls are rendered
     await expect(page.getByText('Tool: list')).toBeVisible()
+    await page.getByText('Tool: list').click()
     await expect(page.getByText('/test/path').first()).toBeVisible()
 
     await expect(page.getByText('Tool: write')).toBeVisible()
+    await page.getByText('Tool: write').click()
     await expect(page.getByText('/test/file.txt')).toBeVisible()
     await expect(page.getByText('hello world')).toBeVisible()
   })

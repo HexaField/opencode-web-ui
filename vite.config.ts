@@ -15,12 +15,7 @@ export default defineConfig(({ mode }) => {
       host: env.CLIENT_HOST || '127.0.0.1',
       port: parseInt(env.CLIENT_PORT || '5173'),
       proxy: {
-        '/fs': serverUrl,
-        '/sessions': serverUrl,
-        '/files': serverUrl,
-        '/agents': serverUrl,
-        '/models': serverUrl,
-        '/git': serverUrl
+        '/api': serverUrl
       }
     },
     test: {

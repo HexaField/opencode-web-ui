@@ -65,7 +65,7 @@ const withClient = async (req: express.Request, res: express.Response, next: exp
   }
 }
 
-app.post('/connect', async (req, res) => {
+app.post('/api/connect', async (req, res) => {
   const { folder } = req.body as { folder?: string }
   if (!folder) {
     res.status(400).json({ error: 'Missing folder in body' })
@@ -80,7 +80,7 @@ app.post('/connect', async (req, res) => {
   }
 })
 
-app.get('/sessions', withClient, async (req, res) => {
+app.get('/api/sessions', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
     const folder = (req as AuthenticatedRequest).targetFolder!
@@ -111,7 +111,7 @@ app.get('/sessions', withClient, async (req, res) => {
   }
 })
 
-app.post('/sessions', withClient, async (req, res) => {
+app.post('/api/sessions', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
     const session = await client.session.create({ body: req.body })
@@ -123,7 +123,7 @@ app.post('/sessions', withClient, async (req, res) => {
   }
 })
 
-app.get('/sessions/:id', withClient, async (req, res) => {
+app.get('/api/sessions/:id', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
     const { id } = req.params
@@ -160,7 +160,7 @@ app.get('/sessions/:id', withClient, async (req, res) => {
   }
 })
 
-app.post('/sessions/:id/prompt', withClient, async (req, res) => {
+app.post('/api/sessions/:id/prompt', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
     const { id } = req.params
@@ -176,7 +176,7 @@ app.post('/sessions/:id/prompt', withClient, async (req, res) => {
   }
 })
 
-app.get('/agents', withClient, async (req, res) => {
+app.get('/api/agents', withClient, async (req, res) => {
   try {
     const folder = (req as AuthenticatedRequest).targetFolder!
     const agents = await manager.listAgents(folder)
@@ -187,7 +187,7 @@ app.get('/agents', withClient, async (req, res) => {
   }
 })
 
-app.post('/agents', withClient, async (req, res) => {
+app.post('/api/agents', withClient, async (req, res) => {
   try {
     const folder = (req as AuthenticatedRequest).targetFolder!
     const { name, content } = req.body as { name: string; content: string }
@@ -199,7 +199,7 @@ app.post('/agents', withClient, async (req, res) => {
   }
 })
 
-app.delete('/agents/:name', withClient, async (req, res) => {
+app.delete('/api/agents/:name', withClient, async (req, res) => {
   try {
     const folder = (req as AuthenticatedRequest).targetFolder!
     const { name } = req.params
@@ -211,7 +211,7 @@ app.delete('/agents/:name', withClient, async (req, res) => {
   }
 })
 
-app.get('/models', async (_req, res) => {
+app.get('/api/models', async (_req, res) => {
   try {
     const models = await manager.listModels()
     res.json(models)
@@ -221,7 +221,7 @@ app.get('/models', async (_req, res) => {
   }
 })
 
-app.get('/git/status', async (req, res) => {
+app.get('/api/git/status', async (req, res) => {
   const folder = req.query.folder as string
   if (!folder) {
     res.status(400).json({ error: 'Folder required' })
@@ -235,7 +235,7 @@ app.get('/git/status', async (req, res) => {
   }
 })
 
-app.get('/git/current-branch', async (req, res) => {
+app.get('/api/git/current-branch', async (req, res) => {
   const folder = req.query.folder as string
   if (!folder) {
     res.status(400).json({ error: 'Folder required' })
@@ -249,7 +249,7 @@ app.get('/git/current-branch', async (req, res) => {
   }
 })
 
-app.get('/git/branches', async (req, res) => {
+app.get('/api/git/branches', async (req, res) => {
   const folder = req.query.folder as string
   if (!folder) {
     res.status(400).json({ error: 'Folder required' })
@@ -263,7 +263,7 @@ app.get('/git/branches', async (req, res) => {
   }
 })
 
-app.post('/git/stage', async (req, res) => {
+app.post('/api/git/stage', async (req, res) => {
   const { folder, files } = req.body as { folder?: string; files?: string[] }
   if (!folder || !files) {
     res.status(400).json({ error: 'Folder and files required' })
@@ -277,7 +277,7 @@ app.post('/git/stage', async (req, res) => {
   }
 })
 
-app.post('/git/unstage', async (req, res) => {
+app.post('/api/git/unstage', async (req, res) => {
   const { folder, files } = req.body as { folder?: string; files?: string[] }
   if (!folder || !files) {
     res.status(400).json({ error: 'Folder and files required' })
@@ -291,7 +291,7 @@ app.post('/git/unstage', async (req, res) => {
   }
 })
 
-app.post('/git/commit', async (req, res) => {
+app.post('/api/git/commit', async (req, res) => {
   const { folder, message } = req.body as { folder?: string; message?: string }
   if (!folder || !message) {
     res.status(400).json({ error: 'Folder and message required' })
@@ -305,7 +305,7 @@ app.post('/git/commit', async (req, res) => {
   }
 })
 
-app.post('/git/generate-commit-message', async (req, res) => {
+app.post('/api/git/generate-commit-message', async (req, res) => {
   const { folder } = req.body as { folder?: string }
   if (!folder) {
     res.status(400).json({ error: 'Folder required' })
@@ -336,7 +336,7 @@ app.post('/git/generate-commit-message', async (req, res) => {
   }
 })
 
-app.post('/git/push', async (req, res) => {
+app.post('/api/git/push', async (req, res) => {
   const { folder, remote, branch } = req.body as { folder?: string; remote?: string; branch?: string }
   if (!folder) {
     res.status(400).json({ error: 'Folder required' })
@@ -353,7 +353,7 @@ app.post('/git/push', async (req, res) => {
   }
 })
 
-app.post('/git/pull', async (req, res) => {
+app.post('/api/git/pull', async (req, res) => {
   const { folder, remote, branch } = req.body as { folder?: string; remote?: string; branch?: string }
   if (!folder) {
     res.status(400).json({ error: 'Folder required' })
@@ -370,7 +370,7 @@ app.post('/git/pull', async (req, res) => {
   }
 })
 
-app.post('/git/checkout', async (req, res) => {
+app.post('/api/git/checkout', async (req, res) => {
   const { folder, branch } = req.body as { folder?: string; branch?: string }
   if (!folder || !branch) {
     res.status(400).json({ error: 'Folder and branch required' })
@@ -384,7 +384,7 @@ app.post('/git/checkout', async (req, res) => {
   }
 })
 
-app.get('/files/status', withClient, async (req, res) => {
+app.get('/api/files/status', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
     const status = await client.file.status()
@@ -396,7 +396,7 @@ app.get('/files/status', withClient, async (req, res) => {
   }
 })
 
-app.get('/files/read', withClient, async (req, res) => {
+app.get('/api/files/read', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
     const path = req.query.path as string
@@ -413,7 +413,7 @@ app.get('/files/read', withClient, async (req, res) => {
   }
 })
 
-app.get('/fs/list', async (req, res) => {
+app.get('/api/fs/list', async (req, res) => {
   const dirPath = (req.query.path as string) || os.homedir()
   console.log('Listing dir:', dirPath)
   try {
@@ -436,7 +436,7 @@ app.get('/fs/list', async (req, res) => {
   }
 })
 
-app.get('/fs/read', async (req, res) => {
+app.get('/api/fs/read', async (req, res) => {
   const filePath = req.query.path as string
   if (!filePath) {
     res.status(400).json({ error: 'Missing path query parameter' })
@@ -451,7 +451,7 @@ app.get('/fs/read', async (req, res) => {
   }
 })
 
-app.post('/fs/write', async (req, res) => {
+app.post('/api/fs/write', async (req, res) => {
   const { path: filePath, content } = req.body as { path?: string; content?: string }
   if (!filePath || content === undefined) {
     res.status(400).json({ error: 'Missing path or content' })
@@ -466,7 +466,7 @@ app.post('/fs/write', async (req, res) => {
   }
 })
 
-app.post('/fs/delete', async (req, res) => {
+app.post('/api/fs/delete', async (req, res) => {
   const { path: filePath } = req.body as { path?: string }
   if (!filePath) {
     res.status(400).json({ error: 'Missing path' })
@@ -482,7 +482,7 @@ app.post('/fs/delete', async (req, res) => {
 })
 
 // Return unified git diff for a single file (unified=3)
-app.get('/files/diff', async (req, res) => {
+app.get('/api/files/diff', async (req, res) => {
   const folder = req.query.folder as string
   const filePath = req.query.path as string
   if (!folder || !filePath) {
@@ -506,7 +506,7 @@ app.get('/files/diff', async (req, res) => {
 })
 
 // Return summary of diffs (files changed, total added/removed lines)
-app.get('/files/diff-summary', async (req, res) => {
+app.get('/api/files/diff-summary', async (req, res) => {
   const folder = req.query.folder as string
   if (!folder) {
     res.status(400).json({ error: 'Missing folder' })
@@ -551,14 +551,7 @@ app.use(express.static(distPath))
 
 // SPA fallback
 app.get(/(.*)/, async (req, res) => {
-  if (
-    req.path.startsWith('/fs') ||
-    req.path.startsWith('/sessions') ||
-    req.path.startsWith('/connect') ||
-    req.path.startsWith('/files') ||
-    req.path.startsWith('/agents') ||
-    req.path.startsWith('/git')
-  ) {
+  if (req.path.startsWith('/api/')) {
     res.status(404).json({ error: 'Not found' })
     return
   }

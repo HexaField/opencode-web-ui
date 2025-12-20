@@ -1,5 +1,5 @@
 import { createOpencode, createOpencodeClient } from '@opencode-ai/sdk'
-import { spawn, type ChildProcess, exec as _exec } from 'child_process'
+import { exec as _exec, spawn, type ChildProcess } from 'child_process'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
@@ -198,7 +198,10 @@ export class OpencodeManager {
   async listModels() {
     try {
       const { stdout } = await exec('opencode models')
-      return stdout.split('\n').filter(Boolean).map(m => m.trim())
+      return stdout
+        .split('\n')
+        .filter(Boolean)
+        .map((m) => m.trim())
     } catch (error) {
       console.error('Failed to list models:', error)
       return []

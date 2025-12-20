@@ -15,14 +15,16 @@ interface Props {
 
 export default function FileTree(props: Props) {
   const [entries, setEntries] = createSignal<Entry[]>([])
-  const [expandedPaths, setExpandedPaths] = createSignal<Set<string>>((() => {
-    try {
-      const stored = localStorage.getItem('opencode_expanded_paths')
-      return stored ? new Set(JSON.parse(stored) as string[]) : new Set()
-    } catch {
-      return new Set()
-    }
-  })())
+  const [expandedPaths, setExpandedPaths] = createSignal<Set<string>>(
+    (() => {
+      try {
+        const stored = localStorage.getItem('opencode_expanded_paths')
+        return stored ? new Set(JSON.parse(stored) as string[]) : new Set()
+      } catch {
+        return new Set()
+      }
+    })()
+  )
 
   createEffect(() => {
     // Depend on lastUpdated to trigger refresh
@@ -33,7 +35,7 @@ export default function FileTree(props: Props) {
 
   const fetchEntries = async (path: string): Promise<Entry[]> => {
     try {
-      const res = await fetch(`/fs/list?path=${encodeURIComponent(path)}`)
+      const res = await fetch(`/api/fs/list?path=${encodeURIComponent(path)}`)
       if (!res.ok) return []
       return (await res.json()) as Entry[]
     } catch (e) {
@@ -88,7 +90,7 @@ function FileTreeNode(props: {
 
   createEffect(() => {
     if (isExpanded() && props.isDirectory && children().length === 0) {
-      fetch(`/fs/list?path=${encodeURIComponent(props.path)}`)
+      fetch(`/api/fs/list?path=${encodeURIComponent(props.path)}`)
         .then((res) => res.json())
         .then(setChildren)
         .catch(console.error)

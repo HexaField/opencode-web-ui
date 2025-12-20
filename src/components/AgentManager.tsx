@@ -1,4 +1,4 @@
-import { createSignal, createEffect, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 
 interface Agent {
   name: string
@@ -46,14 +46,14 @@ export default function AgentManager(props: Props) {
   const [editName, setEditName] = createSignal('')
 
   const fetchAgents = () => {
-    return fetch(`/agents?folder=${encodeURIComponent(props.folder)}`)
+    return fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`)
       .then((res) => res.json())
       .then((data) => setAgents(data as Agent[]))
       .catch((err) => setError(String(err)))
   }
 
   const fetchModels = () => {
-    fetch('/models')
+    fetch('/api/models')
       .then((res) => res.json())
       .then((data) => setModels(data as string[]))
       .catch((err) => console.error('Failed to fetch models:', err))
@@ -78,11 +78,11 @@ export default function AgentManager(props: Props) {
       const [key, ...rest] = line.split(':')
       if (!key || !rest) return
       const value = rest.join(':').trim()
-      
+
       if (key.trim() === 'description') conf.description = value
       if (key.trim() === 'mode') conf.mode = value as 'primary' | 'subagent'
       if (key.trim() === 'model') conf.model = value
-      
+
       // Simple tool parsing (assumes indented lines follow 'tools:')
       // This is a very basic parser, might need improvement for nested structures
     })
@@ -92,11 +92,11 @@ export default function AgentManager(props: Props) {
     const toolsMatch = frontmatter.match(/tools:\n([\s\S]*?)(?=\n\w+:|$)/)
     if (toolsMatch) {
       const toolsBlock = toolsMatch[1]
-      toolsBlock.split('\n').forEach(line => {
-        const [tKey, tVal] = line.split(':').map(s => s.trim())
+      toolsBlock.split('\n').forEach((line) => {
+        const [tKey, tVal] = line.split(':').map((s) => s.trim())
         if (tKey && tVal) {
-            // @ts-expect-error - dynamic assignment
-            conf.tools[tKey] = tVal === 'true'
+          // @ts-expect-error - dynamic assignment
+          conf.tools[tKey] = tVal === 'true'
         }
       })
     }
@@ -120,10 +120,10 @@ ${c.systemPrompt}`
 
   const handleSave = async () => {
     if (!editName()) return
-    
+
     const content = generateContent(config())
     try {
-      const res = await fetch(`/agents?folder=${encodeURIComponent(props.folder)}`, {
+      const res = await fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editName(), content })
@@ -140,7 +140,7 @@ ${c.systemPrompt}`
   const handleDelete = async (name: string) => {
     if (!confirm(`Are you sure you want to delete agent ${name}?`)) return
     try {
-      const res = await fetch(`/agents/${name}?folder=${encodeURIComponent(props.folder)}`, {
+      const res = await fetch(`/api/agents/${name}?folder=${encodeURIComponent(props.folder)}`, {
         method: 'DELETE'
       })
       if (!res.ok) throw new Error(await res.text())
@@ -171,12 +171,16 @@ ${c.systemPrompt}`
         <div class="p-4 border-b border-gray-200 dark:border-[#30363d] flex justify-between items-center bg-[#f6f8fa] dark:bg-[#010409]">
           <div class="flex items-center gap-3">
             <Show when={isEditing()}>
-              <button 
+              <button
                 onClick={() => setIsEditing(false)}
                 class="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  <path
+                    fill-rule="evenodd"
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                    clip-rule="evenodd"
+                  />
                 </svg>
               </button>
             </Show>
@@ -184,8 +188,17 @@ ${c.systemPrompt}`
               {isEditing() ? (editName() ? 'Edit Agent' : 'New Agent') : 'Manage Agents'}
             </h2>
           </div>
-          <button onClick={props.onClose} class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button
+            onClick={props.onClose}
+            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -193,10 +206,12 @@ ${c.systemPrompt}`
 
         <div class="flex-1 flex overflow-hidden relative">
           {/* Sidebar List */}
-          <div class={`
+          <div
+            class={`
             w-full md:w-64 border-r border-gray-200 dark:border-[#30363d] flex flex-col bg-[#f6f8fa] dark:bg-[#010409]
             ${isEditing() ? 'hidden md:flex' : 'flex'}
-          `}>
+          `}
+          >
             <div class="p-2">
               <button
                 onClick={() => startEdit()}
@@ -227,7 +242,11 @@ ${c.systemPrompt}`
                       class="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 p-1"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 000-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        <path
+                          fill-rule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 000-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clip-rule="evenodd"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -237,24 +256,31 @@ ${c.systemPrompt}`
           </div>
 
           {/* Editor Area */}
-          <div class={`
+          <div
+            class={`
             flex-1 flex-col overflow-hidden bg-white dark:bg-[#0d1117]
             ${isEditing() ? 'flex' : 'hidden md:flex'}
-          `}>
-            <Show when={isEditing()} fallback={
-              <div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                Select an agent to edit or create a new one
-              </div>
-            }>
+          `}
+          >
+            <Show
+              when={isEditing()}
+              fallback={
+                <div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                  Select an agent to edit or create a new one
+                </div>
+              }
+            >
               <div class="flex-1 overflow-y-auto p-6 space-y-6">
                 {error() && (
                   <div class="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md text-sm">
                     {error()}
                   </div>
                 )}
-                
+
                 <div>
-                  <label for="agent-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                  <label for="agent-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Name
+                  </label>
                   <input
                     id="agent-name"
                     type="text"
@@ -266,7 +292,12 @@ ${c.systemPrompt}`
                 </div>
 
                 <div>
-                  <label for="agent-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                  <label
+                    for="agent-description"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
+                    Description
+                  </label>
                   <input
                     id="agent-description"
                     type="text"
@@ -278,7 +309,9 @@ ${c.systemPrompt}`
 
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label for="agent-model" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Model</label>
+                    <label for="agent-model" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Model
+                    </label>
                     <select
                       id="agent-model"
                       value={config().model}
@@ -286,17 +319,19 @@ ${c.systemPrompt}`
                       class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
                     >
                       <option value="">Default</option>
-                      <For each={models()}>
-                        {(model) => <option value={model}>{model}</option>}
-                      </For>
+                      <For each={models()}>{(model) => <option value={model}>{model}</option>}</For>
                     </select>
                   </div>
                   <div>
-                    <label for="agent-mode" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mode</label>
+                    <label for="agent-mode" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Mode
+                    </label>
                     <select
                       id="agent-mode"
                       value={config().mode}
-                      onChange={(e) => setConfig({ ...config(), mode: e.currentTarget.value as 'primary' | 'subagent' })}
+                      onChange={(e) =>
+                        setConfig({ ...config(), mode: e.currentTarget.value as 'primary' | 'subagent' })
+                      }
                       class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
                     >
                       <option value="primary">Primary</option>
@@ -306,7 +341,9 @@ ${c.systemPrompt}`
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tool Permissions</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Tool Permissions
+                  </label>
                   <div class="space-y-2">
                     <For each={Object.keys(config().tools)}>
                       {(tool) => (
@@ -314,10 +351,12 @@ ${c.systemPrompt}`
                           <input
                             type="checkbox"
                             checked={config().tools[tool as keyof AgentConfig['tools']]}
-                            onChange={(e) => setConfig({
-                              ...config(),
-                              tools: { ...config().tools, [tool]: e.currentTarget.checked }
-                            })}
+                            onChange={(e) =>
+                              setConfig({
+                                ...config(),
+                                tools: { ...config().tools, [tool]: e.currentTarget.checked }
+                              })
+                            }
                             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
                           <span class="text-sm text-gray-700 dark:text-gray-300 capitalize">{tool}</span>

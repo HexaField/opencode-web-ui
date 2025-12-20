@@ -26,7 +26,7 @@ export default function SessionList(props: Props) {
 
   const fetchSessions = () => {
     setError(null)
-    fetch(`/sessions?folder=${encodeURIComponent(props.folder)}`)
+    fetch(`/api/sessions?folder=${encodeURIComponent(props.folder)}`)
       .then((res) => res.json())
       .then((data: unknown) => {
         if (Array.isArray(data)) setSessions(data as Session[])
@@ -35,7 +35,7 @@ export default function SessionList(props: Props) {
   }
 
   const fetchAgents = () => {
-    fetch(`/agents?folder=${encodeURIComponent(props.folder)}`)
+    fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`)
       .then((res) => res.json())
       .then((data) => setAgents(data as Agent[]))
       .catch((err) => console.error('Failed to fetch agents:', err))
@@ -56,7 +56,7 @@ export default function SessionList(props: Props) {
         body.agent = selectedAgent()
       }
 
-      const res = await fetch(`/sessions?folder=${encodeURIComponent(props.folder)}`, {
+      const res = await fetch(`/api/sessions?folder=${encodeURIComponent(props.folder)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -83,10 +83,13 @@ export default function SessionList(props: Props) {
   return (
     <div class="w-full border-r border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] flex flex-col h-full transition-colors duration-200">
       <Show when={isAgentManagerOpen()}>
-        <AgentManager folder={props.folder} onClose={() => {
-          setIsAgentManagerOpen(false)
-          fetchAgents() // Refresh agents list after closing manager
-        }} />
+        <AgentManager
+          folder={props.folder}
+          onClose={() => {
+            setIsAgentManagerOpen(false)
+            fetchAgents() // Refresh agents list after closing manager
+          }}
+        />
       </Show>
 
       <div class="p-3 border-b border-gray-200 dark:border-[#30363d] flex justify-between items-center gap-2">
@@ -101,7 +104,7 @@ export default function SessionList(props: Props) {
               <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
             </svg>
           </button>
-          
+
           <div class="relative flex-1 min-w-[100px] max-w-[150px]">
             <select
               value={selectedAgent()}
@@ -109,12 +112,12 @@ export default function SessionList(props: Props) {
               class="w-full text-xs py-1.5 pl-2 pr-6 border border-gray-200 dark:border-[#30363d] rounded bg-white dark:bg-[#0d1117] text-gray-700 dark:text-gray-300 focus:ring-1 focus:ring-blue-500 outline-none appearance-none truncate"
             >
               <option value="">Default</option>
-              <For each={agents()}>
-                {(agent) => <option value={agent.name}>{agent.name}</option>}
-              </For>
+              <For each={agents()}>{(agent) => <option value={agent.name}>{agent.name}</option>}</For>
             </select>
             <div class="absolute inset-y-0 right-0 flex items-center px-1 pointer-events-none text-gray-500">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
             </div>
           </div>
 

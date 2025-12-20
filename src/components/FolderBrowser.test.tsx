@@ -26,7 +26,7 @@ describe('FolderBrowser', () => {
 
     render(() => <FolderBrowser onSelectFolder={() => {}} />)
 
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/fs/list'))
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/fs/list'))
     await waitFor(() => expect(screen.getByText('folder1')).toBeTruthy())
     expect(screen.getByText('file1.txt')).toBeTruthy()
   })

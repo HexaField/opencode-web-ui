@@ -16,7 +16,7 @@ export default function ChatInterface(props: Props) {
     if (props.sessionId) {
       setMessages([])
       setLoading(true)
-      fetch(`/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`)
+      fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`)
         .then((res) => res.json())
         .then((data: unknown) => {
           const session = data as Session
@@ -58,7 +58,7 @@ export default function ChatInterface(props: Props) {
     setMessages((prev) => [...prev, tempMessage])
 
     try {
-      const res = await fetch(`/sessions/${props.sessionId}/prompt?folder=${encodeURIComponent(props.folder)}`, {
+      const res = await fetch(`/api/sessions/${props.sessionId}/prompt?folder=${encodeURIComponent(props.folder)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parts: [{ type: 'text', text }] })
