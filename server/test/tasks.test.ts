@@ -6,38 +6,53 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 // Mock radicleService BEFORE importing server
 vi.mock('../src/radicle.js', () => {
-  const tasks = new Map<string, any>()
+  interface MockTag {
+    id: string
+    name: string
+    color: string
+  }
+  interface MockTask {
+    id: string
+    title: string
+    status: string
+    tags: MockTag[]
+  }
+  const tasks = new Map<string, MockTask>()
   return {
     radicleService: {
-      getTasks: vi.fn(async () => Array.from(tasks.values())),
-      createTask: vi.fn(async (_folder, task) => {
+      getTasks: vi.fn(() => Promise.resolve(Array.from(tasks.values()))),
+      createTask: vi.fn((_folder: string, task: Omit<MockTask, 'id' | 'tags'>) => {
         const id = 'task-' + Date.now()
-        const newTask = { ...task, id, tags: [] }
+        const newTask: MockTask = { ...task, id, tags: [] }
         tasks.set(id, newTask)
-        return newTask
+        return Promise.resolve(newTask)
       }),
-      updateTask: vi.fn(async (_folder, id, updates) => {
+      updateTask: vi.fn((_folder: string, id: string, updates: Partial<MockTask>) => {
         const task = tasks.get(id)
         if (task) {
           Object.assign(task, updates)
         }
+        return Promise.resolve()
       }),
-      deleteTask: vi.fn(async (_folder, id) => {
+      deleteTask: vi.fn((_folder: string, id: string) => {
         tasks.delete(id)
+        return Promise.resolve()
       }),
-      getTags: vi.fn(async () => []),
-      addTag: vi.fn(async (_folder, taskId, tagId) => {
+      getTags: vi.fn(() => Promise.resolve([])),
+      addTag: vi.fn((_folder: string, taskId: string, tagId: string) => {
         const task = tasks.get(taskId)
         if (task) {
           task.tags = task.tags || []
           task.tags.push({ id: tagId, name: tagId, color: '#000' })
         }
+        return Promise.resolve()
       }),
-      removeTag: vi.fn(async (_folder, taskId, tagId) => {
+      removeTag: vi.fn((_folder: string, taskId: string, tagId: string) => {
         const task = tasks.get(taskId)
         if (task && task.tags) {
-          task.tags = task.tags.filter((t: any) => t.id !== tagId)
+          task.tags = task.tags.filter((t) => t.id !== tagId)
         }
+        return Promise.resolve()
       })
     }
   }

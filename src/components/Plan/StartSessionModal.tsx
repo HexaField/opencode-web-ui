@@ -38,7 +38,9 @@ export default function StartSessionModal(props: Props) {
 
   createEffect(() => {
     if (props.isOpen && props.task) {
-      setPrompt(`I am working on the task: "${props.task.title}".\n\nDescription: ${props.task.description || ''}\n\nPlease help me with this task.`)
+      setPrompt(
+        `I am working on the task: "${props.task.title}".\n\nDescription: ${props.task.description || ''}\n\nPlease help me with this task.`
+      )
     }
   })
 
@@ -89,9 +91,7 @@ export default function StartSessionModal(props: Props) {
                 onChange={(e) => setSelectedAgent(e.currentTarget.value)}
                 class="w-full px-3 py-2 border rounded-md bg-white dark:bg-[#161b22] border-gray-300 dark:border-[#30363d] focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <For each={agents()}>
-                  {(agent) => <option value={agent.name}>{agent.name}</option>}
-                </For>
+                <For each={agents()}>{(agent) => <option value={agent.name}>{agent.name}</option>}</For>
               </select>
             </div>
 

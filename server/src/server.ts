@@ -1,4 +1,4 @@
-import { type Session } from '@opencode-ai/sdk'
+import { type Event, type Message, type Session } from '@opencode-ai/sdk'
 import bodyParser from 'body-parser'
 import { exec as _exec } from 'child_process'
 import cors from 'cors'
@@ -20,6 +20,10 @@ app.use(bodyParser.json())
 
 const manager = new OpencodeManager()
 
+interface SessionWithHistory extends Session {
+  history?: Message[]
+}
+
 // Helper to unwrap SDK response
 function unwrap<T>(res: { data: T } | T): T {
   if (res && typeof res === 'object' && 'data' in res) {
@@ -35,11 +39,16 @@ interface TypedClient {
     create(args: { body: unknown }): Promise<{ data: Session }>
     prompt(args: { path: { id: string }; body: unknown }): Promise<{ data: unknown }>
     get?(args: { path: { id: string } }): Promise<{ data: Session }>
-    messages?(args: { path: { id: string } }): Promise<{ data: unknown[] }>
+    messages?(args: { path: { id: string } }): Promise<{ data: Message[] }>
   }
   file: {
     status(): Promise<{ data: unknown }>
     read(args: { query: { path: string } }): Promise<{ data: unknown }>
+  }
+  event?: {
+    subscribe(args?: { query?: { directory?: string } }): Promise<{
+      stream: AsyncGenerator<unknown, void, unknown>
+    }>
   }
 }
 
@@ -160,6 +169,110 @@ app.get('/api/sessions/:id', withClient, async (req, res) => {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
+  }
+})
+
+app.get('/api/sessions/:id/events', withClient, async (req, res) => {
+  const client = (req as AuthenticatedRequest).opencodeClient!
+  const { id } = req.params
+
+  const folder = (req as AuthenticatedRequest).targetFolder!
+
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+  res.flushHeaders()
+
+  let isActive = true
+  req.on('close', () => {
+    isActive = false
+  })
+
+  const fetchSession = async (): Promise<SessionWithHistory | undefined> => {
+    const sessionClient = client.session
+    if (typeof sessionClient.get === 'function') {
+      const session = await sessionClient.get({ path: { id } })
+      const raw = unwrap(session)
+
+      if (typeof sessionClient.messages === 'function') {
+        const messages = await sessionClient.messages({ path: { id } })
+        const msgData = unwrap(messages)
+        if (raw && typeof raw === 'object' && raw !== null) {
+          const obj = raw as SessionWithHistory
+          obj.history = msgData
+          return obj
+        }
+      }
+      return raw as SessionWithHistory
+    } else {
+      const response = await client.session.list()
+      const sessions = unwrap(response)
+      return sessions.find((s) => s.id === id)
+    }
+  }
+
+  // Initial fetch
+  try {
+    const session = await fetchSession()
+    if (session) {
+      res.write(`data: ${JSON.stringify(session)}\n\n`)
+    }
+  } catch (error) {
+    console.error('Initial fetch error:', error)
+  }
+
+  // Use SDK event stream if available
+  if (client.event && typeof client.event.subscribe === 'function') {
+    try {
+      const { stream } = await client.event.subscribe({ query: { directory: folder } })
+
+      for await (const event of stream) {
+        if (!isActive) break
+
+        // Check if event is relevant to this session
+        const e = event as Event
+        let isRelevant = false
+
+        if (e.type === 'session.updated' && e.properties?.info?.id === id) isRelevant = true
+        if (e.type === 'message.updated' && e.properties?.info?.sessionID === id) isRelevant = true
+        if (e.type === 'message.part.updated' && e.properties?.part?.sessionID === id) isRelevant = true
+        if (e.type === 'message.part.removed' && e.properties?.sessionID === id) isRelevant = true
+        if (e.type === 'message.removed' && e.properties?.sessionID === id) isRelevant = true
+
+        if (isRelevant) {
+          try {
+            const session = await fetchSession()
+            if (session) {
+              res.write(`data: ${JSON.stringify(session)}\n\n`)
+            }
+          } catch (err) {
+            console.error('Error fetching session update:', err)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('SDK Event Stream Error:', error)
+      // Fallback to polling if stream fails?
+      // For now, just log error.
+    }
+  } else {
+    // Fallback to polling if event API is not available
+    let lastHistoryLength = 0
+    while (isActive) {
+      try {
+        const session = await fetchSession()
+        if (session && Array.isArray(session.history)) {
+          const currentLength = JSON.stringify(session.history).length
+          if (currentLength !== lastHistoryLength) {
+            res.write(`data: ${JSON.stringify(session)}\n\n`)
+            lastHistoryLength = currentLength
+          }
+        }
+      } catch (error) {
+        console.error('Polling Error:', error)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+    }
   }
 })
 

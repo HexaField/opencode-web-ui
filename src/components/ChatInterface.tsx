@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Message, Session, ToolPart } from '../types'
 import ToolCall from './ToolCall'
 
@@ -12,20 +12,85 @@ export default function ChatInterface(props: Props) {
   const [input, setInput] = createSignal('')
   const [loading, setLoading] = createSignal(false)
 
+  const fetchSession = async () => {
+    try {
+      const res = await fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`)
+      const data = (await res.json()) as unknown
+      const session = data as Session
+      if (session && Array.isArray(session.history)) {
+        setMessages((prev) => {
+          const newHistory = session.history
+          // Check if we need to preserve the temp message
+          const lastPrev = prev[prev.length - 1]
+          if (lastPrev?.info.id.startsWith('temp-')) {
+            // Check if newHistory contains this message (by content)
+            const found = newHistory.find(
+              (m) =>
+                m.info.role === 'user' &&
+                m.parts[0].type === 'text' &&
+                (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
+            )
+            if (!found) {
+              return [...newHistory, lastPrev]
+            }
+          }
+          return newHistory
+        })
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   createEffect(() => {
     if (props.sessionId) {
       setMessages([])
       setLoading(true)
-      fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`)
-        .then((res) => res.json())
-        .then((data: unknown) => {
-          const session = data as Session
+
+      // Initial fetch
+      void fetchSession().finally(() => setLoading(false))
+
+      // Setup SSE
+      const eventSource = new EventSource(
+        `/api/sessions/${props.sessionId}/events?folder=${encodeURIComponent(props.folder)}`
+      )
+
+      eventSource.onmessage = (event) => {
+        try {
+          const session = JSON.parse(event.data as string) as Session
           if (session && Array.isArray(session.history)) {
-            setMessages(session.history)
+            setMessages((prev) => {
+              const newHistory = session.history
+              // Check if we need to preserve the temp message
+              const lastPrev = prev[prev.length - 1]
+              if (lastPrev?.info.id.startsWith('temp-')) {
+                // Check if newHistory contains this message (by content)
+                const found = newHistory.find(
+                  (m) =>
+                    m.info.role === 'user' &&
+                    m.parts[0].type === 'text' &&
+                    (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
+                )
+                if (!found) {
+                  return [...newHistory, lastPrev]
+                }
+              }
+              return newHistory
+            })
           }
-        })
-        .catch(console.error)
-        .finally(() => setLoading(false))
+        } catch (error) {
+          console.error('SSE Parse Error:', error)
+        }
+      }
+
+      eventSource.onerror = (err) => {
+        console.error('SSE Error:', err)
+        eventSource.close()
+      }
+
+      onCleanup(() => {
+        eventSource.close()
+      })
     }
   })
 
@@ -58,19 +123,12 @@ export default function ChatInterface(props: Props) {
     setMessages((prev) => [...prev, tempMessage])
 
     try {
-      const res = await fetch(`/api/sessions/${props.sessionId}/prompt?folder=${encodeURIComponent(props.folder)}`, {
+      await fetch(`/api/sessions/${props.sessionId}/prompt?folder=${encodeURIComponent(props.folder)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parts: [{ type: 'text', text }] })
       })
-      const data = (await res.json()) as Message | Message[]
-
-      // Append the response message(s)
-      if (Array.isArray(data)) {
-        setMessages((prev) => [...prev, ...data])
-      } else {
-        setMessages((prev) => [...prev, data])
-      }
+      await fetchSession()
     } catch (err) {
       console.error(err)
       const errorMessage: Message = {
