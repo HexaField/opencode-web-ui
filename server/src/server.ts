@@ -572,13 +572,14 @@ app.post('/api/tasks', async (req, res) => {
     return
   }
   try {
-    const { title, description, parent_id, status } = req.body as {
+    const { title, description, parent_id, status, dependencies } = req.body as {
       title: string
       description?: string
       parent_id?: string
       status?: 'todo' | 'in-progress' | 'done'
+      dependencies?: string[]
     }
-    const task = await radicleService.createTask(folder, { title, description, parent_id, status })
+    const task = await radicleService.createTask(folder, { title, description, parent_id, status, dependencies })
     res.json(task)
   } catch (error) {
     res.status(500).json({ error: String(error) })
@@ -593,15 +594,16 @@ app.put('/api/tasks/:id', async (req, res) => {
   }
   try {
     const { id } = req.params
-    const { title, description, status, parent_id, position } = req.body as {
+    const { title, description, status, parent_id, position, dependencies } = req.body as {
       title?: string
       description?: string
       status?: 'todo' | 'in-progress' | 'done'
       parent_id?: string
       position?: number
+      dependencies?: string[]
     }
 
-    await radicleService.updateTask(folder, id, { title, description, status, parent_id, position })
+    await radicleService.updateTask(folder, id, { title, description, status, parent_id, position, dependencies })
     res.json({ success: true })
   } catch (error) {
     res.status(500).json({ error: String(error) })
