@@ -1,5 +1,6 @@
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { Task } from '../../types'
+import DependencyModal from './DependencyModal'
 
 interface Props {
   tasks: Task[]
@@ -16,6 +17,7 @@ export default function ListView(props: Props) {
   const [newTaskTitle, setNewTaskTitle] = createSignal('')
   const [draggedTaskId, setDraggedTaskId] = createSignal<string | null>(null)
   const [dragOverTaskId, setDragOverTaskId] = createSignal<string | null>(null)
+  const [dependencyModalTask, setDependencyModalTask] = createSignal<Task | null>(null)
 
   const taskTree = createMemo(() => {
     const map = new Map<string, TaskNode>()
@@ -85,6 +87,28 @@ export default function ListView(props: Props) {
     await props.onUpdateTask(sourceTaskId, { parent_id: null })
     setDraggedTaskId(null)
     setDragOverTaskId(null)
+  }
+
+  const handleToggleDependency = async (taskId: string, dependencyId: string, add: boolean) => {
+    const task = props.tasks.find((t) => t.id === taskId)
+    if (!task) return
+
+    const currentDeps = task.dependencies || []
+    let newDeps: string[]
+    if (add) {
+      if (currentDeps.includes(dependencyId)) return
+      newDeps = [...currentDeps, dependencyId]
+    } else {
+      newDeps = currentDeps.filter((id) => id !== dependencyId)
+    }
+
+    // Optimistically update the local state for the modal
+    setDependencyModalTask((prev) => {
+      if (!prev || prev.id !== taskId) return prev
+      return { ...prev, dependencies: newDeps }
+    })
+
+    await props.onUpdateTask(taskId, { dependencies: newDeps })
   }
 
   const TaskItem = (itemProps: { task: TaskNode; level: number }) => {
@@ -228,7 +252,16 @@ export default function ListView(props: Props) {
             </Show>
           </div>
 
-          <div class="opacity-0 group-hover:opacity-100 flex items-center gap-2">
+          <div class="opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center gap-2">
+            <button
+              class="text-gray-400 hover:text-blue-500"
+              title="Manage Dependencies"
+              onClick={() => setDependencyModalTask(itemProps.task)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
+              </svg>
+            </button>
             <button
               class="text-gray-400 hover:text-blue-500"
               title="Add Subtask"
@@ -356,6 +389,14 @@ export default function ListView(props: Props) {
           Drag here to make a root task (remove parent)
         </div>
       </Show>
+
+      <DependencyModal
+        isOpen={!!dependencyModalTask()}
+        onClose={() => setDependencyModalTask(null)}
+        task={dependencyModalTask()}
+        allTasks={props.tasks}
+        onToggleDependency={handleToggleDependency}
+      />
     </div>
   )
 }
