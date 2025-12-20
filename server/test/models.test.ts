@@ -4,7 +4,7 @@ import { app } from '../src/server.js'
 
 describe('Models API', () => {
   it('should list available models from opencode CLI', async () => {
-    const res = await request(app).get('/models')
+    const res = await request(app).get('/api/models')
 
     expect(res.status).toBe(200)
     expect(Array.isArray(res.body)).toBe(true)

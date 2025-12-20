@@ -4,7 +4,14 @@ import * as os from 'os'
 import * as path from 'path'
 import { promisify } from 'util'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getCurrentBranch, getGitStatus, listGitBranches, runGitCommand } from '../src/git.js'
+import {
+  getCurrentBranch,
+  getGitStatus,
+  listBranchCommits,
+  listGitBranches,
+  runGitCommand,
+  runGitCommandSync
+} from '../src/git.js'
 
 const execAsync = promisify(exec)
 
@@ -31,6 +38,11 @@ describe('Git Module Tests', () => {
     expect(output).toContain('On branch')
   })
 
+  it('should run synchronous git commands', () => {
+    const output = runGitCommandSync(['status'], tempDir)
+    expect(output).toContain('On branch')
+  })
+
   it('should get current branch', async () => {
     const branch = await getCurrentBranch(tempDir)
     // Default could be master or main depending on git config, but we can check it's not empty
@@ -45,6 +57,14 @@ describe('Git Module Tests', () => {
 
     // Switch back
     await execAsync(`git checkout -`, { cwd: tempDir })
+  })
+
+  it('should list branch commits', async () => {
+    const branch = await getCurrentBranch(tempDir)
+    const commits = await listBranchCommits({ repoPath: tempDir, branch })
+    expect(commits.length).toBeGreaterThan(0)
+    expect(commits[0].message).toBe('Initial commit')
+    expect(commits[0].authorName).toBe('Test User')
   })
 
   it('should detect file status changes', async () => {

@@ -144,6 +144,8 @@ app.get('/api/sessions/:id', withClient, async (req, res) => {
           res.json(obj)
           return
         }
+      } else {
+        console.log('sessionClient.messages is not a function')
       }
 
       res.json(raw)
