@@ -14,6 +14,8 @@ interface TaskNode extends Task {
 
 export default function ListView(props: Props) {
   const [newTaskTitle, setNewTaskTitle] = createSignal('')
+  const [draggedTaskId, setDraggedTaskId] = createSignal<string | null>(null)
+  const [dragOverTaskId, setDragOverTaskId] = createSignal<string | null>(null)
 
   const taskTree = createMemo(() => {
     const map = new Map<string, TaskNode>()
@@ -44,17 +46,66 @@ export default function ListView(props: Props) {
     setNewTaskTitle('')
   }
 
+  const handleDragStart = (e: DragEvent, taskId: string) => {
+    e.dataTransfer?.setData('text/plain', taskId)
+    setDraggedTaskId(taskId)
+    e.stopPropagation()
+  }
+
+  const isDescendant = (parentId: string, childId: string): boolean => {
+    let current = props.tasks.find((t) => t.id === childId)
+    while (current && current.parent_id) {
+      if (current.parent_id === parentId) return true
+      const nextParentId = current.parent_id
+      current = props.tasks.find((t) => t.id === nextParentId)
+    }
+    return false
+  }
+
+  const handleDropOnTask = async (e: DragEvent, targetTaskId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const sourceTaskId = draggedTaskId()
+    if (!sourceTaskId || sourceTaskId === targetTaskId) return
+
+    if (isDescendant(sourceTaskId, targetTaskId)) {
+      return
+    }
+
+    await props.onUpdateTask(sourceTaskId, { parent_id: targetTaskId })
+    setDraggedTaskId(null)
+    setDragOverTaskId(null)
+  }
+
+  const handleDropOnRoot = async (e: DragEvent) => {
+    e.preventDefault()
+    const sourceTaskId = draggedTaskId()
+    if (!sourceTaskId) return
+
+    await props.onUpdateTask(sourceTaskId, { parent_id: null })
+    setDraggedTaskId(null)
+    setDragOverTaskId(null)
+  }
+
   const TaskItem = (itemProps: { task: TaskNode; level: number }) => {
     const [isEditing, setIsEditing] = createSignal(false)
     const [editTitle, setEditTitle] = createSignal(itemProps.task.title)
     const [isAddingSubtask, setIsAddingSubtask] = createSignal(false)
     const [subtaskTitle, setSubtaskTitle] = createSignal('')
+    const [isExpanded, setIsExpanded] = createSignal(false)
+    const [description, setDescription] = createSignal(itemProps.task.description || '')
 
     const handleSave = () => {
       if (editTitle().trim() !== itemProps.task.title) {
         void props.onUpdateTask(itemProps.task.id, { title: editTitle() })
       }
       setIsEditing(false)
+    }
+
+    const handleSaveDescription = () => {
+      if (description() !== (itemProps.task.description || '')) {
+        void props.onUpdateTask(itemProps.task.id, { description: description() })
+      }
     }
 
     const handleAddSubtask = (e: Event) => {
@@ -65,9 +116,95 @@ export default function ListView(props: Props) {
       setIsAddingSubtask(false)
     }
 
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const sourceId = draggedTaskId()
+      if (sourceId && sourceId !== itemProps.task.id && !isDescendant(sourceId, itemProps.task.id)) {
+        setDragOverTaskId(itemProps.task.id)
+      }
+    }
+
+    const onDragLeave = () => {
+      if (dragOverTaskId() === itemProps.task.id) {
+        setDragOverTaskId(null)
+      }
+    }
+
+    const onDrop = (e: DragEvent) => {
+      setDragOverTaskId(null)
+      handleDropOnTask(e, itemProps.task.id)
+    }
+
+    const handleTouchStart = (e: TouchEvent) => {
+      setDraggedTaskId(itemProps.task.id)
+    }
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault()
+      const touch = e.touches[0]
+      const target = document.elementFromPoint(touch.clientX, touch.clientY)
+      if (!target) return
+
+      const taskElement = target.closest('[data-task-id]') as HTMLElement
+      if (taskElement) {
+        const id = taskElement.dataset.taskId
+        if (id && id !== draggedTaskId() && !isDescendant(draggedTaskId()!, id)) {
+          setDragOverTaskId(id)
+        } else {
+          if (dragOverTaskId() !== 'root') setDragOverTaskId(null)
+        }
+      } else {
+        const rootZone = target.closest('[data-drop-zone="root"]')
+        if (rootZone) {
+          setDragOverTaskId('root')
+        } else {
+          setDragOverTaskId(null)
+        }
+      }
+    }
+
+    const handleTouchEnd = async (e: TouchEvent) => {
+      const sourceId = draggedTaskId()
+      const targetId = dragOverTaskId()
+
+      if (sourceId && targetId) {
+        if (targetId === 'root') {
+          await props.onUpdateTask(sourceId, { parent_id: null })
+        } else if (sourceId !== targetId && !isDescendant(sourceId, targetId)) {
+          await props.onUpdateTask(sourceId, { parent_id: targetId })
+        }
+      }
+      setDraggedTaskId(null)
+      setDragOverTaskId(null)
+    }
+
     return (
-      <div class="flex flex-col">
+      <div
+        class={`flex flex-col rounded transition-colors ${dragOverTaskId() === itemProps.task.id ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : ''}`}
+        draggable="true"
+        data-task-id={itemProps.task.id}
+        onDragStart={(e) => handleDragStart(e, itemProps.task.id)}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
         <div class="flex items-center gap-2 py-1 group hover:bg-gray-50 dark:hover:bg-[#161b22] rounded px-2 -mx-2">
+          <button
+            class={`text-gray-400 hover:text-blue-500 transition-transform ${isExpanded() ? 'rotate-90' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsExpanded(!isExpanded())
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
           <div class="w-2 h-2 rounded-full bg-gray-400 shrink-0 mt-1.5"></div>
           <div class="flex-1">
             <Show
@@ -119,7 +256,32 @@ export default function ListView(props: Props) {
               </svg>
             </button>
           </div>
+
+          <div
+            class="touch-none p-1 text-gray-400 cursor-grab active:cursor-grabbing hover:text-gray-600 dark:hover:text-gray-300"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            title="Drag to move"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" />
+            </svg>
+          </div>
         </div>
+
+        <Show when={isExpanded()}>
+          <div class="ml-8 mb-2 mr-2">
+            <textarea
+              class="w-full p-2 text-sm border rounded-md dark:bg-[#0d1117] dark:border-[#30363d] focus:ring-2 focus:ring-blue-500 outline-none resize-y"
+              rows={3}
+              value={description()}
+              onInput={(e) => setDescription(e.currentTarget.value)}
+              onBlur={handleSaveDescription}
+              placeholder="Add a description..."
+            />
+          </div>
+        </Show>
 
         <Show when={isAddingSubtask()}>
           <form onSubmit={handleAddSubtask} class="ml-6 mt-1 mb-2 flex gap-2">
@@ -175,6 +337,25 @@ export default function ListView(props: Props) {
         <For each={taskTree()}>{(task) => <TaskItem task={task} level={0} />}</For>
         {props.tasks.length === 0 && <div class="text-center text-gray-500 py-10">No tasks yet. Add one above!</div>}
       </div>
+
+      <Show when={draggedTaskId()}>
+        <div
+          data-drop-zone="root"
+          class={`mt-8 p-8 border-2 border-dashed rounded-lg text-center transition-colors cursor-pointer ${
+            dragOverTaskId() === 'root'
+              ? 'border-blue-500 text-blue-500 bg-blue-50 dark:bg-blue-900/10'
+              : 'border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10'
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOverTaskId('root')
+          }}
+          onDragLeave={() => setDragOverTaskId(null)}
+          onDrop={handleDropOnRoot}
+        >
+          Drag here to make a root task (remove parent)
+        </div>
+      </Show>
     </div>
   )
 }
