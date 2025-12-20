@@ -48,7 +48,35 @@ export default function Workspace(props: Props) {
     window.history.replaceState({}, '', url)
   })
 
-  const handleStartSession = async (sessionTitle: string, agentId: string, prompt: string) => {
+  const handleStartSession = async (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => {
+    if (taskId) {
+      // Update task status
+      await fetch(`/api/tasks/${taskId}?folder=${encodeURIComponent(props.folder)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in_progress' })
+      })
+
+      // Create branch
+      const branchName = `issue/${taskId}`
+      try {
+        await fetch(`/api/git/branch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder: props.folder, branch: branchName })
+        })
+      } catch (e) {
+        console.error('Failed to create branch', e)
+      }
+
+      // Checkout branch
+      await fetch(`/api/git/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: props.folder, branch: branchName })
+      })
+    }
+
     // 1. Create session
     const res = await fetch(`/api/sessions?folder=${encodeURIComponent(props.folder)}`, {
       method: 'POST',

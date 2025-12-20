@@ -8,7 +8,7 @@ interface Props {
   onAddTask: (task: Partial<Task>) => void | Promise<void>
   onUpdateTask: (id: string, updates: Partial<Task>) => void | Promise<void>
   onDeleteTask: (id: string) => void | Promise<void>
-  onStartSession?: (sessionTitle: string, agentId: string, prompt: string) => Promise<void>
+  onStartSession?: (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => Promise<void>
 }
 
 interface TaskNode extends Task {

@@ -490,6 +490,36 @@ app.post('/api/git/checkout', async (req, res) => {
   }
 })
 
+app.post('/api/git/branch', async (req, res) => {
+  const { folder, branch, from } = req.body as { folder?: string; branch?: string; from?: string }
+  if (!folder || !branch) {
+    res.status(400).json({ error: 'Folder and branch required' })
+    return
+  }
+  try {
+    const args = ['branch', branch]
+    if (from) args.push(from)
+    await runGitCommand(args, folder)
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: String(err) })
+  }
+})
+
+app.post('/api/git/merge', async (req, res) => {
+  const { folder, branch } = req.body as { folder?: string; branch?: string }
+  if (!folder || !branch) {
+    res.status(400).json({ error: 'Folder and branch required' })
+    return
+  }
+  try {
+    await runGitCommand(['merge', branch], folder)
+    res.json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: String(err) })
+  }
+})
+
 app.get('/api/files/status', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
@@ -526,7 +556,6 @@ app.get('/api/files/read', withClient, async (req, res) => {
 
 app.get('/api/fs/list', async (req, res) => {
   const dirPath = (req.query.path as string) || os.homedir()
-  console.log('Listing dir:', dirPath)
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true })
     const files = entries.map((entry) => ({

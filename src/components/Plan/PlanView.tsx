@@ -6,7 +6,7 @@ import TagsModal from './TagsModal'
 import { createTasksStore } from './store'
 
 interface Props {
-  onStartSession?: (sessionTitle: string, agentId: string, prompt: string) => Promise<void>
+  onStartSession?: (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => Promise<void>
 }
 
 export default function PlanView(props: Props) {

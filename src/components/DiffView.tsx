@@ -114,6 +114,62 @@ export default function DiffView(props: Props) {
     void fetchStatus()
   }
 
+  const handleAccept = async () => {
+    // 1. Check for pending changes
+    const hasChanges = gitFiles().length > 0
+    if (hasChanges) {
+      // Stage all
+      await fetch('/api/git/stage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: props.folder, files: ['.'] })
+      })
+
+      // Generate message if empty
+      let msg = commitMessage()
+      if (!msg) {
+        const res = await fetch('/api/git/generate-commit-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder: props.folder })
+        })
+        const data = (await res.json()) as { message?: string }
+        if (data.message) msg = data.message
+      }
+
+      // Commit
+      if (msg) {
+        await fetch('/api/git/commit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder: props.folder, message: msg })
+        })
+      }
+    }
+
+    // 2. Merge to default branch
+    const defaultBranch = branches().includes('main') ? 'main' : 'master'
+    const branchToMerge = currentBranch()
+
+    // Checkout default branch
+    await fetch('/api/git/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: props.folder, branch: defaultBranch })
+    })
+
+    // Merge the issue branch
+    await fetch('/api/git/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: props.folder, branch: branchToMerge })
+    })
+
+    // Refresh
+    void fetchStatus()
+    void fetchBranches()
+  }
+
   const handleCheckout = async (e: Event) => {
     const branch = (e.target as HTMLSelectElement).value
     setCurrentBranch(branch)
@@ -360,6 +416,14 @@ export default function DiffView(props: Props) {
             >
               Commit
             </button>
+            <Show when={currentBranch().startsWith('issue/')}>
+              <button
+                onClick={() => void handleAccept()}
+                class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+              >
+                Accept
+              </button>
+            </Show>
             <button
               onClick={() => void handleGenerateMessage()}
               disabled={isGenerating()}

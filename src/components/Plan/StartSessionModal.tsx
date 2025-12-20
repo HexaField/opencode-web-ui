@@ -11,7 +11,7 @@ interface Props {
   onClose: () => void
   task: Task | null
   folder: string
-  onStartSession: (sessionTitle: string, agentId: string, prompt: string) => Promise<void>
+  onStartSession: (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => Promise<void>
 }
 
 export default function StartSessionModal(props: Props) {
@@ -51,7 +51,7 @@ export default function StartSessionModal(props: Props) {
     setLoading(true)
     setError(null)
     try {
-      await props.onStartSession(`Task: ${props.task.title}`, selectedAgent(), prompt())
+      await props.onStartSession(`Task: ${props.task.title}`, selectedAgent(), prompt(), props.task.id)
       props.onClose()
     } catch (err) {
       setError(String(err))
