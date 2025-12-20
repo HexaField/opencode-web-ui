@@ -5,7 +5,11 @@ import ListView from './ListView'
 import TagsModal from './TagsModal'
 import { createTasksStore } from './store'
 
-export default function PlanView() {
+interface Props {
+  onStartSession?: (sessionTitle: string, agentId: string, prompt: string) => Promise<void>
+}
+
+export default function PlanView(props: Props) {
   console.log('Rendering PlanView')
   const params = new URLSearchParams(window.location.search)
   const folder = params.get('folder') || ''
@@ -79,6 +83,7 @@ export default function PlanView() {
               onDeleteTask={(id) => {
                 void removeTask(id)
               }}
+              onStartSession={props.onStartSession}
             />
           </Show>
           <Show when={subView() === 'kanban'}>

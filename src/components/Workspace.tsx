@@ -48,6 +48,32 @@ export default function Workspace(props: Props) {
     window.history.replaceState({}, '', url)
   })
 
+  const handleStartSession = async (sessionTitle: string, agentId: string, prompt: string) => {
+    // 1. Create session
+    const res = await fetch(`/api/sessions?folder=${encodeURIComponent(props.folder)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: sessionTitle, agent: agentId })
+    })
+    if (!res.ok) {
+      throw new Error(`Failed to create session: ${res.statusText}`)
+    }
+    const session = (await res.json()) as { id: string }
+
+    // 2. Send prompt
+    if (prompt.trim()) {
+      await fetch(`/api/sessions/${session.id}/prompt?folder=${encodeURIComponent(props.folder)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parts: [{ type: 'text', text: prompt }] })
+      })
+    }
+
+    // 3. Navigate
+    setCurrentSessionId(session.id)
+    setView('chat')
+  }
+
   return (
     <div class="flex h-screen w-screen overflow-hidden relative bg-white dark:bg-[#0d1117] transition-colors duration-200">
       <SettingsModal isOpen={isSettingsOpen()} onClose={() => setIsSettingsOpen(false)} onChangeFolder={props.onBack} />
@@ -200,7 +226,7 @@ export default function Workspace(props: Props) {
           {view() === 'files' && (
             <FilesView folder={props.folder} selectedFile={selectedFile()} onSelectFile={setSelectedFile} />
           )}
-          {view() === 'plan' && <PlanView />}
+          {view() === 'plan' && <PlanView onStartSession={handleStartSession} />}
         </div>
       </div>
     </div>

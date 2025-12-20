@@ -10,30 +10,30 @@ vi.mock('../src/radicle.js', () => {
   return {
     radicleService: {
       getTasks: vi.fn(async () => Array.from(tasks.values())),
-      createTask: vi.fn(async (folder, task) => {
+      createTask: vi.fn(async (_folder, task) => {
         const id = 'task-' + Date.now()
         const newTask = { ...task, id, tags: [] }
         tasks.set(id, newTask)
         return newTask
       }),
-      updateTask: vi.fn(async (folder, id, updates) => {
+      updateTask: vi.fn(async (_folder, id, updates) => {
         const task = tasks.get(id)
         if (task) {
           Object.assign(task, updates)
         }
       }),
-      deleteTask: vi.fn(async (folder, id) => {
+      deleteTask: vi.fn(async (_folder, id) => {
         tasks.delete(id)
       }),
       getTags: vi.fn(async () => []),
-      addTag: vi.fn(async (folder, taskId, tagId) => {
+      addTag: vi.fn(async (_folder, taskId, tagId) => {
         const task = tasks.get(taskId)
         if (task) {
           task.tags = task.tags || []
           task.tags.push({ id: tagId, name: tagId, color: '#000' })
         }
       }),
-      removeTag: vi.fn(async (folder, taskId, tagId) => {
+      removeTag: vi.fn(async (_folder, taskId, tagId) => {
         const task = tasks.get(taskId)
         if (task && task.tags) {
           task.tags = task.tags.filter((t: any) => t.id !== tagId)

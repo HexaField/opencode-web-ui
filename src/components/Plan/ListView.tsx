@@ -1,12 +1,14 @@
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import { Task } from '../../types'
 import DependencyModal from './DependencyModal'
+import StartSessionModal from './StartSessionModal'
 
 interface Props {
   tasks: Task[]
   onAddTask: (task: Partial<Task>) => void | Promise<void>
   onUpdateTask: (id: string, updates: Partial<Task>) => void | Promise<void>
   onDeleteTask: (id: string) => void | Promise<void>
+  onStartSession?: (sessionTitle: string, agentId: string, prompt: string) => Promise<void>
 }
 
 interface TaskNode extends Task {
@@ -18,6 +20,7 @@ export default function ListView(props: Props) {
   const [draggedTaskId, setDraggedTaskId] = createSignal<string | null>(null)
   const [dragOverTaskId, setDragOverTaskId] = createSignal<string | null>(null)
   const [dependencyModalTask, setDependencyModalTask] = createSignal<Task | null>(null)
+  const [sessionModalTask, setSessionModalTask] = createSignal<Task | null>(null)
 
   const taskTree = createMemo(() => {
     const map = new Map<string, TaskNode>()
@@ -157,10 +160,10 @@ export default function ListView(props: Props) {
 
     const onDrop = (e: DragEvent) => {
       setDragOverTaskId(null)
-      handleDropOnTask(e, itemProps.task.id)
+      void handleDropOnTask(e, itemProps.task.id)
     }
 
-    const handleTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = () => {
       setDraggedTaskId(itemProps.task.id)
     }
 
@@ -188,7 +191,7 @@ export default function ListView(props: Props) {
       }
     }
 
-    const handleTouchEnd = async (e: TouchEvent) => {
+    const handleTouchEnd = async () => {
       const sourceId = draggedTaskId()
       const targetId = dragOverTaskId()
 
@@ -253,6 +256,21 @@ export default function ListView(props: Props) {
           </div>
 
           <div class="opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center gap-2">
+            <Show when={props.onStartSession}>
+              <button
+                class="text-gray-400 hover:text-green-500"
+                title="Start Session"
+                onClick={() => setSessionModalTask(itemProps.task)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </Show>
             <button
               class="text-gray-400 hover:text-blue-500"
               title="Manage Dependencies"
@@ -294,7 +312,7 @@ export default function ListView(props: Props) {
             class="touch-none p-1 text-gray-400 cursor-grab active:cursor-grabbing hover:text-gray-600 dark:hover:text-gray-300"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            onTouchEnd={() => void handleTouchEnd()}
             title="Drag to move"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -384,7 +402,7 @@ export default function ListView(props: Props) {
             setDragOverTaskId('root')
           }}
           onDragLeave={() => setDragOverTaskId(null)}
-          onDrop={handleDropOnRoot}
+          onDrop={(e) => void handleDropOnRoot(e)}
         >
           Drag here to make a root task (remove parent)
         </div>
@@ -395,7 +413,15 @@ export default function ListView(props: Props) {
         onClose={() => setDependencyModalTask(null)}
         task={dependencyModalTask()}
         allTasks={props.tasks}
-        onToggleDependency={handleToggleDependency}
+        onToggleDependency={(taskId, dependencyId, add) => void handleToggleDependency(taskId, dependencyId, add)}
+      />
+
+      <StartSessionModal
+        isOpen={!!sessionModalTask()}
+        onClose={() => setSessionModalTask(null)}
+        task={sessionModalTask()}
+        folder={new URLSearchParams(window.location.search).get('folder') || ''}
+        onStartSession={props.onStartSession!}
       />
     </div>
   )
