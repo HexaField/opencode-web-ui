@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { execSync } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -49,7 +49,7 @@ test.describe('Task Expansion and Description', () => {
     // Since it's the first button in the row (before the bullet), we can try to locate it.
     // Or we can look for the button that toggles expansion.
     // It has class 'transition-transform'.
-    
+
     const expandButton = page.locator('button.transition-transform').first()
     await expandButton.click()
 
@@ -59,19 +59,19 @@ test.describe('Task Expansion and Description', () => {
 
     // Edit description
     await textarea.fill('This is a multi-line\ndescription.')
-    
+
     // Trigger save (blur)
     await textarea.blur()
 
     // Reload to verify persistence
     await page.reload()
-    
+
     // Task should be collapsed by default on reload (since state is local)
     await expect(textarea).not.toBeVisible()
-    
+
     // Expand again
     await expandButton.click()
-    
+
     // Verify description content
     await expect(textarea).toHaveValue('This is a multi-line\ndescription.')
   })

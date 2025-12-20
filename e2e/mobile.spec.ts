@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { execSync } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -9,7 +9,7 @@ const testFolder = path.join(os.tmpdir(), 'opencode-e2e-mobile-' + Date.now())
 test.use({
   viewport: { width: 375, height: 667 },
   isMobile: true,
-  hasTouch: true,
+  hasTouch: true
 })
 
 test.describe('Mobile View', () => {
@@ -55,7 +55,7 @@ test.describe('Mobile View', () => {
     // We can check if the "Manage Dependencies" button is visible
     const depsButton = page.locator('button[title="Manage Dependencies"]').first()
     await expect(depsButton).toBeVisible()
-    
+
     // Check delete button
     const deleteButton = page.locator('button[title="Delete"]').first()
     await expect(deleteButton).toBeVisible()

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { execSync } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -14,10 +14,9 @@ test.describe('Task Drag and Drop', () => {
         execSync('git init', { cwd: testFolder })
         execSync('git commit --allow-empty -m "Initial commit"', { cwd: testFolder })
         const projectName = 'e2e-dnd-' + Date.now()
-        execSync(
-          `rad init --name ${projectName} --description "E2E DnD" --default-branch main --public --no-confirm`,
-          { cwd: testFolder }
-        )
+        execSync(`rad init --name ${projectName} --description "E2E DnD" --default-branch main --public --no-confirm`, {
+          cwd: testFolder
+        })
       } catch (e) {
         console.error('Failed to init repo', e)
         throw e
@@ -70,16 +69,16 @@ test.describe('Task Drag and Drop', () => {
     await page.mouse.down()
     await page.mouse.move(100, 100)
     await page.waitForTimeout(500)
-    
+
     const dropZone = page.getByText('Drag here to make a root task')
     await expect(dropZone).toBeVisible()
-    
+
     await dropZone.hover()
     await page.mouse.up()
-    
+
     // Wait for update
     await page.waitForTimeout(1000)
-    
+
     // Verify un-nesting
     await expect(page.locator('.ml-6').getByText('Child Task')).not.toBeVisible()
     await expect(page.getByText('Child Task')).toBeVisible()

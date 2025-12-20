@@ -84,7 +84,7 @@ test.describe('Plan Tab', () => {
     await expect(page.getByTestId('dag-svg')).toBeVisible()
     // Verify tasks are rendered as nodes
     await expect(page.getByTestId(`node-${taskTitle}`)).toBeVisible()
-    
+
     // Verify subtask is nested inside parent
     await expect(page.getByTestId(`node-${taskTitle}`).getByTestId(`node-${subtaskTitle}`)).toBeVisible()
   })

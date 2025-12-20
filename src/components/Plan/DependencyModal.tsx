@@ -15,9 +15,7 @@ export default function DependencyModal(props: Props) {
   const filteredTasks = createMemo(() => {
     if (!props.task) return []
     const query = search().toLowerCase()
-    return props.allTasks.filter(
-      (t) => t.id !== props.task!.id && t.title.toLowerCase().includes(query)
-    )
+    return props.allTasks.filter((t) => t.id !== props.task!.id && t.title.toLowerCase().includes(query))
   })
 
   return (
@@ -59,9 +57,7 @@ export default function DependencyModal(props: Props) {
                   <input
                     type="checkbox"
                     checked={props.task!.dependencies?.includes(otherTask.id)}
-                    onChange={(e) =>
-                      props.onToggleDependency(props.task!.id, otherTask.id, e.currentTarget.checked)
-                    }
+                    onChange={(e) => props.onToggleDependency(props.task!.id, otherTask.id, e.currentTarget.checked)}
                     class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
                   />
                   <span class="text-sm text-gray-700 dark:text-gray-300">{otherTask.title}</span>
