@@ -34,7 +34,7 @@ describe('Session Update Tests', () => {
     const res = await request(app)
       .post(`/api/sessions?folder=${encodeURIComponent(tempDir)}`)
       .send({ title: 'Test Session', agent: 'test-agent' })
-    
+
     expect(res.status).toBe(200)
     const body = res.body as SessionResponse
     sessionId = body.id
@@ -51,11 +51,10 @@ describe('Session Update Tests', () => {
       console.log('Update response:', updateRes.body)
     }
     expect(updateRes.status).toBe(200)
-    
+
     // Verify update by fetching session
-    const getRes = await request(app)
-      .get(`/api/sessions/${sessionId}?folder=${encodeURIComponent(tempDir)}`)
-    
+    const getRes = await request(app).get(`/api/sessions/${sessionId}?folder=${encodeURIComponent(tempDir)}`)
+
     console.log('Get session:', JSON.stringify(getRes.body, null, 2))
 
     expect(getRes.status).toBe(200)

@@ -1,7 +1,7 @@
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Message, Session, ToolPart } from '../types'
-import ToolCall from './ToolCall'
 import AgentSettingsModal from './AgentSettingsModal'
+import ToolCall from './ToolCall'
 
 interface Props {
   folder: string
@@ -18,7 +18,9 @@ export default function ChatInterface(props: Props) {
 
   const fetchSession = async () => {
     try {
-      const res = await fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}&t=${Date.now()}`)
+      const res = await fetch(
+        `/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}&t=${Date.now()}`
+      )
       const data = (await res.json()) as unknown
       const session = data as Session
       if (session) {
@@ -27,25 +29,25 @@ export default function ChatInterface(props: Props) {
 
         if (Array.isArray(session.history)) {
           setMessages((prev) => {
-          const newHistory = session.history
-          // Check if we need to preserve the temp message
-          const lastPrev = prev[prev.length - 1]
-          if (lastPrev?.info.id.startsWith('temp-')) {
-            // Check if newHistory contains this message (by content)
-            const found = newHistory.find(
-              (m) =>
-                m.info.role === 'user' &&
-                m.parts[0].type === 'text' &&
-                (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
-            )
-            if (!found) {
-              return [...newHistory, lastPrev]
+            const newHistory = session.history
+            // Check if we need to preserve the temp message
+            const lastPrev = prev[prev.length - 1]
+            if (lastPrev?.info.id.startsWith('temp-')) {
+              // Check if newHistory contains this message (by content)
+              const found = newHistory.find(
+                (m) =>
+                  m.info.role === 'user' &&
+                  m.parts[0].type === 'text' &&
+                  (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
+              )
+              if (!found) {
+                return [...newHistory, lastPrev]
+              }
             }
-          }
-          return newHistory
-        })
+            return newHistory
+          })
+        }
       }
-    }
     } catch (error) {
       console.error(error)
     }

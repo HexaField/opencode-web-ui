@@ -86,7 +86,10 @@ export default function AgentSettingsModal(props: Props) {
           <div class="p-4 space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Agent</label>
-              <Show when={!loadingAgents()} fallback={<div class="text-sm text-gray-500 dark:text-gray-400 py-2">Loading agents...</div>}>
+              <Show
+                when={!loadingAgents()}
+                fallback={<div class="text-sm text-gray-500 dark:text-gray-400 py-2">Loading agents...</div>}
+              >
                 <select
                   value={selectedAgent()}
                   onChange={(e) => setSelectedAgent(e.currentTarget.value)}
@@ -100,7 +103,10 @@ export default function AgentSettingsModal(props: Props) {
 
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Model</label>
-              <Show when={!loadingModels()} fallback={<div class="text-sm text-gray-500 dark:text-gray-400 py-2">Loading models...</div>}>
+              <Show
+                when={!loadingModels()}
+                fallback={<div class="text-sm text-gray-500 dark:text-gray-400 py-2">Loading models...</div>}
+              >
                 <select
                   value={selectedModel()}
                   onChange={(e) => setSelectedModel(e.currentTarget.value)}

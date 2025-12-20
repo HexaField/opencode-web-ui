@@ -1,9 +1,9 @@
+import { exec } from 'child_process'
 import * as fs from 'fs/promises'
 import * as os from 'os'
 import * as path from 'path'
-import { exec } from 'child_process'
 import { promisify } from 'util'
-import { describe, expect, it, beforeAll, afterAll } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { radicleService } from '../src/radicle'
 
 const execAsync = promisify(exec)
@@ -18,7 +18,7 @@ describe('RadicleService', () => {
     await execAsync('git config user.email "test@example.com"', { cwd: folder })
     await execAsync('git config user.name "Test User"', { cwd: folder })
     await execAsync('git commit --allow-empty -m "Initial commit"', { cwd: folder })
-    
+
     // Initialize radicle
     const projectName = 'radicle-test-' + Date.now()
     try {

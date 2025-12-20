@@ -76,7 +76,7 @@ test.describe('Agent Management', () => {
     // The modal is closed by setting isEditing(false)
     // We can wait for the "New Agent" button to be visible again in the header if it was hidden?
     // Actually, "New Agent" button is always visible in the sidebar.
-    
+
     // Let's wait a bit for the list to refresh
     await page.waitForTimeout(1000)
 

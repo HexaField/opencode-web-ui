@@ -261,10 +261,18 @@ app.get('/api/sessions/:id/events', withClient, async (req, res) => {
 app.post('/api/sessions/:id/prompt', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
+    const folder = (req as AuthenticatedRequest).targetFolder!
     const { id } = req.params
+
+    const metadata = await manager.getSessionMetadata(folder, id)
+    const body = req.body as Record<string, unknown>
+
+    if (metadata.agent) body.agent = metadata.agent
+    if (metadata.model) body.model = metadata.model
+
     const result = await client.session.prompt({
       path: { id },
-      body: req.body as SessionPromptData['body']
+      body: body as SessionPromptData['body']
     })
     const data = unwrap(result)
     res.json(data)
