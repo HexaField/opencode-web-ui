@@ -1,6 +1,7 @@
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Message, Session, ToolPart } from '../types'
 import ToolCall from './ToolCall'
+import AgentSettingsModal from './AgentSettingsModal'
 
 interface Props {
   folder: string
@@ -11,14 +12,23 @@ export default function ChatInterface(props: Props) {
   const [messages, setMessages] = createSignal<Message[]>([])
   const [input, setInput] = createSignal('')
   const [loading, setLoading] = createSignal(false)
+  const [currentAgent, setCurrentAgent] = createSignal<string>('')
+  const [currentModel, setCurrentModel] = createSignal<string>('')
+  const [isAgentSettingsOpen, setIsAgentSettingsOpen] = createSignal(false)
 
   const fetchSession = async () => {
     try {
       const res = await fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`)
       const data = (await res.json()) as unknown
       const session = data as Session
-      if (session && Array.isArray(session.history)) {
-        setMessages((prev) => {
+      if (session) {
+        // @ts-expect-error - SdkSession might not have agent/model typed yet
+        if (session.agent) setCurrentAgent(session.agent)
+        // @ts-expect-error - SdkSession might not have agent/model typed yet
+        if (session.model) setCurrentModel(session.model)
+
+        if (Array.isArray(session.history)) {
+          setMessages((prev) => {
           const newHistory = session.history
           // Check if we need to preserve the temp message
           const lastPrev = prev[prev.length - 1]
@@ -37,6 +47,7 @@ export default function ChatInterface(props: Props) {
           return newHistory
         })
       }
+    }
     } catch (error) {
       console.error(error)
     }
@@ -93,6 +104,19 @@ export default function ChatInterface(props: Props) {
       })
     }
   })
+
+  const handleUpdateSession = async (agent: string, model: string) => {
+    try {
+      await fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent, model })
+      })
+      await fetchSession()
+    } catch (err) {
+      console.error('Failed to update session:', err)
+    }
+  }
 
   const sendMessage = async () => {
     if (!input().trim() || loading()) return
@@ -163,6 +187,16 @@ export default function ChatInterface(props: Props) {
 
   return (
     <div class="flex flex-col h-full bg-white dark:bg-[#0d1117] transition-colors duration-200">
+      <AgentSettingsModal
+        isOpen={isAgentSettingsOpen()}
+        onClose={() => setIsAgentSettingsOpen(false)}
+        folder={props.folder}
+        sessionId={props.sessionId}
+        currentAgent={currentAgent()}
+        currentModel={currentModel()}
+        onSave={handleUpdateSession}
+      />
+
       <div class="flex-1 overflow-y-auto p-2 md:p-4 flex flex-col space-y-4">
         <For each={messages()}>
           {(msg) => {
@@ -208,7 +242,20 @@ export default function ChatInterface(props: Props) {
         </Show>
       </div>
       <div class="p-3 md:p-4 border-t border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#0d1117]">
-        <div class="flex gap-2 max-w-4xl mx-auto">
+        <div class="flex gap-2 max-w-4xl mx-auto items-end">
+          <button
+            onClick={() => setIsAgentSettingsOpen(true)}
+            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors mb-0.5"
+            title={`Agent: ${currentAgent() || 'Default'}\nModel: ${currentModel() || 'Default'}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fill-rule="evenodd"
+                d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
           <textarea
             class="flex-1 border border-gray-300 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] text-gray-900 dark:text-gray-100 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
             rows={1}
@@ -228,7 +275,7 @@ export default function ChatInterface(props: Props) {
             placeholder="Type a message..."
           />
           <button
-            class="bg-[#0969da] hover:bg-[#0860ca] text-white px-4 py-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            class="bg-[#0969da] hover:bg-[#0860ca] text-white p-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
             onClick={() => void sendMessage()}
             disabled={loading()}
             title="Send"

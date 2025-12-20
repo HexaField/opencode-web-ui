@@ -252,6 +252,10 @@ describe('Server Integration Tests', () => {
     const finalStatusRes = await request(app).get(`/api/git/status?folder=${encodeURIComponent(tempDir)}`)
     expect(finalStatusRes.status).toBe(200)
     // We expect test.txt to be gone from status. Other files might remain.
+    if (finalStatusRes.headers['content-type']?.includes('text/html')) {
+      console.error('Received HTML instead of JSON for git status:', finalStatusRes.text)
+      throw new Error('Received HTML instead of JSON for git status')
+    }
     const finalStatus = JSON.parse(finalStatusRes.text) as GitStatusItem[]
     const testFileStatus = finalStatus.find((s) => s.path === 'test.txt')
     expect(testFileStatus).toBeUndefined()

@@ -104,6 +104,8 @@ app.get('/api/sessions', withClient, async (req, res) => {
 
     const response = await client.session.list()
     const sessions = unwrap(response)
+    const allMetadata = await manager.getAllSessionMetadata(folder)
+
     const filtered = Array.isArray(sessions)
       ? sessions.filter(
           (s) =>
@@ -111,7 +113,7 @@ app.get('/api/sessions', withClient, async (req, res) => {
             s.directory === folder + '/' ||
             s.directory === realFolder ||
             s.directory === realFolder + '/'
-        )
+        ).map(s => ({ ...s, ...(allMetadata[s.id] || {}) }))
       : sessions
 
     res.json(filtered)
@@ -124,8 +126,16 @@ app.get('/api/sessions', withClient, async (req, res) => {
 app.post('/api/sessions', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
+    const folder = (req as AuthenticatedRequest).targetFolder!
     const session = await client.session.create({ body: req.body })
     const data = unwrap(session)
+
+    const { agent, model } = req.body as { agent?: string; model?: string }
+    if (agent || model) {
+      await manager.saveSessionMetadata(folder, data.id, { agent, model })
+      Object.assign(data, { agent, model })
+    }
+
     res.json(data)
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
@@ -136,6 +146,7 @@ app.post('/api/sessions', withClient, async (req, res) => {
 app.get('/api/sessions/:id', withClient, async (req, res) => {
   try {
     const client = (req as AuthenticatedRequest).opencodeClient!
+    const folder = (req as AuthenticatedRequest).targetFolder!
     const { id } = req.params
 
     // Check if 'get' method exists safely
@@ -144,6 +155,7 @@ app.get('/api/sessions/:id', withClient, async (req, res) => {
     if (typeof sessionClient.get === 'function') {
       const session = await sessionClient.get({ path: { id } })
       const raw = unwrap(session)
+      const metadata = await manager.getSessionMetadata(folder, id)
 
       if (typeof sessionClient.messages === 'function') {
         const messages = await sessionClient.messages({ path: { id } })
@@ -151,6 +163,7 @@ app.get('/api/sessions/:id', withClient, async (req, res) => {
         if (raw && typeof raw === 'object' && raw !== null) {
           const obj = raw as Record<string, unknown>
           obj.history = msgData
+          Object.assign(obj, metadata)
           res.json(obj)
           return
         }
@@ -158,13 +171,59 @@ app.get('/api/sessions/:id', withClient, async (req, res) => {
         console.log('sessionClient.messages is not a function')
       }
 
+      if (raw && typeof raw === 'object' && raw !== null) {
+        Object.assign(raw, metadata)
+      }
       res.json(raw)
     } else {
       const response = await client.session.list()
       const sessions = unwrap(response)
       const session = sessions.find((s) => s.id === id)
-      if (session) res.json(session)
+      if (session) {
+        const metadata = await manager.getSessionMetadata(folder, id)
+        Object.assign(session, metadata)
+        res.json(session)
+      }
       else res.status(404).json({ error: 'Session not found' })
+    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    res.status(500).json({ error: msg })
+  }
+})
+
+app.patch('/api/sessions/:id', withClient, async (req, res) => {
+  try {
+    const client = (req as AuthenticatedRequest).opencodeClient!
+    const folder = (req as AuthenticatedRequest).targetFolder!
+    const { id } = req.params
+    const { agent, model } = req.body as { agent?: string; model?: string }
+
+    // Save metadata
+    if (agent || model) {
+      await manager.saveSessionMetadata(folder, id, { agent, model })
+    }
+
+    // Check if client.session.update exists
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    const sessionClient = client.session as any
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (typeof sessionClient.update === 'function') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const result = await sessionClient.update({
+        path: { id },
+        body: { agent, model }
+      })
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const data = unwrap(result)
+      
+      // Merge metadata
+      const metadata = await manager.getSessionMetadata(folder, id)
+      const merged = { ...(data as object), ...metadata }
+      
+      res.json(merged)
+    } else {
+      res.status(501).json({ error: 'Session update not supported by SDK' })
     }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
@@ -522,7 +581,12 @@ app.get('/api/files/read', withClient, async (req, res) => {
     }
     const content = await client.file.read({ query: { path } })
     const data = unwrap(content)
-    res.json(data)
+    // Ensure we return an object with content property if the SDK returns raw string or similar
+    if (typeof data === 'string') {
+      res.json({ content: data })
+    } else {
+      res.json(data)
+    }
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })

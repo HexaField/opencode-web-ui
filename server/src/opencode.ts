@@ -195,6 +195,43 @@ export class OpencodeManager {
     await fs.unlink(agentPath)
   }
 
+  async getSessionMetadata(folder: string, sessionId: string) {
+    try {
+      const metadataPath = path.join(folder, '.opencode', 'sessions.json')
+      const content = await fs.readFile(metadataPath, 'utf-8')
+      const data = JSON.parse(content) as Record<string, unknown>
+      return (data[sessionId] as Record<string, unknown>) || {}
+    } catch {
+      return {}
+    }
+  }
+
+  async getAllSessionMetadata(folder: string) {
+    try {
+      const metadataPath = path.join(folder, '.opencode', 'sessions.json')
+      const content = await fs.readFile(metadataPath, 'utf-8')
+      return JSON.parse(content) as Record<string, Record<string, unknown>>
+    } catch {
+      return {}
+    }
+  }
+
+  async saveSessionMetadata(folder: string, sessionId: string, metadata: Record<string, unknown>) {
+    const metadataPath = path.join(folder, '.opencode', 'sessions.json')
+    let data: Record<string, unknown> = {}
+    try {
+      const content = await fs.readFile(metadataPath, 'utf-8')
+      data = JSON.parse(content) as Record<string, unknown>
+    } catch {
+      // ignore
+    }
+
+    data[sessionId] = { ...(data[sessionId] as Record<string, unknown>), ...metadata }
+
+    await fs.mkdir(path.dirname(metadataPath), { recursive: true })
+    await fs.writeFile(metadataPath, JSON.stringify(data, null, 2))
+  }
+
   async listModels() {
     try {
       const { stdout } = await exec('opencode models')

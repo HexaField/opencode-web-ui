@@ -1,11 +1,41 @@
+import * as fs from 'fs/promises'
+import * as os from 'os'
 import * as path from 'path'
-import { describe, expect, it } from 'vitest'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import { describe, expect, it, beforeAll, afterAll } from 'vitest'
 import { radicleService } from '../src/radicle'
 
-const folder = path.resolve(__dirname, '../../') // Root of the workspace
+const execAsync = promisify(exec)
 
 describe('RadicleService', () => {
+  let folder: string
   let taskId: string
+
+  beforeAll(async () => {
+    folder = await fs.mkdtemp(path.join(os.tmpdir(), 'opencode-radicle-test-'))
+    await execAsync('git init', { cwd: folder })
+    await execAsync('git config user.email "test@example.com"', { cwd: folder })
+    await execAsync('git config user.name "Test User"', { cwd: folder })
+    await execAsync('git commit --allow-empty -m "Initial commit"', { cwd: folder })
+    
+    // Initialize radicle
+    const projectName = 'radicle-test-' + Date.now()
+    try {
+      await execAsync(
+        `rad init --name ${projectName} --description "Radicle Test" --default-branch main --public --no-confirm`,
+        { cwd: folder }
+      )
+    } catch (error) {
+      console.warn('Failed to initialize radicle repo:', error)
+    }
+  })
+
+  afterAll(async () => {
+    if (folder) {
+      await fs.rm(folder, { recursive: true, force: true })
+    }
+  })
 
   it('should create a task', async () => {
     const task = await radicleService.createTask(folder, {

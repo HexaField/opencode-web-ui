@@ -1,6 +1,21 @@
 import { expect, test } from '@playwright/test'
+import * as fs from 'fs/promises'
+import * as os from 'os'
+import * as path from 'path'
 
 test.describe('SSE Streaming', () => {
+  let tempDir: string
+
+  test.beforeAll(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'opencode-e2e-sse-'))
+  })
+
+  test.afterAll(async () => {
+    if (tempDir) {
+      await fs.rm(tempDir, { recursive: true, force: true })
+    }
+  })
+
   test('should receive session updates via SSE', async ({ page }) => {
     // 1. Navigate to the app
     await page.goto('/')
@@ -16,8 +31,7 @@ test.describe('SSE Streaming', () => {
     // We need a valid path. In CI/Test environment, we can use the current directory.
     // But we need to know what it is.
     // Let's try to use the current working directory of the test runner.
-    const cwd = process.cwd()
-    await page.goto(`/?folder=${encodeURIComponent(cwd)}`)
+    await page.goto(`/?folder=${encodeURIComponent(tempDir)}`)
 
     // Wait for the workspace to load
     // Look for something that indicates we are in the workspace
