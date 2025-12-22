@@ -12,6 +12,7 @@ import { promisify } from 'util'
 import { getCurrentBranch, getGitStatus, listGitBranches, runCopilotPrompt, runGitCommand } from './git.js'
 import { OpencodeManager } from './opencode.js'
 import { radicleService } from './radicle.js'
+import { SkillManager } from './skills.js'
 const exec = promisify(_exec)
 
 const app = express()
@@ -19,6 +20,7 @@ app.use(cors())
 app.use(bodyParser.json())
 
 const manager = new OpencodeManager()
+const skillManager = new SkillManager()
 
 interface SessionWithHistory extends Session {
   history?: { info: Message; parts: Part[] }[]
@@ -266,6 +268,17 @@ app.post('/api/sessions/:id/prompt', withClient, async (req, res) => {
 
     const metadata = await manager.getSessionMetadata(folder, id)
     const body = req.body as Record<string, unknown>
+
+    // Skill Injection
+    if (typeof body.prompt === 'string') {
+      const skills = await skillManager.loadSkills(folder)
+      const relevantSkills = skillManager.matchSkills(body.prompt, skills)
+
+      if (relevantSkills.length > 0) {
+        const skillContext = relevantSkills.map((s) => `## ${s.name}\n${s.content}`).join('\n\n')
+        body.prompt += `\n\n--- \nActive Skills:\n${skillContext}`
+      }
+    }
 
     if (metadata.agent) body.agent = metadata.agent
     if (metadata.model) body.model = metadata.model
