@@ -8,10 +8,26 @@ const execPromise = promisify(_exec) as (
   options?: ExecOptions
 ) => Promise<{ stdout: string; stderr: string }>
 
+interface ExecError extends Error {
+  stdout?: string
+  stderr?: string
+}
+
 async function exec(command: string, options?: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   // Default timeout 10s
   const opts = { timeout: 10000, ...options }
-  return execPromise(command, opts)
+  try {
+    return await execPromise(command, opts)
+  } catch (error) {
+    const execError = error as ExecError
+    const stderr = execError.stderr || ''
+    if (stderr.includes('Passphrase') || stderr.includes('ssh-agent')) {
+      throw new Error(
+        `Radicle authentication failed. Please set RAD_PASSPHRASE or ensure agent is running.\nOriginal error: ${execError.message}\nStderr: ${stderr}`
+      )
+    }
+    throw error
+  }
 }
 
 export interface Task {
@@ -88,7 +104,6 @@ export class RadicleService {
     }
   }
 
-  
   private parseMetadata(description: string): { metadata: TaskMetadata; cleanDescription: string } {
     const match = description.match(/<!-- metadata\s*([\s\S]*?)\s*-->$/)
     if (match) {

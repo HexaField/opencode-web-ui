@@ -21,7 +21,7 @@ let server
 if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
   const options = {
     key: fs.readFileSync(keyPath),
-    cert: fs.readFileSync(certPath),
+    cert: fs.readFileSync(certPath)
   }
   server = https.createServer(options, app).listen(Number(port), host, () => {
     console.log(`Server running on https://${host}:${port}`)
