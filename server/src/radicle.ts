@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { exec as _exec, ExecOptions } from 'child_process'
+import * as path from 'path'
 import { promisify } from 'util'
 
 const execPromise = promisify(_exec) as (
@@ -55,7 +56,6 @@ export class RadicleService {
   private async getRid(folder: string): Promise<string> {
     if (this.ridCache[folder]) return this.ridCache[folder]
     try {
-      console.error('PATH:', process.env.PATH)
       const { stdout } = await exec('rad .', { cwd: folder })
       const rid = stdout.trim()
       this.ridCache[folder] = rid
@@ -67,7 +67,28 @@ export class RadicleService {
       throw new Error('Not a Radicle repository')
     }
   }
+  async isRepo(folder: string): Promise<boolean> {
+    try {
+      await this.getRid(folder)
+      return true
+    } catch {
+      return false
+    }
+  }
 
+  async initRepo(folder: string): Promise<void> {
+    const name = path.basename(folder)
+    try {
+      await exec(`rad init --name "${name}" --description "Opencode repository" --public --no-confirm`, { cwd: folder })
+      // Clear cache
+      delete this.ridCache[folder]
+    } catch (e) {
+      console.error('Failed to init radicle repo:', e)
+      throw e
+    }
+  }
+
+  
   private parseMetadata(description: string): { metadata: TaskMetadata; cleanDescription: string } {
     const match = description.match(/<!-- metadata\s*([\s\S]*?)\s*-->$/)
     if (match) {
@@ -172,6 +193,7 @@ export class RadicleService {
     // │ Issue   d7f5776ac448173ba0f3e0308f557e3d4ea6053b              │
     const match = stdout.match(/Issue\s+([a-z0-9]+)/)
     if (!match) {
+      console.error('Failed to parse issue ID from output:', stdout)
       throw new Error('Failed to parse issue ID from output')
     }
     const id = match[1]

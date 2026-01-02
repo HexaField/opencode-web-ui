@@ -50,6 +50,7 @@ const withClient = async (req: express.Request, res: express.Response, next: exp
     ;(req as AuthenticatedRequest).targetFolder = folder
     next()
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: `Failed to connect: ${msg}` })
   }
@@ -65,6 +66,7 @@ app.post('/api/connect', async (req, res) => {
     await manager.connect(folder)
     res.json({ success: true, folder })
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -100,6 +102,7 @@ app.get('/api/sessions', withClient, async (req, res) => {
 
     res.json(filtered)
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -122,6 +125,7 @@ app.post('/api/sessions', withClient, async (req, res) => {
 
     res.json(data)
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -149,6 +153,7 @@ app.get('/api/sessions/:id', withClient, async (req, res) => {
       res.status(404).json({ error: 'Session not found' })
     }
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -178,6 +183,7 @@ app.patch('/api/sessions/:id', withClient, async (req, res) => {
 
     res.json(merged)
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -224,6 +230,7 @@ app.get('/api/sessions/:id/events', withClient, async (req, res) => {
       res.write(`data: ${JSON.stringify(session)}\n\n`)
     }
   } catch (error) {
+    console.error(error)
     console.error('Initial fetch error:', error)
   }
 
@@ -254,6 +261,7 @@ app.get('/api/sessions/:id/events', withClient, async (req, res) => {
       }
     }
   } catch (error) {
+    console.error(error)
     console.error('SDK Event Stream Error:', error)
   }
 })
@@ -277,6 +285,7 @@ app.post('/api/sessions/:id/prompt', withClient, async (req, res) => {
     const data = unwrap(result)
     res.json(data)
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -288,6 +297,7 @@ app.get('/api/agents', withClient, async (req, res) => {
     const agents = await manager.listAgents(folder)
     res.json(agents)
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -300,6 +310,7 @@ app.post('/api/agents', withClient, async (req, res) => {
     await manager.saveAgent(folder, name, content)
     res.json({ success: true })
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -312,6 +323,7 @@ app.delete('/api/agents/:name', withClient, async (req, res) => {
     await manager.deleteAgent(folder, name)
     res.json({ success: true })
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -322,6 +334,7 @@ app.get('/api/models', async (_req, res) => {
     const models = await manager.listModels()
     res.json(models)
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -539,6 +552,7 @@ app.get('/api/files/status', withClient, async (req, res) => {
     const data = unwrap(status)
     res.json(data)
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -561,6 +575,7 @@ app.get('/api/files/read', withClient, async (req, res) => {
       res.json(data)
     }
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -583,6 +598,7 @@ app.get('/api/fs/list', async (req, res) => {
     res.setHeader('x-current-path', dirPath)
     res.json(files)
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -598,6 +614,7 @@ app.get('/api/fs/read', async (req, res) => {
     const content = await fs.readFile(filePath, 'utf-8')
     res.json({ content })
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -613,6 +630,7 @@ app.post('/api/fs/write', async (req, res) => {
     await fs.writeFile(filePath, content, 'utf-8')
     res.json({ success: true })
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -628,6 +646,7 @@ app.post('/api/fs/delete', async (req, res) => {
     await fs.rm(filePath, { recursive: true, force: true })
     res.json({ success: true })
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -652,6 +671,7 @@ app.get('/api/files/diff', async (req, res) => {
     }
     res.json({ diff: stdout || '' })
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -689,6 +709,7 @@ app.get('/api/files/diff-summary', async (req, res) => {
     }
     res.json({ filesChanged: details.length, added, removed, details })
   } catch (error) {
+    console.error(error)
     const msg = error instanceof Error ? error.message : String(error)
     res.status(500).json({ error: msg })
   }
@@ -710,6 +731,7 @@ app.get('/api/tasks', async (req, res) => {
     const tasks = await radicleService.getTasks(folder)
     res.json(tasks)
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: String(error) })
   }
 })
@@ -731,6 +753,7 @@ app.post('/api/tasks', async (req, res) => {
     const task = await radicleService.createTask(folder, { title, description, parent_id, status, dependencies })
     res.json(task)
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: String(error) })
   }
 })
@@ -755,6 +778,7 @@ app.put('/api/tasks/:id', async (req, res) => {
     await radicleService.updateTask(folder, id, { title, description, status, parent_id, position, dependencies })
     res.json({ success: true })
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: String(error) })
   }
 })
@@ -770,6 +794,7 @@ app.delete('/api/tasks/:id', async (req, res) => {
     await radicleService.deleteTask(folder, id)
     res.json({ success: true })
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: String(error) })
   }
 })
@@ -784,6 +809,7 @@ app.get('/api/tags', async (req, res) => {
     const tags = await radicleService.getTags(folder)
     res.json(tags)
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: String(error) })
   }
 })
@@ -800,6 +826,7 @@ app.post('/api/tags', (req, res) => {
     // We just return what was sent to satisfy the frontend.
     res.json({ id: name, name, color })
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: String(error) })
   }
 })
@@ -816,6 +843,7 @@ app.post('/api/tasks/:id/tags', async (req, res) => {
     await radicleService.addTag(folder, id, tag_id)
     res.json({ success: true })
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: String(error) })
   }
 })
@@ -831,6 +859,7 @@ app.delete('/api/tasks/:id/tags/:tagId', async (req, res) => {
     await radicleService.removeTag(folder, id, tagId)
     res.json({ success: true })
   } catch (error) {
+    console.error(error)
     res.status(500).json({ error: String(error) })
   }
 })
