@@ -1,3 +1,5 @@
+import DOMPurify from 'dompurify'
+import { marked } from 'marked'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { Message, Session, ToolPart } from '../types'
 import AgentSettingsModal from './AgentSettingsModal'
@@ -223,9 +225,21 @@ export default function ChatInterface(props: Props) {
                             }
                           `}
                         >
-                          <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                            {(part as { text: string }).text}
-                          </pre>
+                          <Show
+                            when={isUser}
+                            fallback={
+                              <div
+                                class="prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                                innerHTML={DOMPurify.sanitize(
+                                  marked.parse((part as { text: string }).text, { async: false })
+                                )}
+                              />
+                            }
+                          >
+                            <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                              {(part as { text: string }).text}
+                            </pre>
+                          </Show>
                         </div>
                       </Show>
                       <Show when={part.type === 'tool'}>

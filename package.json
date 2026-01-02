@@ -29,6 +29,7 @@
     "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
     "@playwright/test": "^1.57.0",
     "@solidjs/testing-library": "^0.8.10",
+    "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "4.1.18",
     "@types/better-sqlite3": "^7.6.13",
     "@types/body-parser": "^1.19.6",
@@ -57,10 +58,14 @@
   },
   "dependencies": {
     "@opencode-ai/sdk": "^1.0.223",
+    "@types/dompurify": "^3.2.0",
+    "@types/marked": "^6.0.0",
     "better-sqlite3": "^12.5.0",
     "body-parser": "^2.2.1",
     "cors": "^2.8.5",
+    "dompurify": "^3.3.1",
     "express": "^5.2.1",
+    "marked": "^17.0.1",
     "monaco-editor": "^0.55.1",
     "solid-js": "1.9.10"
   }
