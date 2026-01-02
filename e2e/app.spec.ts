@@ -47,7 +47,9 @@ test.describe('OpenCode Web UI E2E', () => {
     await page.click('button:has-text("Select this folder")')
 
     // 4. Create session
+    const createSessionPromise = page.waitForResponse((response) => response.url().includes('/api/sessions') && response.status() === 200)
     await page.click('button[title="New Session"]') // Create session button
+    await createSessionPromise
 
     // 5. Wait for session to appear in list and be selected
     await expect(page.locator('text=New Session')).toBeVisible()

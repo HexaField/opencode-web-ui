@@ -54,7 +54,7 @@
     "vitest": "^4.0.16"
   },
   "dependencies": {
-    "@opencode-ai/sdk": "^1.0.166",
+    "@opencode-ai/sdk": "^1.0.223",
     "better-sqlite3": "^12.5.0",
     "body-parser": "^2.2.1",
     "cors": "^2.8.5",

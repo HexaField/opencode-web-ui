@@ -10,9 +10,23 @@ const execAsync = promisify(exec)
 
 describe('RadicleService', () => {
   let folder: string
+  let radHome: string
   let taskId: string
+  const originalEnv = { ...process.env }
 
   beforeAll(async () => {
+    // Setup Radicle Home
+    radHome = await fs.mkdtemp(path.join(os.tmpdir(), 'opencode-radicle-home-'))
+    process.env.RAD_HOME = radHome
+    process.env.RAD_PASSPHRASE = 'test'
+
+    // Initialize Radicle Identity
+    try {
+      await execAsync('rad auth --alias test-user', { env: process.env })
+    } catch (error) {
+      console.warn('Failed to initialize radicle identity:', error)
+    }
+
     folder = await fs.mkdtemp(path.join(os.tmpdir(), 'opencode-radicle-test-'))
     await execAsync('git init', { cwd: folder })
     await execAsync('git config user.email "test@example.com"', { cwd: folder })
@@ -24,7 +38,7 @@ describe('RadicleService', () => {
     try {
       await execAsync(
         `rad init --name ${projectName} --description "Radicle Test" --default-branch main --public --no-confirm`,
-        { cwd: folder }
+        { cwd: folder, env: process.env }
       )
     } catch (error) {
       console.warn('Failed to initialize radicle repo:', error)
@@ -35,6 +49,10 @@ describe('RadicleService', () => {
     if (folder) {
       await fs.rm(folder, { recursive: true, force: true })
     }
+    if (radHome) {
+      await fs.rm(radHome, { recursive: true, force: true })
+    }
+    process.env = originalEnv
   })
 
   it('should create a task', async () => {

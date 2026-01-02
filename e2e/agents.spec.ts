@@ -69,16 +69,10 @@ test.describe('Agent Management', () => {
       expect(count).toBeGreaterThan(1)
     }).toPass()
 
-    // Save
+    // Save and wait for response
+    const savePromise = page.waitForResponse((response) => response.url().includes('/api/agents') && response.status() === 200)
     await page.getByRole('button', { name: 'Save Agent' }).click()
-
-    // Wait for modal to close (or check if it's closed)
-    // The modal is closed by setting isEditing(false)
-    // We can wait for the "New Agent" button to be visible again in the header if it was hidden?
-    // Actually, "New Agent" button is always visible in the sidebar.
-
-    // Let's wait a bit for the list to refresh
-    await page.waitForTimeout(1000)
+    await savePromise
 
     // Verify agent is in the list
     const agentList = page.locator('div.space-y-1 > div > span.truncate')

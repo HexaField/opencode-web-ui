@@ -60,8 +60,10 @@ test.describe('Task Expansion and Description', () => {
     // Edit description
     await textarea.fill('This is a multi-line\ndescription.')
 
-    // Trigger save (blur)
+    // Trigger save (blur) and wait for response
+    const responsePromise = page.waitForResponse((response) => response.url().includes('/api/tasks') && response.status() === 200)
     await textarea.blur()
+    await responsePromise
 
     // Reload to verify persistence
     await page.reload()
