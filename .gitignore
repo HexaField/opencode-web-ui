@@ -9,3 +9,4 @@ test-results
 npm-debug.log
 .opencode
 .agent/tasks/tasks.*
+server/certs
