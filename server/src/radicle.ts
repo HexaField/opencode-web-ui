@@ -258,7 +258,7 @@ export class RadicleService {
             // todo: remove in-progress label
             try {
               await exec(`rad issue label ${id} --delete status:in-progress --no-announce`, { cwd: folder })
-            } catch (e) {
+            } catch {
               // ignore if label doesn't exist
             }
           }

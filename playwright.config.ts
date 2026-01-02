@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
-import { loadEnv } from 'vite'
 import { execSync } from 'child_process'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
+import { loadEnv } from 'vite'
 
 // Setup Radicle for E2E
 // Use a fixed path so all workers and webServer share the same identity

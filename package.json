@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "check": "npm run format && npm run lint && npm run test",
     "build": "vite build",
     "preview": "vite preview",
     "format": "prettier --write .",

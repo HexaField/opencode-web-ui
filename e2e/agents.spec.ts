@@ -70,7 +70,9 @@ test.describe('Agent Management', () => {
     }).toPass()
 
     // Save and wait for response
-    const savePromise = page.waitForResponse((response) => response.url().includes('/api/agents') && response.status() === 200)
+    const savePromise = page.waitForResponse(
+      (response) => response.url().includes('/api/agents') && response.status() === 200
+    )
     await page.getByRole('button', { name: 'Save Agent' }).click()
     await savePromise
 
