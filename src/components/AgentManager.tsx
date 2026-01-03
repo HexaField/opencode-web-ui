@@ -1,9 +1,6 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
-
-interface Agent {
-  name: string
-  content: string
-}
+import { createAgent, deleteAgent, listAgents, type Agent } from '../api/agents'
+import { listModels } from '../api/misc'
 
 interface AgentConfig {
   description: string
@@ -46,16 +43,14 @@ export default function AgentManager(props: Props) {
   const [editName, setEditName] = createSignal('')
 
   const fetchAgents = () => {
-    return fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`)
-      .then((res) => res.json())
-      .then((data) => setAgents(data as Agent[]))
+    return listAgents(props.folder)
+      .then((data) => setAgents(data))
       .catch((err) => setError(String(err)))
   }
 
   const fetchModels = () => {
-    fetch('/api/models')
-      .then((res) => res.json())
-      .then((data) => setModels(data as string[]))
+    listModels()
+      .then((data) => setModels(data))
       .catch((err) => console.error('Failed to fetch models:', err))
   }
 
@@ -123,12 +118,7 @@ ${c.systemPrompt}`
 
     const content = generateContent(config())
     try {
-      const res = await fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editName(), content })
-      })
-      if (!res.ok) throw new Error(await res.text())
+      await createAgent(props.folder, { name: editName(), content })
       await fetchAgents()
       setIsEditing(false)
       setSelectedAgent(null)
@@ -140,10 +130,7 @@ ${c.systemPrompt}`
   const handleDelete = async (name: string) => {
     if (!confirm(`Are you sure you want to delete agent ${name}?`)) return
     try {
-      const res = await fetch(`/api/agents/${name}?folder=${encodeURIComponent(props.folder)}`, {
-        method: 'DELETE'
-      })
-      if (!res.ok) throw new Error(await res.text())
+      await deleteAgent(props.folder, name)
       await fetchAgents()
       if (selectedAgent() === name) {
         setSelectedAgent(null)

@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { getSession, promptSession, updateSession } from '../api/sessions'
 import { Message, Session, ToolPart } from '../types'
 import AgentSettingsModal from './AgentSettingsModal'
 import ToolCall from './ToolCall'
@@ -20,11 +21,7 @@ export default function ChatInterface(props: Props) {
 
   const fetchSession = async () => {
     try {
-      const res = await fetch(
-        `/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}&t=${Date.now()}`
-      )
-      const data = (await res.json()) as unknown
-      const session = data as Session
+      const session = await getSession(props.folder, props.sessionId)
       if (session) {
         setCurrentAgent(session.agent || '')
         setCurrentModel(session.model || '')
@@ -114,11 +111,7 @@ export default function ChatInterface(props: Props) {
 
   const handleUpdateSession = async (agent: string, model: string) => {
     try {
-      await fetch(`/api/sessions/${props.sessionId}?folder=${encodeURIComponent(props.folder)}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agent, model })
-      })
+      await updateSession(props.folder, props.sessionId, { agent, model })
       await fetchSession()
     } catch (err) {
       console.error('Failed to update session:', err)
@@ -154,11 +147,7 @@ export default function ChatInterface(props: Props) {
     setMessages((prev) => [...prev, tempMessage])
 
     try {
-      await fetch(`/api/sessions/${props.sessionId}/prompt?folder=${encodeURIComponent(props.folder)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parts: [{ type: 'text', text }] })
-      })
+      await promptSession(props.folder, props.sessionId, { parts: [{ type: 'text', text }] })
       await fetchSession()
     } catch (err) {
       console.error(err)

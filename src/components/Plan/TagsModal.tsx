@@ -5,7 +5,7 @@ interface Props {
   isOpen: boolean
   onClose: () => void
   tags: Tag[]
-  onCreateTag: (tag: Partial<Tag>) => void | Promise<void>
+  onCreateTag: (tag: { name: string; color: string }) => void | Promise<void>
 }
 
 export default function TagsModal(props: Props) {

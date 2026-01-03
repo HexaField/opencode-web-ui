@@ -1,4 +1,6 @@
 import { createEffect, createSignal, For, on, Show } from 'solid-js'
+import { listAgents } from '../api/agents'
+import { listModels } from '../api/misc'
 
 interface Props {
   isOpen: boolean
@@ -35,8 +37,7 @@ export default function AgentSettingsModal(props: Props) {
   const fetchAgents = async () => {
     setLoadingAgents(true)
     try {
-      const res = await fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`)
-      const data = (await res.json()) as { name: string }[]
+      const data = await listAgents(props.folder)
       setAgents(data)
     } catch (err) {
       console.error(err)
@@ -48,8 +49,7 @@ export default function AgentSettingsModal(props: Props) {
   const fetchModels = async () => {
     setLoadingModels(true)
     try {
-      const res = await fetch('/api/models')
-      const data = (await res.json()) as string[]
+      const data = await listModels()
       setModels(data)
     } catch (err) {
       console.error(err)

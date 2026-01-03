@@ -1,4 +1,5 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
+import { listFiles } from '../api/files'
 
 interface Entry {
   name: string
@@ -35,9 +36,8 @@ export default function FileTree(props: Props) {
 
   const fetchEntries = async (path: string): Promise<Entry[]> => {
     try {
-      const res = await fetch(`/api/fs/list?path=${encodeURIComponent(path)}`)
-      if (!res.ok) return []
-      return (await res.json()) as Entry[]
+      const { files } = await listFiles(path)
+      return files
     } catch (e) {
       console.error(e)
       return []
@@ -90,9 +90,8 @@ function FileTreeNode(props: {
 
   createEffect(() => {
     if (isExpanded() && props.isDirectory && children().length === 0) {
-      fetch(`/api/fs/list?path=${encodeURIComponent(props.path)}`)
-        .then((res) => res.json())
-        .then(setChildren)
+      listFiles(props.path)
+        .then(({ files }) => setChildren(files))
         .catch(console.error)
     }
   })

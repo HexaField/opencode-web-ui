@@ -1,4 +1,5 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
+import { listAgents } from '../../api/agents'
 import { Task } from '../../types'
 
 interface Agent {
@@ -23,10 +24,8 @@ export default function StartSessionModal(props: Props) {
 
   createEffect(() => {
     if (props.isOpen && props.folder) {
-      fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`)
-        .then((res) => res.json())
-        .then((data: unknown) => {
-          const agentsList = data as Agent[]
+      listAgents(props.folder)
+        .then((agentsList) => {
           setAgents(agentsList)
           if (agentsList.length > 0 && !selectedAgent()) {
             setSelectedAgent(agentsList[0].name)

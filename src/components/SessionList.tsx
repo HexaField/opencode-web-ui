@@ -1,14 +1,11 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
+import { listAgents, type Agent } from '../api/agents'
+import { createSession, listSessions } from '../api/sessions'
 import AgentManager from './AgentManager'
 
 interface Session {
   id: string
   title: string
-}
-
-interface Agent {
-  name: string
-  content: string
 }
 
 interface Props {
@@ -26,18 +23,16 @@ export default function SessionList(props: Props) {
 
   const fetchSessions = () => {
     setError(null)
-    fetch(`/api/sessions?folder=${encodeURIComponent(props.folder)}`)
-      .then((res) => res.json())
-      .then((data: unknown) => {
+    listSessions(props.folder)
+      .then((data) => {
         if (Array.isArray(data)) setSessions(data as Session[])
       })
       .catch((err) => setError(String(err)))
   }
 
   const fetchAgents = () => {
-    fetch(`/api/agents?folder=${encodeURIComponent(props.folder)}`)
-      .then((res) => res.json())
-      .then((data) => setAgents(data as Agent[]))
+    listAgents(props.folder)
+      .then((data) => setAgents(data))
       .catch((err) => console.error('Failed to fetch agents:', err))
   }
 
@@ -48,7 +43,7 @@ export default function SessionList(props: Props) {
     }
   })
 
-  const createSession = async () => {
+  const handleCreateSession = async () => {
     setError(null)
     try {
       const body: { title: string; agent?: string } = { title: 'New Session' }
@@ -56,22 +51,12 @@ export default function SessionList(props: Props) {
         body.agent = selectedAgent()
       }
 
-      const res = await fetch(`/api/sessions?folder=${encodeURIComponent(props.folder)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      })
-      if (!res.ok) {
-        const text = await res.text()
-        throw new Error(`Failed to create session: ${res.status} ${text}`)
-      }
-      const data = (await res.json()) as unknown
-      const session = data as Session
+      const session = await createSession(props.folder, body)
       if (session.id) {
         fetchSessions()
         props.onSelectSession(session.id)
       } else {
-        console.error('Session created but no ID returned', data)
+        console.error('Session created but no ID returned', session)
         setError('Session created but no ID returned')
       }
     } catch (err) {
@@ -122,7 +107,7 @@ export default function SessionList(props: Props) {
           </div>
 
           <button
-            onClick={() => void createSession()}
+            onClick={() => void handleCreateSession()}
             class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-gray-200 dark:hover:bg-[#21262d] shrink-0"
             title="New Session"
           >

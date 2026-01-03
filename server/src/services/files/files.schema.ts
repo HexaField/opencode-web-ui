@@ -1,0 +1,39 @@
+import { z } from 'zod'
+
+export const FileReadSchema = z.object({
+  query: z.object({
+    folder: z.string(),
+    path: z.string()
+  })
+})
+
+export const FSListSchema = z.object({
+  query: z.object({
+    path: z.string().optional()
+  })
+})
+
+export const FSReadSchema = z.object({
+  query: z.object({
+    path: z.string()
+  })
+})
+
+export const FSWriteSchema = z.object({
+  body: z.object({
+    path: z.string(),
+    content: z.string()
+  })
+})
+
+export const FSDeleteSchema = z.object({
+  body: z.object({
+    path: z.string()
+  })
+})
+
+export type FileReadRequest = z.infer<typeof FileReadSchema>
+export type FSListRequest = z.infer<typeof FSListSchema>
+export type FSReadRequest = z.infer<typeof FSReadSchema>
+export type FSWriteRequest = z.infer<typeof FSWriteSchema>
+export type FSDeleteRequest = z.infer<typeof FSDeleteSchema>

@@ -1,4 +1,19 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
+import { getFileDiff, readFile } from '../api/files'
+import {
+  checkout,
+  commit,
+  generateCommitMessage,
+  getCurrentBranch,
+  getGitStatus,
+  listBranches,
+  merge,
+  pull,
+  push,
+  stageFiles,
+  unstageFiles
+} from '../api/git'
+import { updateTask } from '../api/tasks'
 
 interface GitFileStatus {
   path: string
@@ -22,8 +37,7 @@ export default function DiffView(props: Props) {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`/api/git/status?folder=${encodeURIComponent(props.folder)}`)
-      const data = (await res.json()) as GitFileStatus[]
+      const data = await getGitStatus(props.folder)
       if (Array.isArray(data)) setGitFiles(data)
     } catch (e) {
       console.error(e)
@@ -32,12 +46,10 @@ export default function DiffView(props: Props) {
 
   const fetchBranches = async () => {
     try {
-      const res = await fetch(`/api/git/branches?folder=${encodeURIComponent(props.folder)}`)
-      const data = (await res.json()) as string[]
+      const data = await listBranches(props.folder)
       if (Array.isArray(data)) setBranches(data)
 
-      const res2 = await fetch(`/api/git/current-branch?folder=${encodeURIComponent(props.folder)}`)
-      const data2 = (await res2.json()) as { branch?: string }
+      const data2 = await getCurrentBranch(props.folder)
       if (data2.branch) setCurrentBranch(data2.branch)
     } catch (e) {
       console.error(e)
@@ -53,30 +65,18 @@ export default function DiffView(props: Props) {
   const unstagedFiles = () => gitFiles().filter((f) => f.y !== ' ')
 
   const handleStage = async (path: string) => {
-    await fetch('/api/git/stage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: props.folder, files: [path] })
-    })
+    await stageFiles(props.folder, [path])
     void fetchStatus()
   }
 
   const handleUnstage = async (path: string) => {
-    await fetch('/api/git/unstage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: props.folder, files: [path] })
-    })
+    await unstageFiles(props.folder, [path])
     void fetchStatus()
   }
 
   const handleCommit = async () => {
     if (!commitMessage()) return
-    await fetch('/api/git/commit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: props.folder, message: commitMessage() })
-    })
+    await commit(props.folder, commitMessage())
     setCommitMessage('')
     void fetchStatus()
   }
@@ -84,12 +84,7 @@ export default function DiffView(props: Props) {
   const handleGenerateMessage = async () => {
     setIsGenerating(true)
     try {
-      const res = await fetch('/api/git/generate-commit-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: props.folder })
-      })
-      const data = (await res.json()) as { message?: string }
+      const data = await generateCommitMessage(props.folder)
       if (data.message) setCommitMessage(data.message)
     } catch (e) {
       console.error(e)
@@ -98,19 +93,11 @@ export default function DiffView(props: Props) {
   }
 
   const handlePush = async () => {
-    await fetch('/api/git/push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: props.folder, remote: 'origin', branch: currentBranch() })
-    })
+    await push(props.folder, 'origin', currentBranch())
   }
 
   const handlePull = async () => {
-    await fetch('/api/git/pull', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: props.folder, remote: 'origin', branch: currentBranch() })
-    })
+    await pull(props.folder, 'origin', currentBranch())
     void fetchStatus()
   }
 
@@ -119,31 +106,18 @@ export default function DiffView(props: Props) {
     const hasChanges = gitFiles().length > 0
     if (hasChanges) {
       // Stage all
-      await fetch('/api/git/stage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: props.folder, files: ['.'] })
-      })
+      await stageFiles(props.folder, ['.'])
 
       // Generate message if empty
       let msg = commitMessage()
       if (!msg) {
-        const res = await fetch('/api/git/generate-commit-message', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folder: props.folder })
-        })
-        const data = (await res.json()) as { message?: string }
+        const data = await generateCommitMessage(props.folder)
         if (data.message) msg = data.message
       }
 
       // Commit
       if (msg) {
-        await fetch('/api/git/commit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folder: props.folder, message: msg })
-        })
+        await commit(props.folder, msg)
       }
     }
 
@@ -154,28 +128,16 @@ export default function DiffView(props: Props) {
     if (branchToMerge.startsWith('issue/')) {
       const taskId = branchToMerge.replace('issue/', '')
       try {
-        await fetch(`/api/tasks/${taskId}?folder=${encodeURIComponent(props.folder)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'done' })
-        })
+        await updateTask(props.folder, taskId, { status: 'done' })
       } catch (e) {
         console.error('Failed to update task status', e)
       }
     }
     // Checkout default branch
-    await fetch('/api/git/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: props.folder, branch: defaultBranch })
-    })
+    await checkout(props.folder, defaultBranch)
 
     // Merge the issue branch
-    await fetch('/api/git/merge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: props.folder, branch: branchToMerge })
-    })
+    await merge(props.folder, branchToMerge)
 
     // Refresh
     void fetchStatus()
@@ -185,11 +147,7 @@ export default function DiffView(props: Props) {
   const handleCheckout = async (e: Event) => {
     const branch = (e.target as HTMLSelectElement).value
     setCurrentBranch(branch)
-    await fetch('/api/git/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ folder: props.folder, branch })
-    })
+    await checkout(props.folder, branch)
     void fetchStatus()
   }
 
@@ -206,40 +164,13 @@ export default function DiffView(props: Props) {
         const isNew = file && (file.x === 'A' || (file.x === '?' && file.y === '?'))
 
         if (isNew) {
-          const res = await fetch(
-            `/api/files/read?folder=${encodeURIComponent(props.folder)}&path=${encodeURIComponent(path)}`
-          )
-          const body: unknown = await res.json()
-          let content = ''
-          if (body && typeof body === 'object' && 'content' in (body as Record<string, unknown>)) {
-            const c = (body as Record<string, unknown>).content
-            if (typeof c === 'string') content = c
-            else content = JSON.stringify(c ?? '', null, 2)
-          } else if (typeof body === 'string') {
-            content = body
-          } else {
-            content = JSON.stringify(body ?? '', null, 2)
-          }
+          const { content } = await readFile(props.folder, path)
           const lines = content.split(/\r?\n/)
           const pseudo = ['*** New File: ' + path, '*** Begin', ...lines.map((l) => '+' + l), '*** End'].join('\n')
           setDiffs({ ...diffs(), [path]: pseudo })
         } else {
-          const res = await fetch(
-            `/api/files/diff?folder=${encodeURIComponent(props.folder)}&path=${encodeURIComponent(path)}`
-          )
-          const body: unknown = await res.json()
-          let diffText = ''
-          if (body && typeof body === 'object') {
-            const b = body as Record<string, unknown>
-            if (typeof b.diff === 'string') diffText = b.diff
-            else if (typeof b.error === 'string') diffText = `Error: ${b.error}`
-            else diffText = JSON.stringify(b)
-          } else {
-            if (body === null || body === undefined) diffText = ''
-            else if (typeof body === 'string') diffText = body
-            else diffText = JSON.stringify(body, null, 2)
-          }
-          setDiffs({ ...diffs(), [path]: diffText })
+          const { diff } = await getFileDiff(props.folder, path)
+          setDiffs({ ...diffs(), [path]: diff })
         }
       } catch (err) {
         setDiffs({ ...diffs(), [path]: `Error loading diff: ${String(err)}` })

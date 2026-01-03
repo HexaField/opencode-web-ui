@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor'
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { deleteFile, readFSFile, writeFile } from '../api/files'
 import { useTheme } from '../theme'
 import FileTree from './FileTree'
 
@@ -62,9 +63,8 @@ export default function FilesView(props: Props) {
     const file = props.selectedFile
     const ed = editor()
     if (file && ed) {
-      fetch(`/api/fs/read?path=${encodeURIComponent(file)}`)
-        .then((res) => res.json())
-        .then((data: { content: string }) => {
+      readFSFile(file)
+        .then((data) => {
           if (data.content !== undefined) {
             const uri = monaco.Uri.file(file)
             let model = monaco.editor.getModel(uri)
@@ -181,14 +181,8 @@ export default function FilesView(props: Props) {
 
     const content = ed.getValue()
     try {
-      const res = await fetch('/api/fs/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: file, content })
-      })
-      if (res.ok) {
-        setIsDirty(false)
-      }
+      await writeFile(file, content)
+      setIsDirty(false)
     } catch (e) {
       console.error(e)
     }
@@ -208,38 +202,26 @@ export default function FilesView(props: Props) {
     const folder = props.folder.endsWith('/') ? props.folder.slice(0, -1) : props.folder
     const path = folder + '/' + newFileName().trim()
     try {
-      const res = await fetch('/api/fs/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path, content: '' })
-      })
-      if (res.ok) {
-        setLastUpdated(Date.now())
-        setIsCreatingFile(false)
-        setNewFileName('')
-        props.onSelectFile(path)
-      }
+      await writeFile(path, '')
+      setLastUpdated(Date.now())
+      setIsCreatingFile(false)
+      setNewFileName('')
+      props.onSelectFile(path)
     } catch (e) {
       console.error(e)
     }
   }
 
-  const deleteFile = async () => {
+  const deleteFileHandler = async () => {
     const path = fileToDelete()
     if (!path) return
     try {
-      const res = await fetch('/api/fs/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path })
-      })
-      if (res.ok) {
-        setLastUpdated(Date.now())
-        setFileToDelete(null)
-        if (props.selectedFile === path) {
-          props.onSelectFile(null)
-          editor()?.setValue('')
-        }
+      await deleteFile(path)
+      setLastUpdated(Date.now())
+      setFileToDelete(null)
+      if (props.selectedFile === path) {
+        props.onSelectFile(null)
+        editor()?.setValue('')
       }
     } catch (e) {
       console.error(e)
@@ -263,7 +245,7 @@ export default function FilesView(props: Props) {
                 Cancel
               </button>
               <button
-                onClick={() => void deleteFile()}
+                onClick={() => void deleteFileHandler()}
                 class="px-3 py-1 text-sm bg-red-600 text-white hover:bg-red-700 rounded"
               >
                 Delete

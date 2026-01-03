@@ -5,7 +5,7 @@ import StartSessionModal from './StartSessionModal'
 
 interface Props {
   tasks: Task[]
-  onAddTask: (task: Partial<Task>) => void | Promise<void>
+  onAddTask: (task: { title: string; status?: Task['status']; parent_id?: string }) => void | Promise<void>
   onUpdateTask: (id: string, updates: Partial<Task>) => void | Promise<void>
   onDeleteTask: (id: string) => void | Promise<void>
   onStartSession?: (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => Promise<void>

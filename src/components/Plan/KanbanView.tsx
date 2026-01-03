@@ -7,7 +7,6 @@ interface Props {
 }
 
 const COLUMNS: { id: TaskStatus; title: string }[] = [
-  { id: 'backlog', title: 'Backlog' },
   { id: 'todo', title: 'To Do' },
   { id: 'in-progress', title: 'In Progress' },
   { id: 'done', title: 'Done' }

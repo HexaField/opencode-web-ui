@@ -1,4 +1,7 @@
 import { createEffect, createSignal } from 'solid-js'
+import { checkout, createBranch } from '../api/git'
+import { createSession, promptSession } from '../api/sessions'
+import { updateTask } from '../api/tasks'
 import ChatInterface from './ChatInterface'
 import DiffView from './DiffView'
 import FilesView from './FilesView'
@@ -51,42 +54,22 @@ export default function Workspace(props: Props) {
   const handleStartSession = async (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => {
     if (taskId) {
       // Update task status
-      await fetch(`/api/tasks/${taskId}?folder=${encodeURIComponent(props.folder)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'in_progress' })
-      })
+      await updateTask(props.folder, taskId, { status: 'in-progress' })
 
       // Create branch
       const branchName = `issue/${taskId}`
       try {
-        await fetch(`/api/git/branch`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folder: props.folder, branch: branchName })
-        })
+        await createBranch(props.folder, branchName)
       } catch (e) {
         console.error('Failed to create branch', e)
       }
 
       // Checkout branch
-      await fetch(`/api/git/checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: props.folder, branch: branchName })
-      })
+      await checkout(props.folder, branchName)
     }
 
     // 1. Create session
-    const res = await fetch(`/api/sessions?folder=${encodeURIComponent(props.folder)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: sessionTitle, agent: agentId })
-    })
-    if (!res.ok) {
-      throw new Error(`Failed to create session: ${res.statusText}`)
-    }
-    const session = (await res.json()) as { id: string }
+    const session = await createSession(props.folder, { title: sessionTitle, agent: agentId })
 
     // 3. Navigate
     setCurrentSessionId(session.id)
@@ -94,11 +77,7 @@ export default function Workspace(props: Props) {
 
     // 2. Send prompt
     if (prompt.trim()) {
-      void fetch(`/api/sessions/${session.id}/prompt?folder=${encodeURIComponent(props.folder)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parts: [{ type: 'text', text: prompt }] })
-      })
+      void promptSession(props.folder, session.id, { parts: [{ type: 'text', text: prompt }] })
     }
   }
 

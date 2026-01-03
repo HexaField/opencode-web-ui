@@ -1,10 +1,5 @@
 import { createEffect, createSignal, For } from 'solid-js'
-
-interface Entry {
-  name: string
-  isDirectory: boolean
-  path: string
-}
+import { listFiles, type FileEntry } from '../api/files'
 
 interface Props {
   onSelectFolder: (path: string) => void
@@ -13,7 +8,7 @@ interface Props {
 export default function FolderBrowser(props: Props) {
   const [currentPath, setCurrentPath] = createSignal('')
   const [inputPath, setInputPath] = createSignal('')
-  const [entries, setEntries] = createSignal<Entry[]>([])
+  const [entries, setEntries] = createSignal<FileEntry[]>([])
   const [ignoreDotFiles, setIgnoreDotFiles] = createSignal(true)
 
   const [error, setError] = createSignal<string | null>(null)
@@ -24,19 +19,13 @@ export default function FolderBrowser(props: Props) {
     setInputPath(path)
     setError(null)
 
-    const url = path ? `/api/fs/list?path=${encodeURIComponent(path)}` : '/api/fs/list'
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) throw new Error(res.statusText)
-        const serverPath = res.headers.get('x-current-path')
+    listFiles(path)
+      .then(({ files, currentPath: serverPath }) => {
         if (serverPath && !path) {
           setCurrentPath(serverPath)
         }
-        return res.json()
-      })
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setEntries(data)
+        if (Array.isArray(files)) {
+          setEntries(files)
         }
       })
       .catch((err) => {
@@ -45,7 +34,7 @@ export default function FolderBrowser(props: Props) {
       })
   })
 
-  const handleEntryClick = (entry: Entry) => {
+  const handleEntryClick = (entry: FileEntry) => {
     if (entry.isDirectory) {
       setCurrentPath(entry.path)
     }
