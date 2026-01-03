@@ -101,6 +101,13 @@ function FileTreeNode(props: {
       <div
         class={`flex items-center py-1 px-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#161b22] ${props.selectedPath === props.path ? 'bg-blue-100 dark:bg-[#1f6feb]/20' : ''}`}
         style={{ 'padding-left': `${props.level * 12 + 8}px` }}
+        draggable={!props.isDirectory}
+        onDragStart={(e) => {
+          if (!props.isDirectory) {
+            e.dataTransfer?.setData('text/plain', props.path)
+            e.dataTransfer?.setData('application/opencode-file', props.path)
+          }
+        }}
         onClick={() => {
           if (props.isDirectory) {
             props.onToggleExpand(props.path)
