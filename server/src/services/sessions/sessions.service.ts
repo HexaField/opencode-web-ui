@@ -108,6 +108,42 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
     }
   })
 
+  // Get session status
+  app.get('/api/sessions/:id/status', validate(GetSessionSchema), withClient(manager), async (req, res) => {
+    try {
+      const client = (req as AuthenticatedRequest).opencodeClient!
+      const { id } = req.params
+
+      // @ts-expect-error - Status method type definition might be missing in current SDK version
+      const result = await client.session.status({ path: { id } })
+
+      const possibleError = (result as { error?: unknown }).error
+      if (possibleError) {
+        console.error('Status error:', possibleError)
+        res.status(500).json({ error: possibleError })
+        return
+      }
+
+      // If status result is wrapped or just returns the status string directly
+      // Adjust based on actual SDK response structure
+      const data = unwrap(result)
+
+      // If data is just a string (e.g. 'idle'), wrap it
+      if (typeof data === 'string') {
+        res.json({ status: data })
+      } else if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+        res.json(data)
+      } else {
+        // Default to idle if empty (SDK seems to return empty object when idle)
+        res.json({ status: 'idle' })
+      }
+    } catch (error) {
+      console.error(error)
+      const msg = error instanceof Error ? error.message : String(error)
+      res.status(500).json({ error: msg })
+    }
+  })
+
   app.patch('/api/sessions/:id', validate(UpdateSessionSchema), withClient(manager), async (req, res) => {
     try {
       const client = (req as AuthenticatedRequest).opencodeClient!
@@ -258,6 +294,34 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
       }
 
       const data = unwrap(result)
+      res.json(data)
+    } catch (error) {
+      console.error(error)
+      const msg = error instanceof Error ? error.message : String(error)
+      res.status(500).json({ error: msg })
+    }
+  })
+
+  // Abort a running session
+  app.post('/api/sessions/:id/abort', validate(GetSessionSchema), withClient(manager), async (req, res) => {
+    try {
+      const client = (req as AuthenticatedRequest).opencodeClient!
+      const folder = (req as AuthenticatedRequest).targetFolder!
+      const { id } = req.params
+
+      const result = await client.session.abort({ path: { id } })
+      const possibleError = (result as { error?: unknown }).error
+      if (possibleError) {
+        console.error('Abort error:', possibleError)
+        res.status(500).json({ error: possibleError })
+        return
+      }
+
+      const data = unwrap(result)
+      // Optionally merge metadata
+      const metadata = await manager.getSessionMetadata(folder, id)
+      if (data && typeof data === 'object') Object.assign(data, metadata)
+
       res.json(data)
     } catch (error) {
       console.error(error)

@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
-import { getSession, promptSession, updateSession } from '../api/sessions'
+import { abortSession, getSession, getSessionStatus, promptSession, updateSession } from '../api/sessions'
 import { Message, Session, ToolPart } from '../types'
 import AgentSettingsModal from './AgentSettingsModal'
 import ToolCall from './ToolCall'
@@ -18,11 +18,33 @@ export default function ChatInterface(props: Props) {
   const [currentAgent, setCurrentAgent] = createSignal<string>('')
   const [currentModel, setCurrentModel] = createSignal<string>('')
   const [isAgentSettingsOpen, setIsAgentSettingsOpen] = createSignal(false)
+  const [agentStatus, setAgentStatus] = createSignal<string>('idle')
+
+  // Determine if an agent is currently running for this session by
+  // checking status from backend or message history fallback
+  const isAgentRunning = () =>
+    agentStatus() === 'running' ||
+    messages().some(
+      (m) =>
+        m.info.role === 'assistant' && !(m.info.time && (m.info.time as unknown as { completed?: number }).completed)
+    )
+
+  const checkStatus = async () => {
+    try {
+      const { status } = await getSessionStatus(props.folder, props.sessionId)
+      setAgentStatus(status)
+    } catch (e) {
+      console.error('Failed to check status', e)
+    }
+  }
 
   const fetchSession = async () => {
     try {
       const session = await getSession(props.folder, props.sessionId)
       if (session) {
+        // Also check status when fetching session
+        void checkStatus()
+
         setCurrentAgent(session.agent || '')
         setCurrentModel(session.model || '')
 
@@ -69,12 +91,19 @@ export default function ChatInterface(props: Props) {
         try {
           const session = JSON.parse(event.data as string) as Session
           if (session) {
+            // Update status whenever we get a session update via SSE
+            // This might not be enough if status isn't in the session object, so we might need to poll or rely on status endpoint
+            // But ideally the session object or event stream tells us if it's running.
+            // For now, let's also poll status when we get an event, just to be sure.
+            void checkStatus()
+
             if (session.agent !== undefined) setCurrentAgent(session.agent || '')
             if (session.model !== undefined) setCurrentModel(session.model || '')
 
             if (Array.isArray(session.history)) {
               setMessages((prev) => {
                 const newHistory = session.history
+
                 // Check if we need to preserve the temp message
                 const lastPrev = prev[prev.length - 1]
                 if (lastPrev?.info.id.startsWith('temp-')) {
@@ -119,6 +148,8 @@ export default function ChatInterface(props: Props) {
   }
 
   const sendMessage = async () => {
+    // if an agent is running, do not send another message
+    if (isAgentRunning()) return
     if (!input().trim() || loading()) return
     const text = input()
     setInput('')
@@ -176,6 +207,19 @@ export default function ChatInterface(props: Props) {
         ]
       }
       setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const abort = async () => {
+    if (!props.sessionId) return
+    setLoading(true)
+    try {
+      await abortSession(props.folder, props.sessionId)
+      await fetchSession()
+    } catch (err) {
+      console.error('Failed to abort session:', err)
     } finally {
       setLoading(false)
     }
@@ -283,16 +327,32 @@ export default function ChatInterface(props: Props) {
             }}
             placeholder="Type a message..."
           />
-          <button
-            class="bg-[#0969da] hover:bg-[#0860ca] text-white p-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-            onClick={() => void sendMessage()}
-            disabled={loading()}
-            title="Send"
+          <Show
+            when={!isAgentRunning()}
+            fallback={
+              <button
+                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                onClick={() => void abort()}
+                disabled={loading()}
+                title="Stop"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <rect x="4" y="4" width="12" height="12" rx="2" />
+                </svg>
+              </button>
+            }
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-            </svg>
-          </button>
+            <button
+              class="bg-[#0969da] hover:bg-[#0860ca] text-white p-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              onClick={() => void sendMessage()}
+              disabled={loading()}
+              title="Send"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+            </button>
+          </Show>
         </div>
       </div>
     </div>

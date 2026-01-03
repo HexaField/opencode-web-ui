@@ -44,3 +44,18 @@ export async function promptSession(folder: string, id: string, body: SessionPro
   if (!res.ok) throw new Error('Failed to prompt session')
   return res.json() as Promise<unknown>
 }
+
+export async function abortSession(folder: string, id: string): Promise<unknown> {
+  const res = await fetch(`${API_BASE}/sessions/${id}/abort?folder=${encodeURIComponent(folder)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  })
+  if (!res.ok) throw new Error('Failed to abort session')
+  return res.json() as Promise<unknown>
+}
+
+export async function getSessionStatus(folder: string, id: string): Promise<{ status: string }> {
+  const res = await fetch(`${API_BASE}/sessions/${id}/status?folder=${encodeURIComponent(folder)}`)
+  if (!res.ok) throw new Error('Failed to get session status')
+  return res.json() as Promise<{ status: string }>
+}
