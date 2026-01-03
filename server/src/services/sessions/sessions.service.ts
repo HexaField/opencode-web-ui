@@ -236,7 +236,7 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
 
       const [providerID, modelID] = model.split('/')
 
-      const agent = (requestBody.agent || metadata.agent) as string | undefined
+      const agent = (requestBody.agent || metadata.agent || undefined) as string | undefined
 
       const body: SessionPromptData['body'] = {
         parts: requestBody.parts,
