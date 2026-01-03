@@ -291,6 +291,11 @@ describe('Server Integration Tests', () => {
     }
     const sessionId = (createRes.body as SessionResponse).id
 
+    const patchRes = await request(app)
+      .patch(`/api/sessions/${sessionId}?folder=${encodeURIComponent(tempDir)}`)
+      .send({ model: 'opencode/big-pickle' })
+    expect(patchRes.status).toBe(200)
+
     // 2. Send first message
     const msg1 = 'Hello, who are you?'
     const res1 = await request(app)

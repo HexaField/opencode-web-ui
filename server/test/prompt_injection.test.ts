@@ -41,7 +41,7 @@ describe('Prompt Injection Integration Tests', () => {
     // 3. Set Metadata
     const patchRes = await request(app)
       .patch(`/api/sessions/${sessionId}?folder=${encodeURIComponent(tempDir)}`)
-      .send({ agent: 'test-agent', model: 'test-model' })
+      .send({ agent: 'test-agent', model: 'test/test-model' })
     expect(patchRes.status).toBe(200)
 
     // 4. Send Prompt (Real call, no spies)
@@ -49,7 +49,7 @@ describe('Prompt Injection Integration Tests', () => {
       .post(`/api/sessions/${sessionId}/prompt?folder=${encodeURIComponent(tempDir)}`)
       .send({ message: 'Hello' })
 
-    expect(promptRes.status).toBe(200)
+    expect(promptRes.status).toBe(500)
 
     // The SDK/Worker returns an error object because the input is invalid (missing parts, model type mismatch),
     // but it echoes back the data it received in `error.data`.
@@ -58,7 +58,10 @@ describe('Prompt Injection Integration Tests', () => {
       error?: {
         data?: {
           agent?: string
-          model?: string
+          model?: {
+            modelID?: string
+            providerID?: string
+          }
         }
       }
     }
@@ -67,7 +70,8 @@ describe('Prompt Injection Integration Tests', () => {
     // Check if we got the expected error structure echoing the data
     if (responseBody.error?.data) {
       expect(responseBody.error.data.agent).toBe('test-agent')
-      expect(responseBody.error.data.model).toBe('test-model')
+      expect(responseBody.error.data.model!.modelID).toBe('test-model')
+      expect(responseBody.error.data.model!.providerID).toBe('test')
     } else {
       // If the SDK behavior changes and it succeeds, we might need to check elsewhere.
       // But for now, based on the observed behavior:

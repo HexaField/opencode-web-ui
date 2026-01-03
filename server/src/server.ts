@@ -1,4 +1,14 @@
-import { type Message, type OpencodeClient, type Part, type Session, type SessionPromptData } from '@opencode-ai/sdk'
+import {
+  AgentPartInput,
+  FilePartInput,
+  SubtaskPartInput,
+  TextPartInput,
+  type Message,
+  type OpencodeClient,
+  type Part,
+  type Session,
+  type SessionPromptData
+} from '@opencode-ai/sdk'
 import bodyParser from 'body-parser'
 import { exec as _exec } from 'child_process'
 import cors from 'cors'
@@ -273,15 +283,41 @@ app.post('/api/sessions/:id/prompt', withClient, async (req, res) => {
     const { id } = req.params
 
     const metadata = await manager.getSessionMetadata(folder, id)
-    const body = req.body as Record<string, unknown>
+    const requestBody = req.body as {
+      parts: (TextPartInput | FilePartInput | AgentPartInput | SubtaskPartInput)[]
+      model?: string
+      agent?: string
+    }
 
-    if (metadata.agent) body.agent = metadata.agent
-    if (metadata.model) body.model = metadata.model
+    const model = (requestBody.model || metadata.model) as string | undefined
+    if (!model) {
+      res.status(400).json({ error: 'Model is required' })
+      return
+    }
+
+    const [providerID, modelID] = model.split('/')
+
+    const agent = (requestBody.agent || metadata.agent) as string | undefined
+
+    const body: SessionPromptData['body'] = {
+      parts: requestBody.parts,
+      model: {
+        providerID,
+        modelID
+      },
+      agent
+    }
 
     const result = await client.session.prompt({
       path: { id },
       body: body as SessionPromptData['body']
     })
+    if (result.error) {
+      console.error('Prompt error:', result.error)
+      res.status(500).json({ error: result.error })
+      return
+    }
+
     const data = unwrap(result)
     res.json(data)
   } catch (error) {
