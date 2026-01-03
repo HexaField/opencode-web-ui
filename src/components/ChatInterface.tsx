@@ -218,7 +218,8 @@ export default function ChatInterface(props: Props) {
                             when={isUser}
                             fallback={
                               <div
-                                class="prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                                class="prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-sm"
+                                style={{ 'font-size': '14px' }}
                                 innerHTML={DOMPurify.sanitize(
                                   marked.parse((part as { text: string }).text, { async: false })
                                 )}
