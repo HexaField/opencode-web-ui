@@ -237,12 +237,12 @@ export default function ChatInterface(props: Props) {
         onSave={handleUpdateSession}
       />
 
-      <div class="flex-1 overflow-y-auto p-2 md:p-4 flex flex-col space-y-4">
+      <div class="flex-1 overflow-y-auto p-1 md:p-2 flex flex-col">
         <For each={messages()}>
           {(msg) => {
             const isUser = msg.info.role === 'user'
             return (
-              <div class={`flex flex-col gap-1 w-full ${isUser ? 'items-end' : 'items-start'}`}>
+              <div class={`flex flex-col gap-1 w-full ${isUser ? 'items-end m-2' : 'items-start'}`}>
                 <For each={msg.parts}>
                   {(part) => (
                     <>
@@ -277,7 +277,7 @@ export default function ChatInterface(props: Props) {
                         </div>
                       </Show>
                       <Show when={part.type === 'tool'}>
-                        <ToolCall part={part as ToolPart} />
+                        <ToolCall part={part as ToolPart} folder={props.folder} />
                       </Show>
                     </>
                   )}
