@@ -1,10 +1,15 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
 import { listFiles } from '../api/files'
+import { getGitStatus } from '../api/git'
 
 interface Entry {
   name: string
   isDirectory: boolean
   path: string
+}
+
+interface GitStatusMap {
+  [path: string]: { x: string; y: string }
 }
 
 interface Props {
@@ -16,6 +21,7 @@ interface Props {
 
 export default function FileTree(props: Props) {
   const [entries, setEntries] = createSignal<Entry[]>([])
+  const [gitStatus, setGitStatus] = createSignal<GitStatusMap>({})
   const [expandedPaths, setExpandedPaths] = createSignal<Set<string>>(
     (() => {
       try {
@@ -32,6 +38,7 @@ export default function FileTree(props: Props) {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     props.lastUpdated
     void fetchEntries(props.rootPath).then(setEntries)
+    void fetchGitStatus()
   })
 
   const fetchEntries = async (path: string): Promise<Entry[]> => {
@@ -41,6 +48,29 @@ export default function FileTree(props: Props) {
     } catch (e) {
       console.error(e)
       return []
+    }
+  }
+
+  const fetchGitStatus = async () => {
+    try {
+      const status = await getGitStatus(props.rootPath)
+      const map: GitStatusMap = {}
+      if (Array.isArray(status)) {
+        status.forEach((s) => {
+          // Normalize path if needed (git returns relative paths)
+          // Store relative path in map for easier lookup if we have relative paths in FileTree
+          // But FileTree seems to use absolute paths.
+          // Let's store by absolute path if possible, or handle relative logic.
+          // The git status returns paths relative to repo root.
+          // props.rootPath is the repo root.
+          // So absolute path = props.rootPath + '/' + s.path
+          const absPath = props.rootPath + '/' + s.path
+          map[absPath] = s
+        })
+      }
+      setGitStatus(map)
+    } catch (e) {
+      console.error('Failed to fetch git status for tree', e)
     }
   }
 
@@ -68,6 +98,7 @@ export default function FileTree(props: Props) {
             onToggleExpand={toggleExpand}
             onSelectFile={props.onSelectFile}
             selectedPath={props.selectedPath}
+            gitStatus={gitStatus()}
           />
         )}
       </For>
@@ -84,6 +115,7 @@ function FileTreeNode(props: {
   onToggleExpand: (path: string) => void
   onSelectFile: (path: string) => void
   selectedPath: string | null
+  gitStatus: GitStatusMap
 }) {
   const [children, setChildren] = createSignal<Entry[]>([])
   const isExpanded = () => props.expandedPaths.has(props.path)
@@ -95,6 +127,48 @@ function FileTreeNode(props: {
         .catch(console.error)
     }
   })
+
+  // Determine color based on git status
+  const getStatusColor = () => {
+    if (!props.isDirectory) {
+      // File check
+      const status = props.gitStatus[props.path]
+      if (status) {
+        // New: A or ? (untracked)
+        if (status.x === 'A' || (status.x === '?' && status.y === '?')) {
+          return 'text-green-600 dark:text-green-500'
+        }
+        // Modified: M
+        if (status.x === 'M' || status.y === 'M') {
+          return 'text-yellow-600 dark:text-yellow-500'
+        }
+      }
+    } else {
+      // Directory check - recursive (simplified here, but ideally we check if any child matches)
+      // Since we have a flat map of git status files, we can check if any key in map starts with this dir path
+      const dirPath = props.path + '/'
+      let hasNew = false
+      let hasModified = false
+
+      for (const filePath in props.gitStatus) {
+        if (filePath.startsWith(dirPath)) {
+          const status = props.gitStatus[filePath]
+          if (status.x === 'A' || (status.x === '?' && status.y === '?')) {
+            hasNew = true
+          }
+          if (status.x === 'M' || status.y === 'M') {
+            hasModified = true
+          }
+        }
+      }
+
+      if (hasNew) return 'text-green-600 dark:text-green-500'
+      if (hasModified) return 'text-yellow-600 dark:text-yellow-500'
+    }
+    return ''
+  }
+
+  const statusColor = () => getStatusColor()
 
   return (
     <div>
@@ -119,7 +193,7 @@ function FileTreeNode(props: {
         <span class="mr-1 text-gray-500 w-4 text-center inline-block">
           {props.isDirectory ? (isExpanded() ? '▼' : '▶') : '📄'}
         </span>
-        <span class="truncate">{props.name}</span>
+        <span class={`truncate ${statusColor()}`}>{props.name}</span>
       </div>
       <Show when={isExpanded() && props.isDirectory}>
         <For each={children()}>
@@ -133,6 +207,7 @@ function FileTreeNode(props: {
               onToggleExpand={props.onToggleExpand}
               onSelectFile={props.onSelectFile}
               selectedPath={props.selectedPath}
+              gitStatus={props.gitStatus}
             />
           )}
         </For>

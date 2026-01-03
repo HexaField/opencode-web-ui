@@ -51,6 +51,24 @@ export default function Workspace(props: Props) {
     window.history.replaceState({}, '', url)
   })
 
+  createEffect(() => {
+    const handleOpenFile = (e: Event) => {
+      const customEvent = e as CustomEvent<{ path: string; folder: string }>
+      if (customEvent.detail && customEvent.detail.folder === props.folder) {
+        setSelectedFile(customEvent.detail.path)
+        setView('files')
+      }
+    }
+
+    // Also listen for event from same window context if needed
+    // But since we are in the same window, just window event is enough.
+    // However, if the event is dispatched from an iframe or similar (not here), we might need more.
+    // The current setup assumes dispatchEvent on window.
+
+    window.addEventListener('open-file', handleOpenFile)
+    return () => window.removeEventListener('open-file', handleOpenFile)
+  })
+
   const handleStartSession = async (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => {
     if (taskId) {
       // Update task status

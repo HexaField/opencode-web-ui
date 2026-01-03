@@ -178,6 +178,18 @@ export default function DiffView(props: Props) {
     }
   }
 
+  const openInEditor = (path: string) => {
+    // Dispatch custom event to open file in editor
+    window.dispatchEvent(
+      new CustomEvent('open-file', {
+        detail: {
+          path: path,
+          folder: props.folder
+        }
+      })
+    )
+  }
+
   function parseUnified(diffText: string) {
     const out: Array<{
       type: 'meta' | 'context' | 'add' | 'del'
@@ -258,7 +270,16 @@ export default function DiffView(props: Props) {
               </span>
               <span class="font-mono text-sm text-gray-700 dark:text-gray-300 truncate max-w-[60vw]">{file.path}</span>
             </div>
-            <div>
+            <div class="flex items-center gap-2">
+              <button
+                class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded"
+                onClick={() => openInEditor(file.path)}
+                title="Open in Editor"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+              </button>
               <button
                 class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded"
                 onClick={() => void toggleExpand(file.path)}
