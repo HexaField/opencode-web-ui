@@ -298,6 +298,21 @@ export default function DesktopWorkspace(props: Props) {
           >
             Plan
           </button>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            class="px-2 py-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 rounded-sm hover:bg-gray-200 dark:hover:bg-[#21262d]"
+            title="Hide Sidebar"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
 
         {/* Sidebar Content */}
@@ -476,7 +491,24 @@ export default function DesktopWorkspace(props: Props) {
       >
         {/* Chat Header */}
         <div class="flex items-center justify-between p-2 border-b border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409]">
-          <div class="font-medium text-sm">Chat</div>
+          <div class="flex items-center gap-2">
+            <button
+              onClick={() => setIsChatOpen(false)}
+              class="p-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 rounded-sm hover:bg-gray-200 dark:hover:bg-[#21262d]"
+              title="Hide Chat"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <div class="font-medium text-sm">Chat</div>
+          </div>
 
           {/* Session Dropdown/Selector */}
           <div class="flex-1 mx-2 relative group">
@@ -497,7 +529,10 @@ export default function DesktopWorkspace(props: Props) {
                 <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
               </svg>
             </button>
-            <button onClick={() => setIsChatOpen(false)} class="p-1 hover:bg-gray-200 dark:hover:bg-[#21262d] rounded">
+            <button
+              onClick={() => setIsChatOpen(false)}
+              class="p-1 hover:bg-gray-200 dark:hover:bg-[#21262d] rounded hidden"
+            >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fill-rule="evenodd"
