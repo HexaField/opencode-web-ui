@@ -40,7 +40,13 @@ export async function stageFiles(folder: string, files: string[]): Promise<void>
     body: JSON.stringify(body)
   })
   if (!res.ok) throw new Error('Failed to stage files')
-  return res.json() as Promise<void>
+  await res.json()
+  try {
+    window.dispatchEvent(new Event('git-updated'))
+  } catch (err) {
+    void err
+  }
+  return
 }
 
 export async function unstageFiles(folder: string, files: string[]): Promise<void> {
@@ -51,7 +57,13 @@ export async function unstageFiles(folder: string, files: string[]): Promise<voi
     body: JSON.stringify(body)
   })
   if (!res.ok) throw new Error('Failed to unstage files')
-  return res.json() as Promise<void>
+  await res.json()
+  try {
+    window.dispatchEvent(new Event('git-updated'))
+  } catch (err) {
+    void err
+  }
+  return
 }
 
 export async function commit(folder: string, message: string): Promise<void> {
@@ -62,7 +74,13 @@ export async function commit(folder: string, message: string): Promise<void> {
     body: JSON.stringify(body)
   })
   if (!res.ok) throw new Error('Failed to commit')
-  return res.json() as Promise<void>
+  await res.json()
+  try {
+    window.dispatchEvent(new Event('git-updated'))
+  } catch (err) {
+    void err
+  }
+  return
 }
 
 export async function generateCommitMessage(folder: string): Promise<{ message: string }> {
@@ -83,7 +101,13 @@ export async function push(folder: string, remote?: string, branch?: string): Pr
     body: JSON.stringify(body)
   })
   if (!res.ok) throw new Error('Failed to push')
-  return res.json() as Promise<void>
+  await res.json()
+  try {
+    window.dispatchEvent(new Event('git-updated'))
+  } catch (err) {
+    void err
+  }
+  return
 }
 
 export async function pull(folder: string, remote?: string, branch?: string): Promise<void> {
@@ -94,7 +118,13 @@ export async function pull(folder: string, remote?: string, branch?: string): Pr
     body: JSON.stringify(body)
   })
   if (!res.ok) throw new Error('Failed to pull')
-  return res.json() as Promise<void>
+  await res.json()
+  try {
+    window.dispatchEvent(new Event('git-updated'))
+  } catch (err) {
+    void err
+  }
+  return
 }
 
 export async function checkout(folder: string, branch: string): Promise<void> {
@@ -105,7 +135,13 @@ export async function checkout(folder: string, branch: string): Promise<void> {
     body: JSON.stringify(body)
   })
   if (!res.ok) throw new Error('Failed to checkout')
-  return res.json() as Promise<void>
+  await res.json()
+  try {
+    window.dispatchEvent(new Event('git-updated'))
+  } catch (err) {
+    void err
+  }
+  return
 }
 
 export async function createBranch(folder: string, branch: string, from?: string): Promise<void> {
@@ -116,7 +152,13 @@ export async function createBranch(folder: string, branch: string, from?: string
     body: JSON.stringify(body)
   })
   if (!res.ok) throw new Error('Failed to create branch')
-  return res.json() as Promise<void>
+  await res.json()
+  try {
+    window.dispatchEvent(new Event('git-updated'))
+  } catch (err) {
+    void err
+  }
+  return
 }
 
 export async function merge(folder: string, branch: string): Promise<void> {
@@ -127,5 +169,11 @@ export async function merge(folder: string, branch: string): Promise<void> {
     body: JSON.stringify(body)
   })
   if (!res.ok) throw new Error('Failed to merge')
-  return res.json() as Promise<void>
+  await res.json()
+  try {
+    window.dispatchEvent(new Event('git-updated'))
+  } catch (err) {
+    void err
+  }
+  return
 }
