@@ -38,7 +38,7 @@ test.describe('Theme Switcher', () => {
     await page.click('button:has-text("Select this folder")')
 
     // Open settings
-    await page.click('button[title="Settings"]')
+    await page.click('button:has-text("Settings")')
     await expect(page.locator('text=Appearance')).toBeVisible()
 
     // Switch to Dark

@@ -32,7 +32,9 @@ test.describe('Task Expansion and Description', () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    await page.goto(`/?folder=${encodeURIComponent(testFolder)}&view=plan`)
+    await page.goto(`/?folder=${encodeURIComponent(testFolder)}`)
+    // Switch to Plan tab
+    await page.click('button:has-text("Plan")')
   })
 
   test('should allow expanding a task and editing description', async ({ page }) => {
@@ -69,6 +71,7 @@ test.describe('Task Expansion and Description', () => {
 
     // Reload to verify persistence
     await page.reload()
+    await page.click('button:has-text("Plan")')
 
     // Task should be collapsed by default on reload (since state is local)
     await expect(textarea).not.toBeVisible()

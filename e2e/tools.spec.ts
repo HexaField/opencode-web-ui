@@ -38,12 +38,13 @@ test.describe('Tool UI', () => {
     await page.goto('/?folder=/tmp&session=test-session')
 
     // Check if tool calls are rendered
-    await expect(page.getByText('Tool: list')).toBeVisible()
-    await page.getByText('Tool: list').click()
+    await expect(page.getByText('list', { exact: true })).toBeVisible()
+    await page.getByText('list', { exact: true }).click()
     await expect(page.getByText('/test/path').first()).toBeVisible()
 
-    await expect(page.getByText('Tool: write')).toBeVisible()
-    await page.getByText('Tool: write').click()
+    await expect(page.getByText('Wrote')).toBeVisible()
+    await expect(page.getByText('file.txt')).toBeVisible()
+    await page.getByText('Wrote').click()
     await expect(page.getByText('/test/file.txt')).toBeVisible()
     await expect(page.getByText('hello world')).toBeVisible()
   })

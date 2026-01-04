@@ -37,15 +37,15 @@ test.describe('Plan Tab', () => {
     page.on('console', (msg) => console.log('PAGE LOG:', msg.text()))
     page.on('pageerror', (exception) => console.log(`PAGE ERROR: "${exception}"`))
 
-    // Go to the app with the test folder and plan view
-    await page.goto(`/?folder=${encodeURIComponent(testFolder)}&view=plan`)
+    // Go to the app with the test folder
+    await page.goto(`/?folder=${encodeURIComponent(testFolder)}`)
+
+    // Switch to Plan tab
+    await page.click('button:has-text("Plan")')
   })
 
   test('should allow creating, nesting, and viewing tasks', async ({ page }) => {
-    // Wait for Workspace to load
-    await expect(page.locator('button:has-text("Chat")')).toBeVisible()
-
-    // Check if PlanView container is present
+    // Wait for PlanView container is present
     await expect(page.locator('#plan-view-container')).toBeVisible()
 
     // Create a task in List view

@@ -31,7 +31,9 @@ test.describe('Task Drag and Drop', () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    await page.goto(`/?folder=${encodeURIComponent(testFolder)}&view=plan`)
+    await page.goto(`/?folder=${encodeURIComponent(testFolder)}`)
+    // Switch to Plan tab
+    await page.click('button:has-text("Plan")')
   })
 
   test('should allow nesting and un-nesting tasks via drag and drop', async ({ page }) => {
@@ -60,6 +62,7 @@ test.describe('Task Drag and Drop', () => {
 
     // Reload to verify persistence
     await page.reload()
+    await page.click('button:has-text("Plan")')
     await expect(page.getByText('Parent Task')).toBeVisible()
     await expect(nestedChild).toBeVisible()
 

@@ -71,8 +71,11 @@ test.describe('Git Integration E2E', () => {
     await page.fill('textarea[placeholder*="Message"]', 'Add feature.txt')
     await page.click('button:has-text("Commit")')
 
+    // Wait for message to be cleared (indicates commit started/finished)
+    await expect(page.locator('textarea[placeholder*="Message"]')).toBeEmpty()
+
     // 10. Verify changes are gone
-    await expect(page.getByText('No changes detected')).toBeVisible()
+    await expect(page.getByText('No changes detected')).toBeVisible({ timeout: 10000 })
 
     // 11. Verify commit in backend
     const { stdout } = await execAsync('git log -1 --pretty=%s', { cwd: testDir })
@@ -84,7 +87,7 @@ test.describe('Git Integration E2E', () => {
     await page.click('button:has-text("Changes")')
 
     // Check the select value
-    const branchSelect = page.locator('select')
+    const branchSelect = page.locator('select').first()
     await expect(branchSelect).toHaveValue('new-branch')
   })
 })

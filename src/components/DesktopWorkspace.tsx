@@ -68,6 +68,22 @@ export default function DesktopWorkspace(props: Props) {
     window.history.replaceState({}, '', url)
   })
 
+  createEffect(() => {
+    const handleOpenFile = (e: Event) => {
+      const customEvent = e as CustomEvent<{ path: string; folder: string }>
+      if (customEvent.detail && customEvent.detail.folder === props.folder) {
+        openFile(customEvent.detail.path)
+      }
+    }
+
+    window.addEventListener('open-file', handleOpenFile)
+    document.addEventListener('open-file', handleOpenFile)
+    return () => {
+      window.removeEventListener('open-file', handleOpenFile)
+      document.removeEventListener('open-file', handleOpenFile)
+    }
+  })
+
   const handleStartSession = async (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => {
     if (taskId) {
       await updateTask(props.folder, taskId, { status: 'in-progress' })

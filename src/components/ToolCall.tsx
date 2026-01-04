@@ -148,16 +148,12 @@ const ToolCall: Component<Props> = (props) => {
   const getEditInput = () => props.part.state?.input as unknown as EditInput
   const getWriteInput = () => props.part.state?.input as unknown as WriteInput
   const getOutput = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const state = props.part.state as any
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    return state?.output as any
+    const state = props.part.state
+    return 'output' in state ? state.output : undefined
   }
   const getError = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const state = props.part.state as any
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-    return state?.error as any
+    const state = props.part.state
+    return 'error' in state ? state.error : undefined
   }
 
   return (

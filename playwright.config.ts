@@ -24,9 +24,16 @@ if (!fs.existsSync(radHome)) {
 }
 
 const env = loadEnv('', process.cwd(), '')
-const PORT = env.CLIENT_PORT || '5173'
+const PORT = env.CLIENT_PORT || '5174'
+const SERVER_PORT = env.SERVER_PORT || '3002'
 const HOST = env.CLIENT_HOST || 'localhost'
-const BASE_URL = `http://${HOST}:${PORT}`
+
+const keyPath = path.join(process.cwd(), 'server/certs/server.key')
+const certPath = path.join(process.cwd(), 'server/certs/server.crt')
+const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath)
+const protocol = useHttps ? 'https' : 'http'
+
+const BASE_URL = `${protocol}://${HOST}:${PORT}`
 
 export default defineConfig({
   testDir: './e2e',
@@ -37,7 +44,8 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: BASE_URL,
-    trace: 'on-first-retry'
+    trace: 'on-first-retry',
+    ignoreHTTPSErrors: true
   },
   projects: [
     {
@@ -48,11 +56,14 @@ export default defineConfig({
   webServer: {
     command: 'npm run start:test',
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    reuseExistingServer: true,
+    ignoreHTTPSErrors: true,
     env: {
+      CLIENT_PORT: PORT,
+      SERVER_PORT: SERVER_PORT,
       RAD_HOME: radHome,
       RAD_PASSPHRASE: 'test'
-    }
+    },
+    timeout: 120 * 1000
   }
 })

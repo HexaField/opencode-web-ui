@@ -66,7 +66,11 @@ export default function Workspace(props: Props) {
     // The current setup assumes dispatchEvent on window.
 
     window.addEventListener('open-file', handleOpenFile)
-    return () => window.removeEventListener('open-file', handleOpenFile)
+    document.addEventListener('open-file', handleOpenFile)
+    return () => {
+      window.removeEventListener('open-file', handleOpenFile)
+      document.removeEventListener('open-file', handleOpenFile)
+    }
   })
 
   const handleStartSession = async (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => {

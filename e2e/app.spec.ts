@@ -14,6 +14,7 @@ test.describe('OpenCode Web UI E2E', () => {
   test.beforeAll(async () => {
     // Create a temporary directory for the test project
     testDir = await fs.mkdtemp(path.join(os.tmpdir(), TEST_DIR_PREFIX))
+    testDir = await fs.realpath(testDir)
     // Create some dummy files
     await fs.writeFile(path.join(testDir, 'hello.txt'), 'Hello E2E')
     await fs.writeFile(path.join(testDir, 'package.json'), '{}')
@@ -53,8 +54,8 @@ test.describe('OpenCode Web UI E2E', () => {
     await page.click('button[title="New Session"]') // Create session button
     await createSessionPromise
 
-    // 5. Wait for session to appear in list and be selected
-    await expect(page.locator('text=New Session')).toBeVisible()
+    // 5. Wait for session to be selected and chat interface to appear
+    await expect(page.locator('textarea[placeholder="Type a message..."]')).toBeVisible()
 
     // 6. Send message
     await page.fill('textarea[placeholder="Type a message..."]', 'List files')
@@ -71,7 +72,7 @@ test.describe('OpenCode Web UI E2E', () => {
     await fs.writeFile(path.join(testDir, 'hello.txt'), 'Hello Modified')
 
     // Switch tabs to refresh
-    await page.click('button:has-text("Chat")')
+    await page.click('button:has-text("Files")')
     await page.click('button:has-text("Changes")')
 
     await expect(page.locator('text=hello.txt')).toBeVisible()
