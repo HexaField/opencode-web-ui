@@ -1,4 +1,4 @@
-import { Component, createSignal, Match, Show, Switch } from 'solid-js'
+import { Component, createEffect, createSignal, Match, Show, Switch } from 'solid-js'
 import { ToolPart } from '../types'
 
 interface Props {
@@ -31,6 +31,7 @@ interface GrepInput {
 
 const ToolCall: Component<Props> = (props) => {
   const [isExpanded, setIsExpanded] = createSignal(false)
+  const [summaryEl, setSummaryEl] = createSignal<HTMLElement | undefined>(undefined)
 
   const openFile = (path: string) => {
     const event = new CustomEvent('open-file', {
@@ -41,9 +42,59 @@ const ToolCall: Component<Props> = (props) => {
     document.dispatchEvent(event)
   }
 
+  const getToolSummaryText = (): string => {
+    const tool = props.part.tool
+    const input = props.part.state?.input
+
+    switch (tool) {
+      case 'edit': {
+        const editInput = input as unknown as EditInput
+        if (editInput?.filePath) {
+          const oldLines = (editInput.oldString || '').split('\n').length
+          const newLines = (editInput.newString || '').split('\n').length
+          return `Edited ${editInput.filePath.split('/').pop()} +${newLines} -${oldLines}`
+        }
+        return 'Edited file'
+      }
+
+      case 'bash': {
+        const bashInput = input as unknown as BashInput
+        if (bashInput?.command) {
+          const cmd = bashInput.command.split('\n')[0]
+          return `$ ${cmd}`
+        }
+        return 'Run command'
+      }
+
+      case 'read': {
+        const readInput = input as unknown as ReadInput
+        if (readInput?.filePath) {
+          return `Read ${readInput.filePath.split('/').pop()}`
+        }
+        return 'Read file'
+      }
+
+      case 'write': {
+        const writeInput = input as unknown as WriteInput
+        if (writeInput?.filePath) {
+          return `Wrote ${writeInput.filePath.split('/').pop()}`
+        }
+        return 'Write file'
+      }
+
+      case 'grep':
+      case 'glob': {
+        const grepInput = input as unknown as GrepInput
+        return `Search: ${grepInput?.pattern || ''}`
+      }
+
+      default:
+        return tool || ''
+    }
+  }
+
   const getToolSummary = () => {
     const tool = props.part.tool
-    // We need to type cast properly since ToolState.input is typically generic or any
     const input = props.part.state?.input
 
     switch (tool) {
@@ -135,11 +186,26 @@ const ToolCall: Component<Props> = (props) => {
       case 'grep':
       case 'glob': {
         const grepInput = input as unknown as GrepInput
-        return `Search: ${grepInput?.pattern || ''}`
+        const txt = `Search: ${grepInput?.pattern || ''}`
+        return (
+          <span
+            class="font-sans text-sm truncate max-w-[200px] md:max-w-[400px] text-gray-600 dark:text-gray-300"
+            title={txt}
+          >
+            {txt}
+          </span>
+        )
       }
 
       default:
-        return tool
+        return (
+          <span
+            class="font-sans text-sm truncate max-w-[200px] md:max-w-[400px] text-gray-600 dark:text-gray-300"
+            title={String(tool)}
+          >
+            {tool}
+          </span>
+        )
     }
   }
 
@@ -155,6 +221,19 @@ const ToolCall: Component<Props> = (props) => {
     const state = props.part.state
     return 'error' in state ? state.error : undefined
   }
+
+  // when the summary element is mounted or updated, determine if it overflows and set title accordingly
+  createEffect(() => {
+    const el = summaryEl()
+    if (!el) return
+    // get the plain text summary
+    const txt = getToolSummaryText()
+    // small timeout to allow layout/calculations
+    setTimeout(() => {
+      if (el.scrollWidth > el.clientWidth) el.title = txt
+      else el.removeAttribute('title')
+    }, 0)
+  })
 
   return (
     <div
@@ -175,23 +254,15 @@ const ToolCall: Component<Props> = (props) => {
           >
             ▶
           </span>
-          <span class="text-gray-600 dark:text-gray-300 text-sm truncate">{getToolSummary()}</span>
+          <span
+            class="text-gray-600 dark:text-gray-300 text-sm truncate block max-w-full"
+            ref={(el: HTMLElement) => setSummaryEl(el)}
+          >
+            {getToolSummary()}
+          </span>
         </div>
         <div class="px-2 flex-shrink-0">
-          <Switch
-            fallback={
-              <span class="text-yellow-600 dark:text-yellow-400 text-xs px-2 py-0.5 rounded-full bg-yellow-50 dark:bg-yellow-900/20">
-                {props.part.state?.status}
-              </span>
-            }
-          >
-            <Match when={props.part.state?.status === 'completed'}>
-              <div class="text-green-600 dark:text-green-400" title="Completed">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </Match>
+          <Switch fallback={<span></span>}>
             <Match when={props.part.state?.status === 'error'}>
               <div class="text-red-600 dark:text-red-400" title="Error">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

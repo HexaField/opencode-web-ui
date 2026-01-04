@@ -237,7 +237,7 @@ export default function ChatInterface(props: Props) {
         onSave={handleUpdateSession}
       />
 
-      <div class="flex-1 overflow-y-auto p-1 md:p-2 flex flex-col">
+      <div class="flex-1 overflow-y-auto overflow-x-hidden p-1 md:p-2 flex flex-col">
         <For each={messages()}>
           {(msg) => {
             const isUser = msg.info.role === 'user'
@@ -331,9 +331,8 @@ export default function ChatInterface(props: Props) {
             when={!isAgentRunning()}
             fallback={
               <button
-                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-md font-medium transition-colors shadow-sm"
                 onClick={() => void abort()}
-                disabled={loading()}
                 title="Stop"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
