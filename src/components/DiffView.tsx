@@ -101,6 +101,16 @@ export default function DiffView(props: Props) {
     void fetchStatus()
   }
 
+  const handleStageAll = async () => {
+    await stageFiles(props.folder, ['.'])
+    void fetchStatus()
+  }
+
+  const handleUnstageAll = async () => {
+    await unstageFiles(props.folder, ['.'])
+    void fetchStatus()
+  }
+
   const handleAccept = async () => {
     // 1. Check for pending changes
     const hasChanges = gitFiles().length > 0
@@ -244,16 +254,16 @@ export default function DiffView(props: Props) {
     <For each={props.files}>
       {(file) => (
         <div class="border-b border-gray-200 dark:border-[#30363d]">
-          <div class="p-1 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors">
-            <div class="flex items-center gap-3">
+          <div class="p-1 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#161b22] transition-colors min-w-0">
+            <div class="flex items-center gap-3 max-w-full min-w-0">
               <input
                 type="checkbox"
                 checked={props.staged}
                 onChange={() => void (props.staged ? handleUnstage(file.path) : handleStage(file.path))}
-                class="ml-2"
+                class="ml-2 flex-shrink-0"
               />
               <span
-                class={`mr-1 font-bold w-4 text-center ${
+                class={`mr-1 font-bold w-4 text-center flex-shrink-0 ${
                   (props.staged ? file.x : file.y) === 'M'
                     ? 'text-yellow-600 dark:text-yellow-500'
                     : (props.staged ? file.x : file.y) === 'A' || (file.x === '?' && file.y === '?')
@@ -268,9 +278,9 @@ export default function DiffView(props: Props) {
                 {(props.staged ? file.x : file.y) === 'D' && 'D'}
                 {file.x === '?' && file.y === '?' && '?'}
               </span>
-              <span class="font-mono text-sm text-gray-700 dark:text-gray-300 truncate max-w-[60vw]">{file.path}</span>
+              <span class="font-mono text-[14px] text-gray-700 dark:text-gray-300 truncate min-w-0">{file.path}</span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-shrink-0">
               <button
                 class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded"
                 onClick={() => openInEditor(file.path)}
@@ -283,26 +293,34 @@ export default function DiffView(props: Props) {
               <button
                 class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-2 py-1 rounded"
                 onClick={() => void toggleExpand(file.path)}
+                title={expanded()[file.path] ? 'Collapse' : 'Expand'}
               >
-                {expanded()[file.path] ? 'Collapse' : 'Expand'}
+                <span
+                  class="transform transition-transform duration-150 inline-block"
+                  classList={{ 'rotate-90': expanded()[file.path] }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M6 4l8 6-8 6V4z" />
+                  </svg>
+                </span>
               </button>
             </div>
           </div>
           {expanded()[file.path] && (
             <div class="p-1 bg-white dark:bg-[#0d1117]">
-              <div class="overflow-x-auto text-sm font-mono leading-relaxed text-[13px]">
+              <div class="overflow-x-hidden text-sm font-mono leading-relaxed text-[13px] max-w-full">
                 {diffs()[file.path] ? (
                   (() => {
                     const parsed = parseUnified(diffs()[file.path] || '')
                     return (
-                      <div>
+                      <div class="min-w-0">
                         {parsed.map((ln) => (
                           <div class={`flex gap-2 w-full items-stretch ${ln.type === 'meta' ? 'text-gray-500' : ''}`}>
                             <div class="w-auto text-right text-xs text-gray-400 select-none">
                               {ln.oldLine ?? ln.newLine ?? ''}
                             </div>
                             <div
-                              class={`px-2 py-0.5 flex-1 whitespace-pre-wrap w-full text-left ${ln.type === 'add' ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ln.type === 'del' ? 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-transparent text-gray-800 dark:text-gray-200'}`}
+                              class={`px-2 py-0.5 flex-1 whitespace-pre-wrap w-full max-w-full text-left ${ln.type === 'add' ? 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300' : ln.type === 'del' ? 'bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-transparent text-gray-800 dark:text-gray-200'}`}
                             >
                               <span class="font-mono text-[13px] block w-full text-left">
                                 {ln.type === 'add' ? '+' : ln.type === 'del' ? '-' : ' '}
@@ -358,7 +376,7 @@ export default function DiffView(props: Props) {
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto overflow-x-hidden" style="scrollbar-gutter: stable;">
         <div class="p-2">
           <textarea
             class="w-full p-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
@@ -396,6 +414,21 @@ export default function DiffView(props: Props) {
               {isGenerating() ? '...' : '✨'}
             </button>
           </div>
+
+          <div class="flex gap-2 mt-2">
+            <button
+              onClick={() => void handleStageAll()}
+              class="flex-1 text-sm bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+            >
+              Stage All
+            </button>
+            <button
+              onClick={() => void handleUnstageAll()}
+              class="flex-1 text-sm bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+            >
+              Unstage All
+            </button>
+          </div>
         </div>
 
         <Show when={stagedFiles().length > 0}>
@@ -405,7 +438,9 @@ export default function DiffView(props: Props) {
 
         <Show when={unstagedFiles().length > 0}>
           <div class="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">Changes</div>
-          <FileList files={unstagedFiles()} staged={false} />
+          <div class="max-w-full overflow-hidden">
+            <FileList files={unstagedFiles()} staged={false} />
+          </div>
         </Show>
 
         {gitFiles().length === 0 && (
