@@ -35,8 +35,18 @@ export function registerFilesRoutes(app: express.Application, manager: OpencodeM
       // Ensure we return an object with content property if the SDK returns raw string or similar
       if (typeof data === 'string') {
         res.json({ content: data })
-      } else {
+      } else if (data && typeof data === 'object' && 'content' in data) {
+        // Already in expected shape
         res.json(data)
+      } else {
+        // Fallback: try reading the file directly from the filesystem inside the folder
+        try {
+          const fsContent = await fs.readFile(path.join((req.query.folder as string) || '', filePath), 'utf-8')
+          res.json({ content: fsContent })
+        } catch {
+          // If filesystem read fails, just return the raw data
+          res.json(data)
+        }
       }
     } catch (error) {
       console.error(error)

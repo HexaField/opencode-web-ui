@@ -72,13 +72,31 @@ export default function DiffView(props: Props) {
 
   // Periodic refresh for pull count (behind). Run every minute.
   let intervalId: number | undefined
+  // Handler for global git updates dispatched by api/git
+  const handleGitUpdated = () => {
+    // Refresh status, branches and ahead/behind counts when git operations occur elsewhere
+    void fetchStatus()
+    void fetchBranches()
+    void fetchAheadBehind()
+  }
+
   onMount(() => {
     intervalId = window.setInterval(() => {
       void fetchAheadBehind()
     }, 60 * 1000)
+    try {
+      window.addEventListener('git-updated', handleGitUpdated)
+    } catch (err) {
+      void err
+    }
   })
   onCleanup(() => {
     if (intervalId) clearInterval(intervalId)
+    try {
+      window.removeEventListener('git-updated', handleGitUpdated)
+    } catch (err) {
+      void err
+    }
   })
 
   createEffect(() => {

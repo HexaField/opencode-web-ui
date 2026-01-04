@@ -293,9 +293,33 @@ const ToolCall: Component<Props> = (props) => {
                 <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Input
                 </span>
-                <pre class="mt-1 max-h-60 overflow-y-auto rounded-md bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 p-3 text-xs font-mono">
-                  {JSON.stringify(props.part.state?.input, null, 2)}
-                </pre>
+                <div class="relative">
+                  <pre class="mt-1 max-h-60 overflow-y-auto rounded-md bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 p-3 text-xs font-mono">
+                    {JSON.stringify(props.part.state?.input, null, 2)}
+                  </pre>
+                  <button
+                    class="absolute top-1 right-1 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                    title="Copy"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      try {
+                        void navigator.clipboard.writeText(JSON.stringify(props.part.state?.input, null, 2) || '')
+                      } catch (err) {
+                        console.error('Copy failed', err)
+                      }
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 text-gray-600 dark:text-gray-300"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path d="M8 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.586A2 2 0 0015.414 5L12 1.586A2 2 0 0010.586 1H8z" />
+                      <path d="M3 6a2 2 0 012-2h6v2H5v9h9v-4h2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             }
           >
@@ -308,6 +332,28 @@ const ToolCall: Component<Props> = (props) => {
                   <pre class="max-h-60 overflow-y-auto rounded-md bg-[#1e1e1e] text-gray-100 p-3 text-xs font-mono whitespace-pre-wrap border border-gray-800">
                     {getBashInput()?.command}
                   </pre>
+                  <button
+                    class="absolute top-1 right-1 p-1 rounded hover:bg-gray-800/40"
+                    title="Copy"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      try {
+                        void navigator.clipboard.writeText(getBashInput()?.command || '')
+                      } catch (err) {
+                        console.error('Copy failed', err)
+                      }
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4 text-gray-200"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path d="M8 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.586A2 2 0 0015.414 5L12 1.586A2 2 0 0010.586 1H8z" />
+                      <path d="M3 6a2 2 0 012-2h6v2H5v9h9v-4h2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </Match>
@@ -326,15 +372,63 @@ const ToolCall: Component<Props> = (props) => {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <div class="text-xs font-semibold text-red-500/80 uppercase tracking-wider mb-1">Replace</div>
-                    <pre class="max-h-40 overflow-y-auto rounded-md bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 text-red-700 dark:text-red-300 p-2 text-xs font-mono whitespace-pre-wrap">
-                      {getEditInput()?.oldString}
-                    </pre>
+                    <div class="relative">
+                      <pre class="max-h-40 overflow-y-auto rounded-md bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 text-red-700 dark:text-red-300 p-2 text-xs font-mono whitespace-pre-wrap">
+                        {getEditInput()?.oldString}
+                      </pre>
+                      <button
+                        class="absolute top-1 right-1 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                        title="Copy"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          try {
+                            void navigator.clipboard.writeText(getEditInput()?.oldString || '')
+                          } catch (err) {
+                            console.error('Copy failed', err)
+                          }
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 text-red-600 dark:text-red-300"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path d="M8 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.586A2 2 0 0015.414 5L12 1.586A2 2 0 0010.586 1H8z" />
+                          <path d="M3 6a2 2 0 012-2h6v2H5v9h9v-4h2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <div class="text-xs font-semibold text-green-500/80 uppercase tracking-wider mb-1">With</div>
-                    <pre class="max-h-40 overflow-y-auto rounded-md bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/20 text-green-700 dark:text-green-300 p-2 text-xs font-mono whitespace-pre-wrap">
-                      {getEditInput()?.newString}
-                    </pre>
+                    <div class="relative">
+                      <pre class="max-h-40 overflow-y-auto rounded-md bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/20 text-green-700 dark:text-green-300 p-2 text-xs font-mono whitespace-pre-wrap">
+                        {getEditInput()?.newString}
+                      </pre>
+                      <button
+                        class="absolute top-1 right-1 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                        title="Copy"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          try {
+                            void navigator.clipboard.writeText(getEditInput()?.newString || '')
+                          } catch (err) {
+                            console.error('Copy failed', err)
+                          }
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4 text-green-600 dark:text-green-300"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path d="M8 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.586A2 2 0 0015.414 5L12 1.586A2 2 0 0010.586 1H8z" />
+                          <path d="M3 6a2 2 0 012-2h6v2H5v9h9v-4h2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -364,9 +458,33 @@ const ToolCall: Component<Props> = (props) => {
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Output
               </span>
-              <pre class="mt-1 max-h-60 overflow-y-auto rounded-md bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 p-3 text-xs font-mono whitespace-pre-wrap">
-                {getOutput()}
-              </pre>
+              <div class="relative">
+                <pre class="mt-1 max-h-60 overflow-y-auto rounded-md bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 p-3 text-xs font-mono whitespace-pre-wrap">
+                  {typeof getOutput() === 'string' ? getOutput() : JSON.stringify(getOutput(), null, 2)}
+                </pre>
+                <button
+                  class="absolute top-1 right-1 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                  title="Copy"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    try {
+                      void navigator.clipboard.writeText(getWriteInput()?.content || '')
+                    } catch (err) {
+                      console.error('Copy failed', err)
+                    }
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4 text-gray-600 dark:text-gray-300"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path d="M8 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.586A2 2 0 0015.414 5L12 1.586A2 2 0 0010.586 1H8z" />
+                    <path d="M3 6a2 2 0 012-2h6v2H5v9h9v-4h2v4a2 2 0 01-2 2H5a2 2 0 01-2-2V6z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </Show>
           <Show when={getError()}>

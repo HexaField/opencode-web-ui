@@ -10,10 +10,8 @@ When refactoring, never add migrations unless explicity asked to do so.
 
 Test cases should fail if the implementation is incorrect or incomplete.
 
-DO NOT add gates or feature flags for new functionality. All new code must be active by default.
-
 NEVER add stubs or placeholders. All functions and methods must have complete implementations.
 
 Always install dependencies with `npm i package@latest` to ensure the latest version is used.
 
-Always make sure to run `npm run lint`, `npm run build` and `npm test` after making changes to verify that the code compiles and tests pass.
+Always make sure `npm run check` passes after making changes to verify that the code compiles without errors and tests pass.

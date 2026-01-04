@@ -38,6 +38,78 @@ export default function ChatInterface(props: Props) {
     }
   }
 
+  // Persist draft message per session to localStorage
+  // Key format: chat:draft:<sessionId>
+  createEffect(() => {
+    // Load saved draft when sessionId changes
+    if (!props.sessionId) return
+    if (typeof window === 'undefined' || !window.localStorage) return
+    const key = `chat:draft:${props.sessionId}`
+    const saved = window.localStorage.getItem(key)
+    if (saved && input() === '') {
+      setInput(saved)
+    }
+  })
+
+  // Save draft whenever input changes
+  createEffect(() => {
+    if (!props.sessionId) return
+    if (typeof window === 'undefined' || !window.localStorage) return
+    const key = `chat:draft:${props.sessionId}`
+    try {
+      window.localStorage.setItem(key, input())
+    } catch (e) {
+      // Ignore quota / write errors
+      console.warn('Failed to persist draft to localStorage', e)
+    }
+  })
+
+  // Scrolling and manual mode state
+  const [messagesLoaded, setMessagesLoaded] = createSignal(false)
+  const [manualMode, setManualMode] = createSignal(false)
+  let scrollContainer: HTMLDivElement | undefined
+
+  const scrollToBottom = (instant = true) => {
+    if (!scrollContainer) return
+    try {
+      if (instant) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight
+      } else {
+        scrollContainer.scrollTo({ top: scrollContainer.scrollHeight, behavior: 'smooth' })
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Helper to determine if the user is at the bottom (within threshold)
+  const isAtBottom = (): boolean => {
+    if (!scrollContainer) return true
+    const threshold = 20
+    return scrollContainer.scrollHeight - scrollContainer.scrollTop - scrollContainer.clientHeight <= threshold
+  }
+
+  const onUserScroll = () => {
+    // Ignore scrolls until messages are loaded for the first time
+    if (!messagesLoaded()) return
+    // If user scrolled to bottom, resume auto scroll
+    if (isAtBottom()) {
+      setManualMode(false)
+    } else {
+      setManualMode(true)
+    }
+  }
+
+  const attachScrollListener = () => {
+    if (!scrollContainer) return
+    scrollContainer.addEventListener('scroll', onUserScroll, { passive: true })
+  }
+
+  const detachScrollListener = () => {
+    if (!scrollContainer) return
+    scrollContainer.removeEventListener('scroll', onUserScroll)
+  }
+
   const fetchSession = async () => {
     try {
       const session = await getSession(props.folder, props.sessionId)
@@ -76,7 +148,12 @@ export default function ChatInterface(props: Props) {
 
   createEffect(() => {
     if (props.sessionId) {
+      // Reset state for new session
       setMessages([])
+      setMessagesLoaded(false)
+      setManualMode(false)
+      detachScrollListener()
+
       setLoading(true)
 
       // Initial fetch
@@ -92,9 +169,6 @@ export default function ChatInterface(props: Props) {
           const session = JSON.parse(event.data as string) as Session
           if (session) {
             // Update status whenever we get a session update via SSE
-            // This might not be enough if status isn't in the session object, so we might need to poll or rely on status endpoint
-            // But ideally the session object or event stream tells us if it's running.
-            // For now, let's also poll status when we get an event, just to be sure.
             void checkStatus()
 
             if (session.agent !== undefined) setCurrentAgent(session.agent || '')
@@ -135,6 +209,28 @@ export default function ChatInterface(props: Props) {
       onCleanup(() => {
         eventSource.close()
       })
+    }
+  })
+
+  // Scroll behavior: react to messages changes
+  createEffect(() => {
+    const msgs = messages()
+    // If messages are loaded for the first time, ensure we scroll to bottom and start listening to user scrolls
+    if (!messagesLoaded() && msgs.length > 0) {
+      // Ensure DOM updates have rendered
+      requestAnimationFrame(() => {
+        scrollToBottom(true)
+        setMessagesLoaded(true)
+        // Attach listener after initial scroll so a user trying to scroll before load doesn't flip mode
+        attachScrollListener()
+      })
+      return
+    }
+
+    // For subsequent message updates: if not in manual mode, autoscroll
+    if (messagesLoaded() && !manualMode()) {
+      // Ensure DOM updates have rendered before scrolling
+      requestAnimationFrame(() => scrollToBottom(true))
     }
   })
 
@@ -237,7 +333,10 @@ export default function ChatInterface(props: Props) {
         onSave={handleUpdateSession}
       />
 
-      <div class="flex-1 overflow-y-auto overflow-x-hidden p-1 md:p-2 flex flex-col">
+      <div
+        ref={(el) => (scrollContainer = el as HTMLDivElement | undefined)}
+        class="flex-1 overflow-y-auto overflow-x-hidden p-1 md:p-2 flex flex-col"
+      >
         <For each={messages()}>
           {(msg) => {
             const isUser = msg.info.role === 'user'
@@ -261,19 +360,54 @@ export default function ChatInterface(props: Props) {
                           <Show
                             when={isUser}
                             fallback={
-                              <div
-                                class="prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-sm"
-                                style={{ 'font-size': '14px' }}
-                                innerHTML={DOMPurify.sanitize(
-                                  marked.parse((part as { text: string }).text, { async: false })
-                                )}
-                              />
+                              <div>
+                                <div
+                                  class="prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-sm"
+                                  style={{ 'font-size': '14px' }}
+                                  innerHTML={DOMPurify.sanitize(
+                                    marked.parse((part as { text: string }).text, { async: false })
+                                  )}
+                                />
+                              </div>
                             }
                           >
-                            <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                              {(part as { text: string }).text}
-                            </pre>
+                            <div>
+                              <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                                {(part as { text: string }).text}
+                              </pre>
+                            </div>
                           </Show>
+                        </div>
+
+                        {/* Copy button placed beneath the message, outside the message border, aligned based on sender */}
+                        <div class={`mt-0.5 ${isUser ? 'self-end' : 'self-start'}`}>
+                          <button
+                            class="pt-0 pb-0.5 px-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                            title="Copy"
+                            aria-label="Copy message"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              try {
+                                void navigator.clipboard.writeText((part as { text: string }).text)
+                              } catch (err) {
+                                console.error('Copy failed', err)
+                              }
+                            }}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              class="h-3 w-3 text-gray-500 dark:text-gray-400"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <rect x="9" y="4" width="11" height="11" rx="2" />
+                              <rect x="4" y="9" width="11" height="11" rx="2" />
+                            </svg>
+                          </button>
                         </div>
                       </Show>
                       <Show when={part.type === 'tool'}>
