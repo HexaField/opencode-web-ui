@@ -1,4 +1,4 @@
-import { exec } from 'child_process'
+import { exec, spawn, type ChildProcess } from 'child_process'
 import * as fs from 'fs/promises'
 import * as os from 'os'
 import * as path from 'path'
@@ -19,6 +19,8 @@ describe('Server Integration Tests', () => {
   vi.setConfig({ testTimeout: 30000 })
 
   let tempDir: string
+  let opencodeServer: ChildProcess
+  const originalOpencodeUrl = process.env.OPENCODE_SERVER_URL
 
   interface GitStatusItem {
     path: string
@@ -34,6 +36,34 @@ describe('Server Integration Tests', () => {
     // Create a dummy file to read
     await fs.writeFile(path.join(tempDir, 'test.txt'), 'Hello World')
 
+    // Start opencode server in tempDir
+    opencodeServer = spawn('opencode', ['serve', '--port', '0'], {
+      cwd: tempDir,
+      env: { ...process.env }
+    })
+
+    // Wait for server to start and get port/url
+    await new Promise<void>((resolve, reject) => {
+      opencodeServer.stdout?.on('data', (data: Buffer) => {
+        const output = data.toString()
+        const match = output.match(/listening on (http:\/\/[^\s]+)/)
+        if (match) {
+          process.env.OPENCODE_SERVER_URL = match[1]
+          resolve()
+        }
+      })
+      opencodeServer.stderr?.on('data', (data: Buffer) => {
+        console.error('Opencode Server Error:', data.toString())
+      })
+      opencodeServer.on('error', reject)
+      opencodeServer.on('exit', (code) => {
+        if (code !== 0 && code !== null) reject(new Error(`Opencode server exited with code ${code}`))
+      })
+    })
+
+    // Reset manager to pick up new URL
+    manager.shutdown()
+
     // Initialize git repo
     await execAsync('git init', { cwd: tempDir })
     await execAsync('git config user.email "test@example.com"', { cwd: tempDir })
@@ -45,6 +75,10 @@ describe('Server Integration Tests', () => {
 
   afterAll(async () => {
     manager.shutdown()
+    if (opencodeServer) {
+      opencodeServer.kill()
+    }
+    process.env.OPENCODE_SERVER_URL = originalOpencodeUrl
     await fs.rm(tempDir, { recursive: true, force: true })
   })
 

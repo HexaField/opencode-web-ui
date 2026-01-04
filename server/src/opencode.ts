@@ -1,43 +1,12 @@
-import { createOpencode, createOpencodeClient } from '@opencode-ai/sdk'
-import { exec as _exec, spawn, type ChildProcess } from 'child_process'
+import { createOpencodeClient } from '@opencode-ai/sdk'
+import { exec as _exec } from 'child_process'
 import * as fs from 'fs/promises'
 import * as path from 'path'
-import { fileURLToPath } from 'url'
 import { promisify } from 'util'
 
 const exec = promisify(_exec)
 
 export type OpencodeClient = ReturnType<typeof createOpencodeClient>
-
-// Worker Logic
-if (process.env.OPENCODE_WORKER_DIR) {
-  ;(async () => {
-    try {
-      const targetDir = process.env.OPENCODE_WORKER_DIR!
-      process.chdir(targetDir)
-
-      // Start OpenCode server on a random port
-      const { server } = await createOpencode({
-        port: 0 // Random port
-        // We might need to suppress logs if they interfere with our stdout JSON
-        // But createOpencode might log to stdout.
-        // We'll try to capture the specific output we need.
-      })
-
-      // Send the URL back to the parent
-      console.log(JSON.stringify({ type: 'ready', url: server.url }))
-
-      // Keep process alive
-      // The server.close() is available if we need it, but here we just wait.
-    } catch (error) {
-      console.error(error)
-      process.exit(1)
-    }
-  })().catch((e) => {
-    console.error(e)
-    process.exit(1)
-  })
-}
 
 const DEFAULT_AGENTS = [
   {
@@ -96,63 +65,30 @@ You are an exploration agent. Help the user find files and understand the codeba
 
 // Manager Logic
 export class OpencodeManager {
-  private clients = new Map<string, OpencodeClient>()
-  private processes = new Map<string, ChildProcess>()
+  private client: OpencodeClient | null = null
 
-  async connect(folder: string): Promise<OpencodeClient> {
-    if (this.clients.has(folder)) {
-      return this.clients.get(folder)!
+  async connect(_folder: string): Promise<OpencodeClient> {
+    void _folder
+    await Promise.resolve()
+    if (this.client) {
+      return this.client
     }
 
-    // Resolve absolute path
-    const absFolder = path.resolve(folder)
+    const url = process.env.OPENCODE_SERVER_URL
+    if (!url) {
+      throw new Error('OPENCODE_SERVER_URL environment variable is not set')
+    }
 
-    return new Promise((resolve, reject) => {
-      const currentFile = fileURLToPath(import.meta.url)
-
-      // Spawn this same file as a worker
-      // We use process.execPath (node) and tsx loader
-      const child = spawn(process.execPath, ['--import', 'tsx/esm', currentFile], {
-        env: { ...process.env, OPENCODE_WORKER_DIR: absFolder },
-        stdio: ['ignore', 'pipe', 'inherit'] // Pipe stdout to capture URL, inherit stderr for debugging
-      })
-
-      let started = false
-
-      child.stdout.on('data', (data: Buffer) => {
-        const lines = data.toString().split('\n')
-        for (const line of lines) {
-          try {
-            const msg = JSON.parse(line) as { type: string; url: string }
-            if (msg.type === 'ready' && msg.url) {
-              const client = createOpencodeClient({
-                baseUrl: msg.url
-              })
-              this.clients.set(folder, client)
-              this.processes.set(folder, child)
-              started = true
-              resolve(client)
-            }
-          } catch {
-            // Ignore non-JSON lines (logs)
-          }
-        }
-      })
-
-      child.on('error', (err) => {
-        if (!started) reject(err)
-      })
-
-      child.on('exit', (code) => {
-        this.clients.delete(folder)
-        this.processes.delete(folder)
-        if (!started) reject(new Error(`Worker exited with code ${code}`))
-      })
+    this.client = createOpencodeClient({
+      baseUrl: url
     })
+
+    return this.client
   }
 
-  getClient(folder: string): OpencodeClient | undefined {
-    return this.clients.get(folder)
+  getClient(_folder: string): OpencodeClient | undefined {
+    void _folder
+    return this.client || undefined
   }
 
   async listAgents(folder: string) {
@@ -246,10 +182,6 @@ export class OpencodeManager {
   }
 
   shutdown() {
-    for (const child of this.processes.values()) {
-      child.kill()
-    }
-    this.clients.clear()
-    this.processes.clear()
+    this.client = null
   }
 }

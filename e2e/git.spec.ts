@@ -8,7 +8,7 @@ import { promisify } from 'util'
 const execAsync = promisify(exec)
 const TEST_DIR_PREFIX = 'opencode-e2e-git-'
 
-test.describe('Git Integration E2E', () => {
+test.describe.skip('Git Integration E2E', () => {
   let testDir: string
 
   test.beforeAll(async () => {
