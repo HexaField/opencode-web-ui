@@ -1,6 +1,7 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
+import { createStore, reconcile, unwrap } from 'solid-js/store'
 import { abortSession, getSession, getSessionStatus, promptSession, updateSession } from '../api/sessions'
 import { Message, Session, ToolPart } from '../types'
 import AgentSettingsModal from './AgentSettingsModal'
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export default function ChatInterface(props: Props) {
-  const [messages, setMessages] = createSignal<Message[]>([])
+  const [messages, setMessages] = createStore<Message[]>([])
   const [input, setInput] = createSignal('')
   const [loading, setLoading] = createSignal(false)
   const [currentAgent, setCurrentAgent] = createSignal<string>('')
@@ -24,7 +25,7 @@ export default function ChatInterface(props: Props) {
   // checking status from backend or message history fallback
   const isAgentRunning = () =>
     agentStatus() === 'running' ||
-    messages().some(
+    messages.some(
       (m) =>
         m.info.role === 'assistant' && !(m.info.time && (m.info.time as unknown as { completed?: number }).completed)
     )
@@ -121,24 +122,25 @@ export default function ChatInterface(props: Props) {
         setCurrentModel(session.model || '')
 
         if (Array.isArray(session.history)) {
-          setMessages((prev) => {
-            const newHistory = session.history
-            // Check if we need to preserve the temp message
-            const lastPrev = prev[prev.length - 1]
-            if (lastPrev?.info.id.startsWith('temp-')) {
-              // Check if newHistory contains this message (by content)
-              const found = newHistory.find(
-                (m) =>
-                  m.info.role === 'user' &&
-                  m.parts[0].type === 'text' &&
-                  (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
-              )
-              if (!found) {
-                return [...newHistory, lastPrev]
-              }
+          const newHistory = session.history
+          // Check if we need to preserve the temp message
+          const currentMessages = unwrap(messages)
+          const lastPrev = currentMessages[currentMessages.length - 1]
+
+          let nextMessages: Message[] = newHistory.map((m) => ({ ...m, id: m.info.id }))
+          if (lastPrev?.info.id.startsWith('temp-')) {
+            // Check if newHistory contains this message (by content)
+            const found = newHistory.find(
+              (m) =>
+                m.info.role === 'user' &&
+                m.parts[0].type === 'text' &&
+                (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
+            )
+            if (!found) {
+              nextMessages = [...nextMessages, { ...lastPrev, id: lastPrev.info.id }]
             }
-            return newHistory
-          })
+          }
+          setMessages(reconcile(nextMessages))
         }
       }
     } catch (error) {
@@ -175,25 +177,24 @@ export default function ChatInterface(props: Props) {
             if (session.model !== undefined) setCurrentModel(session.model || '')
 
             if (Array.isArray(session.history)) {
-              setMessages((prev) => {
-                const newHistory = session.history
+              const newHistory = session.history
+              const currentMessages = unwrap(messages)
+              const lastPrev = currentMessages[currentMessages.length - 1]
 
-                // Check if we need to preserve the temp message
-                const lastPrev = prev[prev.length - 1]
-                if (lastPrev?.info.id.startsWith('temp-')) {
-                  // Check if newHistory contains this message (by content)
-                  const found = newHistory.find(
-                    (m) =>
-                      m.info.role === 'user' &&
-                      m.parts[0].type === 'text' &&
-                      (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
-                  )
-                  if (!found) {
-                    return [...newHistory, lastPrev]
-                  }
+              let nextMessages: Message[] = newHistory.map((m) => ({ ...m, id: m.info.id }))
+              if (lastPrev?.info.id.startsWith('temp-')) {
+                // Check if newHistory contains this message (by content)
+                const found = newHistory.find(
+                  (m) =>
+                    m.info.role === 'user' &&
+                    m.parts[0].type === 'text' &&
+                    (m.parts[0] as { text: string }).text === (lastPrev.parts[0] as { text: string }).text
+                )
+                if (!found) {
+                  nextMessages = [...nextMessages, { ...lastPrev, id: lastPrev.info.id }]
                 }
-                return newHistory
-              })
+              }
+              setMessages(reconcile(nextMessages))
             }
           }
         } catch (error) {
@@ -214,9 +215,8 @@ export default function ChatInterface(props: Props) {
 
   // Scroll behavior: react to messages changes
   createEffect(() => {
-    const msgs = messages()
     // If messages are loaded for the first time, ensure we scroll to bottom and start listening to user scrolls
-    if (!messagesLoaded() && msgs.length > 0) {
+    if (!messagesLoaded() && messages.length > 0) {
       // Ensure DOM updates have rendered
       requestAnimationFrame(() => {
         scrollToBottom(true)
@@ -253,6 +253,7 @@ export default function ChatInterface(props: Props) {
 
     // Optimistic update
     const tempMessage: Message = {
+      id: 'temp-' + Date.now(),
       info: {
         id: 'temp-' + Date.now(),
         sessionID: props.sessionId,
@@ -271,7 +272,7 @@ export default function ChatInterface(props: Props) {
         }
       ]
     }
-    setMessages((prev) => [...prev, tempMessage])
+    setMessages(messages.length, tempMessage)
 
     try {
       await promptSession(props.folder, props.sessionId, { parts: [{ type: 'text', text }] })
@@ -279,6 +280,7 @@ export default function ChatInterface(props: Props) {
     } catch (err) {
       console.error(err)
       const errorMessage: Message = {
+        id: 'error-' + Date.now(),
         info: {
           id: 'error-' + Date.now(),
           sessionID: props.sessionId,
@@ -302,7 +304,7 @@ export default function ChatInterface(props: Props) {
           }
         ]
       }
-      setMessages((prev) => [...prev, errorMessage])
+      setMessages(messages.length, errorMessage)
     } finally {
       setLoading(false)
     }
@@ -337,7 +339,7 @@ export default function ChatInterface(props: Props) {
         ref={(el) => (scrollContainer = el as HTMLDivElement | undefined)}
         class="flex-1 overflow-y-auto overflow-x-hidden p-1 md:p-2 flex flex-col"
       >
-        <For each={messages()}>
+        <For each={messages}>
           {(msg) => {
             const isUser = msg.info.role === 'user'
             return (

@@ -10,6 +10,7 @@ import type {
 export type { Part as MessagePart, ToolPart, ToolState, ToolStateCompleted }
 
 export type Message = {
+  id?: string
   info: SdkMessage
   parts: Part[]
 }
