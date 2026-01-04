@@ -376,8 +376,8 @@ export default function DiffView(props: Props) {
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto overflow-x-hidden" style="scrollbar-gutter: stable;">
-        <div class="p-2">
+      <div class="flex-1 flex flex-col min-h-0">
+        <div class="p-2 flex-none">
           <textarea
             class="w-full p-2 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-900 text-sm"
             rows={3}
@@ -418,34 +418,36 @@ export default function DiffView(props: Props) {
           <div class="flex gap-2 mt-2">
             <button
               onClick={() => void handleStageAll()}
-              class="flex-1 text-sm bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+              class="text-sm bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700 flex-shrink-0"
             >
               Stage All
             </button>
             <button
               onClick={() => void handleUnstageAll()}
-              class="flex-1 text-sm bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+              class="text-sm bg-gray-200 dark:bg-gray-800 px-3 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700 flex-shrink-0"
             >
               Unstage All
             </button>
           </div>
         </div>
 
-        <Show when={stagedFiles().length > 0}>
-          <div class="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">Staged Changes</div>
-          <FileList files={stagedFiles()} staged={true} />
-        </Show>
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden" style="scrollbar-gutter: stable;">
+          <div class="p-2">
+            <Show when={stagedFiles().length > 0}>
+              <div class="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">Staged Changes</div>
+              <FileList files={stagedFiles()} staged={true} />
+            </Show>
 
-        <Show when={unstagedFiles().length > 0}>
-          <div class="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">Changes</div>
-          <div class="max-w-full overflow-hidden">
-            <FileList files={unstagedFiles()} staged={false} />
+            <Show when={unstagedFiles().length > 0}>
+              <div class="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">Changes</div>
+              <FileList files={unstagedFiles()} staged={false} />
+            </Show>
+
+            {gitFiles().length === 0 && (
+              <div class="p-8 text-center text-gray-500 dark:text-gray-400">No changes detected</div>
+            )}
           </div>
-        </Show>
-
-        {gitFiles().length === 0 && (
-          <div class="p-8 text-center text-gray-500 dark:text-gray-400">No changes detected</div>
-        )}
+        </div>
       </div>
     </div>
   )
