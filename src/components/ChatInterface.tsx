@@ -352,7 +352,7 @@ export default function ChatInterface(props: Props) {
                         <Show
                           when={
                             !isUser &&
-                            currentModel() === 'gemini-3-pro-preview' &&
+                            currentModel().includes('gemini-3-pro-preview') &&
                             (part as { text: string }).text.startsWith('thought:')
                           }
                           fallback={
