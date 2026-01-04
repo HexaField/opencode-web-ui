@@ -3,6 +3,7 @@ import {
   FilePartInput,
   SubtaskPartInput,
   TextPartInput,
+  type Event,
   type Message,
   type Part,
   type Session,
@@ -221,10 +222,25 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
 
     // Use SDK event stream
     try {
-      const { stream } = await client.event.subscribe({ query: { directory: folder } })
+      const sub = await client.event.subscribe({ query: { directory: folder } })
+      const stream = sub.stream
+      const iterator = stream[Symbol.asyncIterator]()
 
-      for await (const event of stream) {
-        if (!isActive) break
+      const closePromise = new Promise<void>((resolve) => {
+        if (!isActive) resolve()
+        req.on('close', resolve)
+      })
+
+      while (isActive) {
+        const nextPacket = iterator.next()
+        const result = await Promise.race([
+          nextPacket,
+          closePromise.then(() => ({ done: true, value: undefined }) as IteratorResult<Event, undefined>)
+        ])
+
+        if (result.done) break
+
+        const event = result.value
 
         let isRelevant = false
 
@@ -244,6 +260,10 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
             console.error('Error fetching session update:', err)
           }
         }
+      }
+
+      if (iterator.return) {
+        await iterator.return(undefined)
       }
     } catch (error) {
       console.error(error)
