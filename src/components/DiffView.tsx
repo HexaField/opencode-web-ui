@@ -1,4 +1,4 @@
-import { createEffect, createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { getFileDiff, readFile } from '../api/files'
 import {
   checkout,
@@ -70,6 +70,17 @@ export default function DiffView(props: Props) {
     }
   }
 
+  // Periodic refresh for pull count (behind). Run every minute.
+  let intervalId: number | undefined
+  onMount(() => {
+    intervalId = window.setInterval(() => {
+      void fetchAheadBehind()
+    }, 60 * 1000)
+  })
+  onCleanup(() => {
+    if (intervalId) clearInterval(intervalId)
+  })
+
   createEffect(() => {
     void fetchStatus()
     void fetchBranches()
@@ -100,6 +111,8 @@ export default function DiffView(props: Props) {
     await commit(props.folder, commitMessage())
     setCommitMessage('')
     void fetchStatus()
+    // update push count after committing
+    void fetchAheadBehind()
   }
 
   const handleGenerateMessage = async () => {
