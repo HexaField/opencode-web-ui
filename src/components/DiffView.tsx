@@ -4,6 +4,7 @@ import {
   checkout,
   commit,
   generateCommitMessage,
+  getAheadBehind,
   getCurrentBranch,
   getGitStatus,
   listBranches,
@@ -31,6 +32,7 @@ export default function DiffView(props: Props) {
   const [currentBranch, setCurrentBranch] = createSignal('')
   const [commitMessage, setCommitMessage] = createSignal('')
   const [isGenerating, setIsGenerating] = createSignal(false)
+  const [aheadBehind, setAheadBehind] = createSignal<{ ahead: number; behind: number }>({ ahead: 0, behind: 0 })
 
   const [expanded, setExpanded] = createSignal<Record<string, boolean>>({})
   const [diffs, setDiffs] = createSignal<Record<string, string | null>>({})
@@ -56,9 +58,28 @@ export default function DiffView(props: Props) {
     }
   }
 
+  const fetchAheadBehind = async () => {
+    try {
+      const res = await getAheadBehind(props.folder, 'origin', currentBranch())
+      if (res && typeof res.ahead === 'number' && typeof res.behind === 'number') {
+        setAheadBehind({ ahead: res.ahead, behind: res.behind })
+      }
+    } catch (err) {
+      // ignore errors
+      console.error('Failed to fetch ahead/behind', err)
+    }
+  }
+
   createEffect(() => {
     void fetchStatus()
     void fetchBranches()
+  })
+
+  createEffect(() => {
+    const branch = currentBranch()
+    if (branch) {
+      void fetchAheadBehind()
+    }
   })
 
   const stagedFiles = () => gitFiles().filter((f) => f.x !== ' ' && f.x !== '?')
@@ -94,11 +115,13 @@ export default function DiffView(props: Props) {
 
   const handlePush = async () => {
     await push(props.folder, 'origin', currentBranch())
+    void fetchAheadBehind()
   }
 
   const handlePull = async () => {
     await pull(props.folder, 'origin', currentBranch())
     void fetchStatus()
+    void fetchAheadBehind()
   }
 
   const handleStageAll = async () => {
@@ -354,13 +377,13 @@ export default function DiffView(props: Props) {
                 onClick={() => void handlePull()}
                 class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-800 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
               >
-                Pull
+                {aheadBehind().behind > 0 ? `Pull (${aheadBehind().behind})` : 'Pull'}
               </button>
               <button
                 onClick={() => void handlePush()}
                 class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-800 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
               >
-                Push
+                {aheadBehind().ahead > 0 ? `Push (${aheadBehind().ahead})` : 'Push'}
               </button>
             </div>
           </div>

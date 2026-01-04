@@ -36,6 +36,54 @@ export function registerGitRoutes(app: express.Application) {
     }
   })
 
+  app.get('/api/git/ahead-behind', validate(FolderQuerySchema), async (req, res) => {
+    const folder = req.query.folder as string
+    const remote = (req.query.remote as string) || 'origin'
+    let branch = req.query.branch as string | undefined
+
+    if (!folder) {
+      res.status(400).json({ error: 'Folder required' })
+      return
+    }
+
+    try {
+      if (!branch) {
+        branch = await getCurrentBranch(folder)
+      }
+
+      try {
+        // Check if the remote branch exists
+        await runGitCommand(['rev-parse', '--verify', `${remote}/${branch}`], folder)
+        // remote branch exists, compare
+        const out = await runGitCommand(
+          ['rev-list', '--left-right', '--count', `${remote}/${branch}...${branch}`],
+          folder
+        )
+        const parts = out.trim().split(/\s+/)
+        let behind = 0
+        let ahead = 0
+        if (parts.length >= 2) {
+          behind = Number(parts[0])
+          ahead = Number(parts[1])
+        }
+        res.json({ ahead, behind })
+      } catch {
+        // remote branch doesn't exist; compute commits on branch not on any remote
+        try {
+          const out = await runGitCommand(['rev-list', '--count', branch, '--not', '--remotes'], folder)
+          const ahead = Number(out.trim() || '0')
+          res.json({ ahead, behind: 0 })
+        } catch (err) {
+          console.error('Failed to compute ahead count:', err)
+          res.json({ ahead: 0, behind: 0 })
+        }
+      }
+    } catch (err) {
+      console.error('Failed to get ahead/behind:', err)
+      res.status(500).json({ error: String(err) })
+    }
+  })
+
   app.get('/api/git/branches', validate(FolderQuerySchema), async (req, res) => {
     const folder = req.query.folder as string
     if (!folder) {

@@ -127,6 +127,20 @@ export async function pull(folder: string, remote?: string, branch?: string): Pr
   return
 }
 
+export async function getAheadBehind(
+  folder: string,
+  remote?: string,
+  branch?: string
+): Promise<{ ahead: number; behind: number }> {
+  const qs = new URLSearchParams()
+  qs.set('folder', folder)
+  if (remote) qs.set('remote', remote)
+  if (branch) qs.set('branch', branch)
+  const res = await fetch(`${API_BASE}/git/ahead-behind?${qs.toString()}`)
+  if (!res.ok) throw new Error('Failed to get ahead/behind')
+  return res.json() as Promise<{ ahead: number; behind: number }>
+}
+
 export async function checkout(folder: string, branch: string): Promise<void> {
   const body: GitCheckoutRequest['body'] = { folder, branch }
   const res = await fetch(`${API_BASE}/git/checkout`, {
