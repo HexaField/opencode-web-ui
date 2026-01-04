@@ -5,6 +5,7 @@ import { createStore, reconcile, unwrap } from 'solid-js/store'
 import { abortSession, getSession, getSessionStatus, promptSession, updateSession } from '../api/sessions'
 import { Message, Session, ToolPart } from '../types'
 import AgentSettingsModal from './AgentSettingsModal'
+import ThoughtChain from './ThoughtChain'
 import ToolCall from './ToolCall'
 
 interface Props {
@@ -348,9 +349,17 @@ export default function ChatInterface(props: Props) {
                   {(part) => (
                     <>
                       <Show when={part.type === 'text'}>
-                        <div
-                          data-testid={`message-${msg.info.role}`}
-                          class={`
+                        <Show
+                          when={
+                            !isUser &&
+                            currentModel() === 'gemini-3-pro-preview' &&
+                            (part as { text: string }).text.startsWith('thought:')
+                          }
+                          fallback={
+                            <>
+                              <div
+                                data-testid={`message-${msg.info.role}`}
+                                class={`
                             max-w-[85%] md:max-w-[75%] rounded-xl px-2 py-1 border shadow-sm
                             ${
                               isUser
@@ -358,59 +367,64 @@ export default function ChatInterface(props: Props) {
                                 : 'bg-white dark:bg-[#161b22] text-gray-900 dark:text-gray-100 border-gray-200 dark:border-[#30363d] rounded-bl-sm'
                             }
                           `}
-                        >
-                          <Show
-                            when={isUser}
-                            fallback={
-                              <div>
-                                <div
-                                  class="prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-sm"
-                                  style={{ 'font-size': '14px' }}
-                                  innerHTML={DOMPurify.sanitize(
-                                    marked.parse((part as { text: string }).text, { async: false })
-                                  )}
-                                />
+                              >
+                                <Show
+                                  when={isUser}
+                                  fallback={
+                                    <div>
+                                      <div
+                                        class="prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-sm"
+                                        style={{ 'font-size': '14px' }}
+                                        innerHTML={DOMPurify.sanitize(
+                                          marked.parse((part as { text: string }).text, { async: false })
+                                        )}
+                                      />
+                                    </div>
+                                  }
+                                >
+                                  <div>
+                                    <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                                      {(part as { text: string }).text}
+                                    </pre>
+                                  </div>
+                                </Show>
                               </div>
-                            }
-                          >
-                            <div>
-                              <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                                {(part as { text: string }).text}
-                              </pre>
-                            </div>
-                          </Show>
-                        </div>
 
-                        {/* Copy button placed beneath the message, outside the message border, aligned based on sender */}
-                        <div class={`mt-0.5 ${isUser ? 'self-end' : 'self-start'}`}>
-                          <button
-                            class="pt-0 pb-0.5 px-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
-                            title="Copy"
-                            aria-label="Copy message"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              try {
-                                void navigator.clipboard.writeText((part as { text: string }).text)
-                              } catch (err) {
-                                console.error('Copy failed', err)
-                              }
-                            }}
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="h-3 w-3 text-gray-500 dark:text-gray-400"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="1.5"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                            >
-                              <rect x="9" y="4" width="11" height="11" rx="2" />
-                              <rect x="4" y="9" width="11" height="11" rx="2" />
-                            </svg>
-                          </button>
-                        </div>
+                              {/* Copy button placed beneath the message, outside the message border, aligned based on sender */}
+                              <div class={`mt-0.5 ${isUser ? 'self-end' : 'self-start'}`}>
+                                <button
+                                  class="pt-0 pb-0.5 px-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                                  title="Copy"
+                                  aria-label="Copy message"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    try {
+                                      void navigator.clipboard.writeText((part as { text: string }).text)
+                                    } catch (err) {
+                                      console.error('Copy failed', err)
+                                    }
+                                  }}
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-3 w-3 text-gray-500 dark:text-gray-400"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                  >
+                                    <rect x="9" y="4" width="11" height="11" rx="2" />
+                                    <rect x="4" y="9" width="11" height="11" rx="2" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </>
+                          }
+                        >
+                          <ThoughtChain text={(part as { text: string }).text} />
+                        </Show>
                       </Show>
                       <Show when={part.type === 'tool'}>
                         <ToolCall part={part as ToolPart} folder={props.folder} />
