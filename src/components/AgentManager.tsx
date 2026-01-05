@@ -6,11 +6,11 @@ interface AgentConfig {
   description: string
   mode: 'primary' | 'subagent'
   model: string
-  tools: {
-    write: boolean
-    edit: boolean
-    bash: boolean
-    webfetch: boolean
+  permission: {
+    write: string
+    edit: string
+    bash: string
+    webfetch: string
   }
   systemPrompt: string
 }
@@ -24,11 +24,11 @@ const DEFAULT_CONFIG: AgentConfig = {
   description: '',
   mode: 'primary',
   model: '',
-  tools: {
-    write: true,
-    edit: true,
-    bash: true,
-    webfetch: true
+  permission: {
+    write: 'allow',
+    edit: 'allow',
+    bash: 'allow',
+    webfetch: 'allow'
   },
   systemPrompt: ''
 }
@@ -77,23 +77,32 @@ export default function AgentManager(props: Props) {
       if (key.trim() === 'description') conf.description = value
       if (key.trim() === 'mode') conf.mode = value as 'primary' | 'subagent'
       if (key.trim() === 'model') conf.model = value
-
-      // Simple tool parsing (assumes indented lines follow 'tools:')
-      // This is a very basic parser, might need improvement for nested structures
     })
 
-    // Better parsing for tools if they are in the frontmatter
-    // We'll use a regex to find the tools block
-    const toolsMatch = frontmatter.match(/tools:\n([\s\S]*?)(?=\n\w+:|$)/)
-    if (toolsMatch) {
-      const toolsBlock = toolsMatch[1]
-      toolsBlock.split('\n').forEach((line) => {
+    // Parse permission block
+    const permissionMatch = frontmatter.match(/permission:\n([\s\S]*?)(?=\n\w+:|$)/)
+    if (permissionMatch) {
+      const permissionBlock = permissionMatch[1]
+      permissionBlock.split('\n').forEach((line) => {
         const [tKey, tVal] = line.split(':').map((s) => s.trim())
         if (tKey && tVal) {
           // @ts-expect-error - dynamic assignment
-          conf.tools[tKey] = tVal === 'true'
+          conf.permission[tKey] = tVal
         }
       })
+    } else {
+      // Fallback for old tools block
+      const toolsMatch = frontmatter.match(/tools:\n([\s\S]*?)(?=\n\w+:|$)/)
+      if (toolsMatch) {
+        const toolsBlock = toolsMatch[1]
+        toolsBlock.split('\n').forEach((line) => {
+          const [tKey, tVal] = line.split(':').map((s) => s.trim())
+          if (tKey && tVal) {
+            // @ts-expect-error - dynamic assignment
+            conf.permission[tKey] = tVal === 'true' ? 'allow' : 'deny'
+          }
+        })
+      }
     }
 
     return conf
@@ -104,11 +113,11 @@ export default function AgentManager(props: Props) {
 description: ${c.description}
 mode: ${c.mode}
 model: ${c.model}
-tools:
-  write: ${c.tools.write}
-  edit: ${c.tools.edit}
-  bash: ${c.tools.bash}
-  webfetch: ${c.tools.webfetch}
+permission:
+  write: ${c.permission.write}
+  edit: ${c.permission.edit}
+  bash: ${c.permission.bash}
+  webfetch: ${c.permission.webfetch}
 ---
 ${c.systemPrompt}`
   }
@@ -332,16 +341,19 @@ ${c.systemPrompt}`
                     Tool Permissions
                   </label>
                   <div class="space-y-2">
-                    <For each={Object.keys(config().tools)}>
+                    <For each={Object.keys(config().permission)}>
                       {(tool) => (
                         <label class="flex items-center space-x-2">
                           <input
                             type="checkbox"
-                            checked={config().tools[tool as keyof AgentConfig['tools']]}
+                            checked={config().permission[tool as keyof AgentConfig['permission']] === 'allow'}
                             onChange={(e) =>
                               setConfig({
                                 ...config(),
-                                tools: { ...config().tools, [tool]: e.currentTarget.checked }
+                                permission: {
+                                  ...config().permission,
+                                  [tool]: e.currentTarget.checked ? 'allow' : 'deny'
+                                }
                               })
                             }
                             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"

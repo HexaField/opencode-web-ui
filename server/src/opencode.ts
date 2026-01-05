@@ -14,11 +14,11 @@ const DEFAULT_AGENTS = [
     content: `---
 description: The default primary agent with all tools enabled.
 mode: primary
-tools:
-  write: true
-  edit: true
-  bash: true
-  webfetch: true
+permission:
+  write: allow
+  edit: allow
+  bash: allow
+  webfetch: allow
 ---
 You are the default build agent. You have full access to the system.`
   },
@@ -27,11 +27,11 @@ You are the default build agent. You have full access to the system.`
     content: `---
 description: A restricted agent designed for planning and analysis.
 mode: primary
-tools:
-  write: false
-  edit: false
-  bash: false
-  webfetch: true
+permission:
+  write: deny
+  edit: deny
+  bash: deny
+  webfetch: allow
 ---
 You are a planning agent. Analyze the request and provide a plan. Do not modify files.`
   },
@@ -40,11 +40,11 @@ You are a planning agent. Analyze the request and provide a plan. Do not modify 
     content: `---
 description: A general-purpose agent for researching complex questions.
 mode: subagent
-tools:
-  write: true
-  edit: true
-  bash: true
-  webfetch: true
+permission:
+  write: allow
+  edit: allow
+  bash: allow
+  webfetch: allow
 ---
 You are a general purpose subagent.`
   },
@@ -53,11 +53,11 @@ You are a general purpose subagent.`
     content: `---
 description: A fast agent specialized for exploring codebases.
 mode: subagent
-tools:
-  write: false
-  edit: false
-  bash: true
-  webfetch: false
+permission:
+  write: deny
+  edit: deny
+  bash: allow
+  webfetch: deny
 ---
 You are an exploration agent. Help the user find files and understand the codebase.`
   }
