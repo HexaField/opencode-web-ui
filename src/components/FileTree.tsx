@@ -1,6 +1,6 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
 import { listFiles } from '../api/files'
-import { getGitStatus } from '../api/git'
+import { findRepos, getGitStatus } from '../api/git'
 
 interface Entry {
   name: string
@@ -53,21 +53,42 @@ export default function FileTree(props: Props) {
 
   const fetchGitStatus = async () => {
     try {
-      const status = await getGitStatus(props.rootPath)
-      const map: GitStatusMap = {}
-      if (Array.isArray(status)) {
-        status.forEach((s) => {
-          // Normalize path if needed (git returns relative paths)
-          // Store relative path in map for easier lookup if we have relative paths in FileTree
-          // But FileTree seems to use absolute paths.
-          // Let's store by absolute path if possible, or handle relative logic.
-          // The git status returns paths relative to repo root.
-          // props.rootPath is the repo root.
-          // So absolute path = props.rootPath + '/' + s.path
-          const absPath = props.rootPath + '/' + s.path
-          map[absPath] = s
-        })
+      // Find all git repos
+      let repos: string[] = []
+      try {
+        repos = await findRepos(props.rootPath)
+      } catch (e) {
+        void e
+        // Fallback to checking root if finding repos fails or is not implemented
+        repos = [props.rootPath]
       }
+      if (repos.length === 0) {
+        // If no repos found (and not even root is returned?), maybe try root
+        repos = [props.rootPath]
+      }
+
+      const map: GitStatusMap = {}
+
+      // Fetch status for all repos in parallel
+      await Promise.all(
+        repos.map(async (repoPath) => {
+          try {
+            const status = await getGitStatus(repoPath)
+            if (Array.isArray(status)) {
+              status.forEach((s) => {
+                // Construct absolute path using / separator (standard for web/git relative paths)
+                // We assume repoPath is absolute from findRepos/rootPath
+                const absPath = repoPath + (repoPath.endsWith('/') ? '' : '/') + s.path
+                map[absPath] = s
+              })
+            }
+          } catch (e) {
+            void e
+            // Ignore error for individual repos (might not be git repo)
+          }
+        })
+      )
+
       setGitStatus(map)
     } catch (e) {
       console.error('Failed to fetch git status for tree', e)
