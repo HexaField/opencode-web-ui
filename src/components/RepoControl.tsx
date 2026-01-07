@@ -26,6 +26,7 @@ export default function RepoControl(props: Props) {
   const [gitFiles, setGitFiles] = createSignal<GitFileStatus[]>([])
   const [currentBranch, setCurrentBranch] = createSignal('')
   const [commitMessage, setCommitMessage] = createSignal('')
+  const [commitError, setCommitError] = createSignal('')
   const [isGenerating, setIsGenerating] = createSignal(false)
   const [aheadBehind, setAheadBehind] = createSignal<{ ahead: number; behind: number }>({ ahead: 0, behind: 0 })
 
@@ -115,17 +116,36 @@ export default function RepoControl(props: Props) {
     await fetchStatus()
   }
 
+  const handleStageAll = async () => {
+    const files = unstagedFiles().map((f) => f.path)
+    if (files.length === 0) return
+    await stageFiles(props.repoPath, files)
+    await fetchStatus()
+  }
+
   const handleUnstage = async (file: string) => {
     await unstageFiles(props.repoPath, [file])
     await fetchStatus()
   }
 
+  const handleUnstageAll = async () => {
+    const files = stagedFiles().map((f) => f.path)
+    if (files.length === 0) return
+    await unstageFiles(props.repoPath, files)
+    await fetchStatus()
+  }
+
   const handleCommit = async () => {
     if (!commitMessage()) return
-    await commit(props.repoPath, commitMessage())
-    setCommitMessage('')
-    await fetchStatus()
-    await fetchAheadBehind()
+    setCommitError('')
+    try {
+      await commit(props.repoPath, commitMessage())
+      setCommitMessage('')
+      await fetchStatus()
+      await fetchAheadBehind()
+    } catch (e) {
+      setCommitError(e instanceof Error ? e.message : String(e))
+    }
   }
 
   const handleGenerateMessage = async () => {
@@ -231,13 +251,27 @@ export default function RepoControl(props: Props) {
             Commit
           </button>
         </div>
+        <Show when={commitError()}>
+          <div class="mt-2 p-2 text-xs text-red-600 bg-red-50 dark:bg-red-900/10 rounded border border-red-200 dark:border-red-900/30 whitespace-pre-wrap font-mono max-h-32 overflow-y-auto">
+            {commitError()}
+          </div>
+        </Show>
       </div>
 
       <div class="flex-1 overflow-y-auto px-4 pb-4 space-y-6">
         <div>
           <div class="flex justify-between items-center mb-2">
             <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Staged Changes</h3>
-            <span class="text-xs text-gray-500">{stagedFiles().length}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs text-gray-500">{stagedFiles().length}</span>
+              <button
+                onClick={() => void handleUnstageAll()}
+                class="text-gray-500 hover:text-gray-700 dark:hover:text-white"
+                title="Unstage All Changes"
+              >
+                -
+              </button>
+            </div>
           </div>
           <div class="space-y-1">
             <For each={stagedFiles()}>
@@ -281,7 +315,16 @@ export default function RepoControl(props: Props) {
         <div>
           <div class="flex justify-between items-center mb-2">
             <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Changes</h3>
-            <span class="text-xs text-gray-500">{unstagedFiles().length}</span>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs text-gray-500">{unstagedFiles().length}</span>
+              <button
+                onClick={() => void handleStageAll()}
+                class="text-gray-500 hover:text-gray-700 dark:hover:text-white"
+                title="Stage All Changes"
+              >
+                +
+              </button>
+            </div>
           </div>
           <div class="space-y-1">
             <For each={unstagedFiles()}>
