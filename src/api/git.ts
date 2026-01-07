@@ -191,3 +191,9 @@ export async function merge(folder: string, branch: string): Promise<void> {
   }
   return
 }
+
+export async function findRepos(folder: string): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/git/repos?folder=${encodeURIComponent(folder)}`)
+  if (!res.ok) throw new Error('Failed to find repos')
+  return res.json() as Promise<string[]>
+}

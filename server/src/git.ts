@@ -181,3 +181,50 @@ export async function runCopilotPrompt(prompt: string, cwd: string): Promise<str
     })
   })
 }
+
+export async function findGitRepositories(rootDir: string): Promise<string[]> {
+  const { stdout } = await spawnPromise(
+    'find',
+    [
+      '.',
+      '-name',
+      'node_modules',
+      '-prune', // Skip node_modules
+      '-o',
+      '-name',
+      '.git',
+      '-type',
+      'd',
+      '-print' // Find .git dirs
+    ],
+    { cwd: rootDir }
+  )
+
+  return (
+    stdout
+      .split('\n')
+      .filter((line) => line.trim())
+      .map((line) => path.dirname(path.resolve(rootDir, line)))
+      // Return unique paths
+      .filter((value, index, self) => self.indexOf(value) === index)
+  )
+}
+
+function spawnPromise(
+  cmd: string,
+  args: string[],
+  options: { cwd: string }
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, options)
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (d: Buffer) => (stdout += d.toString()))
+    child.stderr.on('data', (d: Buffer) => (stderr += d.toString()))
+    child.on('close', (code) => {
+      if (code === 0) resolve({ stdout, stderr })
+      else reject(new Error(stderr || stdout))
+    })
+    child.on('error', reject)
+  })
+}

@@ -1,11 +1,35 @@
 import express from 'express'
-import { getCurrentBranch, getGitStatus, listGitBranches, runCopilotPrompt, runGitCommand } from '../../git'
+import {
+  findGitRepositories,
+  getCurrentBranch,
+  getGitStatus,
+  listGitBranches,
+  runCopilotPrompt,
+  runGitCommand
+} from '../../git'
 import { validate } from '../../middleware'
 import { FolderQuerySchema } from '../common/common.schema'
 import { ConnectSchema } from '../misc/misc.schema'
 import { GitBranchSchema, GitCheckoutSchema, GitCommitSchema, GitPushPullSchema, GitStageSchema } from './git.schema'
 
 export function registerGitRoutes(app: express.Application) {
+  app.get('/api/git/repos', validate(FolderQuerySchema), async (req, res) => {
+    const folder = req.query.folder as string
+    if (!folder) {
+      res.status(400).json({ error: 'Folder required' })
+      return
+    }
+    try {
+      const repos = await findGitRepositories(folder)
+      res.json(repos)
+    } catch (err) {
+      console.error('Failed to find git repositories:', err)
+      // Fallback to just scanning the root if recursive scan fails (e.g. find command issues)
+      // But for now, let's assume it works or return empty
+      res.json([folder])
+    }
+  })
+
   app.get('/api/git/status', validate(FolderQuerySchema), async (req, res) => {
     const folder = req.query.folder as string
     if (!folder) {
