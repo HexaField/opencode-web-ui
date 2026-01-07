@@ -36,8 +36,6 @@ export default defineConfig(({ mode }) => {
       }
     },
     test: {
-      globalSetup: './server/test/globalSetup.ts',
-      setupFiles: ['./server/test/setup.ts'],
       exclude: ['e2e/**', 'node_modules/**', '.opencode/**'],
       coverage: {
         provider: 'v8',
