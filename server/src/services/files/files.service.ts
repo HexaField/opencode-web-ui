@@ -142,15 +142,32 @@ export function registerFilesRoutes(app: express.Application, manager: OpencodeM
       const execAsync = promisify(exec)
 
       // Check if file is untracked
-      const { stdout: statusOut } = await execAsync(`git status --porcelain "${filePath}"`, { cwd: folder })
-      if (statusOut.trim().startsWith('??')) {
-        // Untracked file, return empty diff or special indicator
-        res.json({ diff: null, isNew: true })
-        return
-      }
+      try {
+        const { stdout: statusOut } = await execAsync(`git status --porcelain "${filePath}"`, { cwd: folder })
+        if (statusOut.trim().startsWith('??')) {
+          // Untracked file
+          try {
+            await execAsync(`git diff --no-index /dev/null "${filePath}"`, { cwd: folder })
+            res.json({ diff: '', isNew: true })
+          } catch (err) {
+            const error = err as { code?: number; stdout?: string }
+            // git diff --no-index returns exit code 1 if there are differences
+            if (error.code === 1 && typeof error.stdout === 'string') {
+              res.json({ diff: error.stdout, isNew: true })
+            } else {
+              throw err
+            }
+          }
+          return
+        }
 
-      const { stdout } = await execAsync(`git diff HEAD -- "${filePath}"`, { cwd: folder })
-      res.json({ diff: stdout })
+        const { stdout } = await execAsync(`git diff HEAD -- "${filePath}"`, { cwd: folder })
+        res.json({ diff: stdout })
+      } catch (e) {
+        void e
+        // If git fails (e.g. not a git repo), just return null diff, don't 500
+        res.json({ diff: null })
+      }
     } catch (error) {
       console.error(error)
       const msg = error instanceof Error ? error.message : String(error)
