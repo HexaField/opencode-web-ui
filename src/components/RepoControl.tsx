@@ -175,16 +175,20 @@ export default function RepoControl(props: Props) {
   const unstagedFiles = () => gitFiles().filter((f) => f.x === ' ' || f.x === '?' || (f.x !== ' ' && f.y !== ' '))
 
   return (
-    <div class="flex flex-col h-full border-b border-gray-700 last:border-b-0">
-      <div class="p-2 bg-gray-800 text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+    <div class="flex flex-col h-full border-b border-gray-200 dark:border-[#30363d] last:border-b-0 space-y-4">
+      <div class="p-2 bg-[#f6f8fa] dark:bg-[#161b22] text-xs font-bold text-gray-700 dark:text-gray-400 uppercase tracking-wider flex items-center justify-between">
         <span>{repoName()}</span>
         <div class="flex items-center space-x-2">
           <span class="text-xs text-gray-500">{currentBranch() || '...'}</span>
           <div class="flex space-x-1">
-            {aheadBehind().behind > 0 && <span class="text-red-400">↓{aheadBehind().behind}</span>}
-            {aheadBehind().ahead > 0 && <span class="text-green-400">↑{aheadBehind().ahead}</span>}
+            {aheadBehind().behind > 0 && <span class="text-red-500 dark:text-red-400">↓{aheadBehind().behind}</span>}
+            {aheadBehind().ahead > 0 && <span class="text-green-500 dark:text-green-400">↑{aheadBehind().ahead}</span>}
           </div>
-          <button onClick={() => void handlePush()} class="p-1 hover:bg-gray-700 rounded text-gray-300" title="Push">
+          <button
+            onClick={() => void handlePush()}
+            class="p-1 hover:bg-gray-200 dark:hover:bg-[#21262d] rounded text-gray-600 dark:text-gray-300"
+            title="Push"
+          >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 stroke-linecap="round"
@@ -197,40 +201,75 @@ export default function RepoControl(props: Props) {
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-4 space-y-6">
+      <div class="px-4">
+        <textarea
+          class="w-full bg-white dark:bg-[#0d1117] border border-gray-300 dark:border-[#30363d] text-gray-800 dark:text-gray-300 p-2 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[80px]"
+          placeholder="Message (⌘Enter to commit)"
+          value={commitMessage()}
+          onInput={(e) => setCommitMessage(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+              void handleCommit()
+            }
+          }}
+        />
+        <div class="flex justify-between mt-2">
+          <button
+            onClick={() => void handleGenerateMessage()}
+            disabled={isGenerating()}
+            class={`px-3 py-1 bg-gray-200 dark:bg-[#21262d] text-gray-700 dark:text-gray-300 rounded text-xs hover:bg-gray-300 dark:hover:bg-[#30363d] flex items-center space-x-1 ${isGenerating() ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <Show when={isGenerating()} fallback={<span>✨ AI Generate</span>}>
+              <span>Generat...</span>
+            </Show>
+          </button>
+          <button
+            onClick={() => void handleCommit()}
+            disabled={!commitMessage() || stagedFiles().length === 0}
+            class="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Commit
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-4 pb-4 space-y-6">
         <div>
           <div class="flex justify-between items-center mb-2">
-            <h3 class="text-sm font-semibold text-gray-400">Staged Changes</h3>
+            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Staged Changes</h3>
             <span class="text-xs text-gray-500">{stagedFiles().length}</span>
           </div>
           <div class="space-y-1">
             <For each={stagedFiles()}>
               {(file) => (
                 <div class="group">
-                  <div class="flex items-center justify-between p-2 bg-gray-800 rounded hover:bg-gray-750">
+                  <div class="flex items-center justify-between p-2 bg-white dark:bg-[#161b22] rounded border border-transparent hover:border-gray-200 dark:hover:bg-[#21262d]">
                     <div class="flex items-center space-x-2 overflow-hidden">
-                      <button onClick={() => void toggleDiff(file.path)} class="text-gray-400 hover:text-white">
+                      <button
+                        onClick={() => void toggleDiff(file.path)}
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-white"
+                      >
                         <span
                           class={`transform transition-transform inline-block ${expanded()[file.path] ? 'rotate-90' : ''}`}
                         >
                           ▶
                         </span>
                       </button>
-                      <span class="text-sm text-gray-300 truncate font-mono" title={file.path}>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 truncate font-mono" title={file.path}>
                         {file.path}
                       </span>
-                      <span class="text-xs text-green-400 w-4">{file.x}</span>
+                      <span class="text-xs text-green-500 w-4">{file.x}</span>
                     </div>
                     <button
                       onClick={() => void handleUnstage(file.path)}
-                      class="text-xs text-gray-500 hover:text-white opacity-0 group-hover:opacity-100"
+                      class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-white opacity-0 group-hover:opacity-100"
                     >
                       -
                     </button>
                   </div>
                   <Show when={expanded()[file.path]}>
-                    <div class="mt-1 p-2 bg-gray-900 rounded text-xs font-mono overflow-x-auto text-gray-400 whitespace-pre">
-                      {diffs()[file.path] || 'Loading...'}
+                    <div class="mt-1 p-2 bg-gray-50 dark:bg-[#0d1117] rounded text-xs font-mono overflow-x-auto text-gray-600 dark:text-gray-400 whitespace-pre">
+                      <DiffContent diff={diffs()[file.path] || ''} />
                     </div>
                   </Show>
                 </div>
@@ -241,37 +280,42 @@ export default function RepoControl(props: Props) {
 
         <div>
           <div class="flex justify-between items-center mb-2">
-            <h3 class="text-sm font-semibold text-gray-400">Changes</h3>
+            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Changes</h3>
             <span class="text-xs text-gray-500">{unstagedFiles().length}</span>
           </div>
           <div class="space-y-1">
             <For each={unstagedFiles()}>
               {(file) => (
                 <div class="group">
-                  <div class="flex items-center justify-between p-2 bg-gray-800 rounded hover:bg-gray-750">
+                  <div class="flex items-center justify-between p-2 bg-white dark:bg-[#161b22] rounded border border-transparent hover:border-gray-200 dark:hover:bg-[#21262d]">
                     <div class="flex items-center space-x-2 overflow-hidden">
-                      <button onClick={() => void toggleDiff(file.path)} class="text-gray-400 hover:text-white">
+                      <button
+                        onClick={() => void toggleDiff(file.path)}
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-white"
+                      >
                         <span
                           class={`transform transition-transform inline-block ${expanded()[file.path] ? 'rotate-90' : ''}`}
                         >
                           ▶
                         </span>
                       </button>
-                      <span class="text-sm text-gray-300 truncate font-mono" title={file.path}>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 truncate font-mono" title={file.path}>
                         {file.path}
                       </span>
-                      <span class="text-xs text-yellow-400 w-4">{file.y}</span>
+                      <span class={`text-xs w-4 ${file.y === '?' ? 'text-green-500' : 'text-yellow-500'}`}>
+                        {file.y === '?' ? 'U' : file.y}
+                      </span>
                     </div>
                     <button
                       onClick={() => void handleStage(file.path)}
-                      class="text-xs text-gray-500 hover:text-white opacity-0 group-hover:opacity-100"
+                      class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-white opacity-0 group-hover:opacity-100"
                     >
                       +
                     </button>
                   </div>
                   <Show when={expanded()[file.path]}>
-                    <div class="mt-1 p-2 bg-gray-900 rounded text-xs font-mono overflow-x-auto text-gray-400 whitespace-pre">
-                      {diffs()[file.path] || 'Loading...'}
+                    <div class="mt-1 p-2 bg-gray-50 dark:bg-[#0d1117] rounded text-xs font-mono overflow-x-auto text-gray-600 dark:text-gray-400 whitespace-pre">
+                      <DiffContent diff={diffs()[file.path] || ''} />
                     </div>
                   </Show>
                 </div>
@@ -279,39 +323,39 @@ export default function RepoControl(props: Props) {
             </For>
           </div>
         </div>
-
-        <div class="pt-4 border-t border-gray-700">
-          <textarea
-            class="w-full bg-gray-900 text-gray-300 p-2 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[80px]"
-            placeholder="Message (⌘Enter to commit)"
-            value={commitMessage()}
-            onInput={(e) => setCommitMessage(e.currentTarget.value)}
-            onKeyDown={(e) => {
-              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-                void handleCommit()
-              }
-            }}
-          />
-          <div class="flex justify-between mt-2">
-            <button
-              onClick={() => void handleGenerateMessage()}
-              disabled={isGenerating()}
-              class={`px-3 py-1 bg-gray-700 text-gray-300 rounded text-xs hover:bg-gray-600 flex items-center space-x-1 ${isGenerating() ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <Show when={isGenerating()} fallback={<span>✨ AI Generate</span>}>
-                <span>Generat...</span>
-              </Show>
-            </button>
-            <button
-              onClick={() => void handleCommit()}
-              disabled={!commitMessage() || stagedFiles().length === 0}
-              class="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Commit
-            </button>
-          </div>
-        </div>
       </div>
+    </div>
+  )
+}
+
+function DiffContent(props: { diff: string }) {
+  return (
+    <div class="font-mono text-xs overflow-x-auto whitespace-pre">
+      <Show when={props.diff} fallback="Loading...">
+        <For each={props.diff.split('\n')}>
+          {(line) => {
+            let color = 'text-gray-600 dark:text-gray-400'
+            let bg = ''
+            if (
+              line.startsWith('--- ') ||
+              line.startsWith('+++ ') ||
+              line.startsWith('diff ') ||
+              line.startsWith('index ')
+            ) {
+              color = 'text-gray-500 dark:text-gray-500 font-bold'
+            } else if (line.startsWith('+')) {
+              color = 'text-green-600 dark:text-green-400'
+              bg = 'bg-green-50 dark:bg-green-900/30'
+            } else if (line.startsWith('-')) {
+              color = 'text-red-600 dark:text-red-400'
+              bg = 'bg-red-50 dark:bg-red-900/30'
+            } else if (line.startsWith('@@')) {
+              color = 'text-blue-600 dark:text-blue-400'
+            }
+            return <div class={`${color} ${bg} px-1 w-full block`}>{line}</div>
+          }}
+        </For>
+      </Show>
     </div>
   )
 }

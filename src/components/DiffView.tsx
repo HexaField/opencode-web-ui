@@ -38,10 +38,14 @@ export default function DiffView(props: Props) {
   })
 
   return (
-    <div class="h-full flex flex-col bg-gray-900 border-r border-gray-700">
-      <div class="p-4 border-b border-gray-700 bg-gray-800 flex justify-between items-center">
-        <h2 class="font-bold text-gray-200">Source Control</h2>
-        <button onClick={() => void scanRepos()} title="Rescan Repositories" class="text-gray-400 hover:text-white">
+    <div class="h-full flex flex-col bg-white dark:bg-[#010409] border-r border-gray-200 dark:border-[#30363d]">
+      <div class="p-4 border-b border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#010409] flex justify-between items-center">
+        <h2 class="font-bold text-gray-700 dark:text-gray-200">Source Control</h2>
+        <button
+          onClick={() => void scanRepos()}
+          title="Rescan Repositories"
+          class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
+        >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
