@@ -8,6 +8,7 @@ import FilesView from './FilesView'
 import PlanView from './Plan/PlanView'
 import SessionList from './SessionList'
 import SettingsModal from './SettingsModal'
+import Terminal from './Terminal'
 
 interface Props {
   folder: string
@@ -17,8 +18,8 @@ interface Props {
 export default function Workspace(props: Props) {
   const params = new URLSearchParams(window.location.search)
   const [currentSessionId, setCurrentSessionId] = createSignal<string | null>(params.get('session'))
-  const [view, setView] = createSignal<'chat' | 'changes' | 'files' | 'plan'>(
-    (params.get('view') as 'chat' | 'changes' | 'files' | 'plan') || 'chat'
+  const [view, setView] = createSignal<'chat' | 'changes' | 'files' | 'plan' | 'terminal'>(
+    (params.get('view') as 'chat' | 'changes' | 'files' | 'plan' | 'terminal') || 'chat'
   )
   const [selectedFile, setSelectedFile] = createSignal<string | null>(params.get('file'))
   const [isSettingsOpen, setIsSettingsOpen] = createSignal(false)
@@ -168,6 +169,16 @@ export default function Workspace(props: Props) {
               >
                 Plan
               </button>
+              <button
+                class={`px-3 py-1 rounded-sm text-sm font-medium transition-all ${
+                  view() === 'terminal'
+                    ? 'bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                }`}
+                onClick={() => setView('terminal')}
+              >
+                Terminal
+              </button>
             </div>
 
             <div class="hidden md:block h-4 w-px bg-gray-300 dark:bg-[#30363d] mx-1"></div>
@@ -251,11 +262,19 @@ export default function Workspace(props: Props) {
               </div>
             </div>
           )}
-          {view() === 'changes' && <DiffView folder={props.folder} />}
-          {view() === 'files' && (
+          {/* Keep tabs mounted but toggle visibility */}
+          <div class="h-full w-full" style={{ display: view() === 'changes' ? 'block' : 'none' }}>
+            <DiffView folder={props.folder} />
+          </div>
+          <div class="h-full w-full" style={{ display: view() === 'files' ? 'block' : 'none' }}>
             <FilesView folder={props.folder} selectedFile={selectedFile()} onSelectFile={setSelectedFile} />
-          )}
-          {view() === 'plan' && <PlanView onStartSession={handleStartSession} />}
+          </div>
+          <div class="h-full w-full" style={{ display: view() === 'plan' ? 'block' : 'none' }}>
+            <PlanView onStartSession={handleStartSession} />
+          </div>
+          <div class="h-full w-full flex flex-col" style={{ display: view() === 'terminal' ? 'flex' : 'none' }}>
+            <Terminal active={view() === 'terminal'} folder={props.folder} />
+          </div>
         </div>
       </div>
     </div>

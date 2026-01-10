@@ -36,6 +36,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.3",
     "@types/supertest": "^6.0.3",
+    "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.0.16",
     "concurrently": "^9.2.1",
     "eslint": "9.39.2",
@@ -65,7 +66,11 @@
     "express": "^5.2.1",
     "marked": "^17.0.1",
     "monaco-editor": "^0.55.1",
+    "node-pty": "^1.1.0",
     "solid-js": "1.9.10",
+    "ws": "^8.19.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
     "zod": "^4.3.4"
   }
 }

@@ -5,7 +5,7 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 // Mock radicleService BEFORE importing server
-vi.mock('../src/radicle.js', () => {
+vi.mock('../src/radicle', () => {
   interface MockTag {
     id: string
     name: string
@@ -170,6 +170,8 @@ describe('Tasks API Tests', () => {
     expect(res.status).toBe(200)
 
     const verifyRes = await request(app).get('/api/tasks?folder=' + encodeURIComponent(tempDir))
+    expect(verifyRes.status).toBe(200)
+    expect(Array.isArray(verifyRes.body)).toBe(true)
     const verifyTasks = verifyRes.body as Task[]
     expect(verifyTasks.find((t) => t.id === taskId)).toBeUndefined()
   })

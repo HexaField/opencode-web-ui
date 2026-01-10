@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as https from 'https'
 import * as path from 'path'
 import { app } from './server.js'
+import { setupTerminalService } from './services/terminal/terminal.service.js'
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err)
@@ -31,6 +32,8 @@ if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
     console.log(`Server running on http://${host}:${port}`)
   })
 }
+
+setupTerminalService(server)
 
 server.on('error', (err) => {
   console.error('Server failed to start:', err)

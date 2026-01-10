@@ -10,6 +10,7 @@ import FileTree from './FileTree'
 import PlanView from './Plan/PlanView'
 import SessionList from './SessionList'
 import SettingsModal from './SettingsModal'
+import Terminal from './Terminal'
 
 interface Props {
   folder: string
@@ -21,7 +22,7 @@ export default function DesktopWorkspace(props: Props) {
   const [currentSessionId, setCurrentSessionId] = createSignal<string | null>(params.get('session'))
 
   // Left sidebar state
-  const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan'>('files')
+  const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan' | 'terminal'>('files')
   const [isSidebarOpen, setIsSidebarOpen] = createSignal(true)
   const [sidebarWidth, setSidebarWidth] = createSignal(260)
 
@@ -315,6 +316,12 @@ export default function DesktopWorkspace(props: Props) {
             Plan
           </button>
           <button
+            class={`px-3 py-1 text-sm rounded-sm flex-1 ${leftTab() === 'terminal' ? 'bg-white dark:bg-[#161b22] shadow-sm font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+            onClick={() => setLeftTab('terminal')}
+          >
+            Terminal
+          </button>
+          <button
             onClick={() => setIsSidebarOpen(false)}
             class="px-2 py-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 rounded-sm hover:bg-gray-200 dark:hover:bg-[#21262d]"
             title="Hide Sidebar"
@@ -333,7 +340,7 @@ export default function DesktopWorkspace(props: Props) {
 
         {/* Sidebar Content */}
         <div class="flex-1 overflow-hidden relative">
-          <Show when={leftTab() === 'files'}>
+          <div class="h-full flex flex-col" style={{ display: leftTab() === 'files' ? 'flex' : 'none' }}>
             <div class="h-full flex flex-col">
               <div class="flex items-center justify-between p-2 text-xs font-semibold text-gray-500 uppercase">
                 <span>Explorer</span>
@@ -387,13 +394,16 @@ export default function DesktopWorkspace(props: Props) {
                 </button>
               </div>
             </div>
-          </Show>
-          <Show when={leftTab() === 'changes'}>
+          </div>
+          <div class="h-full flex flex-col" style={{ display: leftTab() === 'changes' ? 'flex' : 'none' }}>
             <DiffView folder={props.folder} />
-          </Show>
-          <Show when={leftTab() === 'plan'}>
+          </div>
+          <div class="h-full flex flex-col" style={{ display: leftTab() === 'plan' ? 'flex' : 'none' }}>
             <PlanView onStartSession={handleStartSession} />
-          </Show>
+          </div>
+          <div class="h-full flex flex-col" style={{ display: leftTab() === 'terminal' ? 'flex' : 'none' }}>
+            <Terminal active={leftTab() === 'terminal'} folder={props.folder} />
+          </div>
         </div>
 
         {/* Resize Handle */}

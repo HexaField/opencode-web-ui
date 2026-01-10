@@ -13,6 +13,7 @@ export type OpencodeClient = ReturnType<typeof createOpencodeClient>
 if (process.env.OPENCODE_WORKER_DIR) {
   ;(async () => {
     try {
+      console.error('[Worker] Starting in', process.env.OPENCODE_WORKER_DIR)
       const targetDir = process.env.OPENCODE_WORKER_DIR!
       process.chdir(targetDir)
 
@@ -30,11 +31,11 @@ if (process.env.OPENCODE_WORKER_DIR) {
       // Keep process alive
       // The server.close() is available if we need it, but here we just wait.
     } catch (error) {
-      console.error(error)
+      console.error('[Worker] Error:', error)
       process.exit(1)
     }
   })().catch((e) => {
-    console.error(e)
+    console.error('[Worker] Fatal:', e)
     process.exit(1)
   })
 }
@@ -114,10 +115,17 @@ export class OpencodeManager {
       // We use process.execPath (node) and tsx loader
       const child = spawn(process.execPath, ['--import', 'tsx/esm', currentFile], {
         env: { ...process.env, OPENCODE_WORKER_DIR: absFolder },
-        stdio: ['ignore', 'pipe', 'inherit'] // Pipe stdout to capture URL, inherit stderr for debugging
+        stdio: ['ignore', 'pipe', 'pipe'] // Capture stderr
       })
 
       let started = false
+      let stderrOutput = ''
+
+      child.stderr.on('data', (data: Buffer | string) => {
+        const str = data.toString()
+        stderrOutput += str
+        process.stderr.write(data) // Pass through
+      })
 
       child.stdout.on('data', (data: Buffer) => {
         const lines = data.toString().split('\n')
@@ -146,7 +154,10 @@ export class OpencodeManager {
       child.on('exit', (code) => {
         this.clients.delete(folder)
         this.processes.delete(folder)
-        if (!started) reject(new Error(`Worker exited with code ${code}`))
+        if (!started) {
+          console.error('Worker failed to start. Stderr:', stderrOutput)
+          reject(new Error(`Worker exited with code ${code}. Stderr: ${stderrOutput}`))
+        }
       })
     })
   }
