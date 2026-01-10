@@ -107,7 +107,7 @@ const ToolCall: Component<Props> = (props) => {
             <span class="flex items-center gap-2">
               <span>Edited</span>
               <button
-                class="hover:underline cursor-pointer font-medium underline-offset-2 decoration-gray-400 dark:decoration-gray-500 text-gray-900 dark:text-gray-100"
+                class="cursor-pointer font-medium text-gray-900 decoration-gray-400 underline-offset-2 hover:underline dark:text-gray-100 dark:decoration-gray-500"
                 onClick={(e) => {
                   e.stopPropagation()
                   openFile(editInput.filePath)
@@ -115,7 +115,7 @@ const ToolCall: Component<Props> = (props) => {
               >
                 {editInput.filePath.split('/').pop()}
               </button>
-              <span class="text-xs flex gap-1 font-mono opacity-80">
+              <span class="flex gap-1 font-mono text-xs opacity-80">
                 <span class="text-green-600 dark:text-green-400">+{newLines}</span>
                 <span class="text-red-600 dark:text-red-400">-{oldLines}</span>
               </span>
@@ -131,7 +131,7 @@ const ToolCall: Component<Props> = (props) => {
           const cmd = bashInput.command.split('\n')[0]
           return (
             <span
-              class="font-mono text-xs truncate max-w-[200px] md:max-w-[400px] text-gray-600 dark:text-gray-300"
+              class="max-w-[200px] truncate font-mono text-xs text-gray-600 md:max-w-[400px] dark:text-gray-300"
               title={bashInput.command}
             >
               $ {cmd}
@@ -148,7 +148,7 @@ const ToolCall: Component<Props> = (props) => {
             <span class="flex items-center gap-1">
               <span>Read</span>
               <button
-                class="hover:underline cursor-pointer font-medium underline-offset-2 decoration-gray-400 dark:decoration-gray-500 text-gray-900 dark:text-gray-100"
+                class="cursor-pointer font-medium text-gray-900 decoration-gray-400 underline-offset-2 hover:underline dark:text-gray-100 dark:decoration-gray-500"
                 onClick={(e) => {
                   e.stopPropagation()
                   openFile(readInput.filePath)
@@ -169,7 +169,7 @@ const ToolCall: Component<Props> = (props) => {
             <span class="flex items-center gap-1">
               <span>Wrote</span>
               <button
-                class="hover:underline cursor-pointer font-medium underline-offset-2 decoration-gray-400 dark:decoration-gray-500 text-gray-900 dark:text-gray-100"
+                class="cursor-pointer font-medium text-gray-900 decoration-gray-400 underline-offset-2 hover:underline dark:text-gray-100 dark:decoration-gray-500"
                 onClick={(e) => {
                   e.stopPropagation()
                   openFile(writeInput.filePath)
@@ -189,7 +189,7 @@ const ToolCall: Component<Props> = (props) => {
         const txt = `Search: ${grepInput?.pattern || ''}`
         return (
           <span
-            class="font-sans text-sm truncate max-w-[200px] md:max-w-[400px] text-gray-600 dark:text-gray-300"
+            class="max-w-[200px] truncate font-sans text-sm text-gray-600 md:max-w-[400px] dark:text-gray-300"
             title={txt}
           >
             {txt}
@@ -200,7 +200,7 @@ const ToolCall: Component<Props> = (props) => {
       default:
         return (
           <span
-            class="font-sans text-sm truncate max-w-[200px] md:max-w-[400px] text-gray-600 dark:text-gray-300"
+            class="max-w-[200px] truncate font-sans text-sm text-gray-600 md:max-w-[400px] dark:text-gray-300"
             title={String(tool)}
           >
             {tool}
@@ -239,40 +239,40 @@ const ToolCall: Component<Props> = (props) => {
     <div
       class={`text-sm transition-all duration-200 ${
         isExpanded()
-          ? 'max-w-full rounded-lg border shadow-sm bg-white dark:bg-[#161b22] text-gray-900 dark:text-gray-100 border-gray-200 dark:border-[#30363d] my-1'
-          : 'hover:bg-gray-50 dark:hover:bg-[#161b22]/50 rounded my-0.5'
+          ? "my-1 max-w-full rounded-lg border border-gray-200 bg-white text-gray-900 shadow-sm dark:border-[#30363d] dark:bg-[#161b22] dark:text-gray-100"
+          : "my-0.5 rounded hover:bg-gray-50 dark:hover:bg-[#161b22]/50"
       }`}
     >
       <div
-        class={`flex cursor-pointer items-center justify-between py-1 px-2 select-none ${isExpanded() ? 'border-b border-gray-100 dark:border-[#30363d]' : ''}`}
+        class={`flex cursor-pointer items-center justify-between px-2 py-1 select-none ${isExpanded() ? "border-b border-gray-100 dark:border-[#30363d]" : ''}`}
         onClick={() => setIsExpanded(!isExpanded())}
       >
         <div class="flex items-center gap-2 overflow-hidden">
           <span
-            class="text-gray-400 dark:text-gray-500 text-[10px] transform transition-transform duration-200"
+            class="transform text-[10px] text-gray-400 transition-transform duration-200 dark:text-gray-500"
             classList={{ 'rotate-90': isExpanded() }}
           >
             ▶
           </span>
           <span
-            class="text-gray-600 dark:text-gray-300 text-sm truncate block max-w-full"
+            class="block max-w-full truncate text-sm text-gray-600 dark:text-gray-300"
             ref={(el: HTMLElement) => setSummaryEl(el)}
           >
             {getToolSummary()}
           </span>
         </div>
-        <div class="px-2 flex-shrink-0">
+        <div class="flex-shrink-0 px-2">
           <Switch fallback={<span></span>}>
             <Match when={props.part.state?.status === 'error'}>
               <div class="text-red-600 dark:text-red-400" title="Error">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
             </Match>
             <Match when={props.part.state?.status === 'running' || props.part.state?.status === 'pending'}>
-              <div class="text-blue-600 dark:text-blue-400 animate-spin" title="Running">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <div class="animate-spin text-blue-600 dark:text-blue-400" title="Running">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -286,19 +286,19 @@ const ToolCall: Component<Props> = (props) => {
       </div>
 
       <Show when={isExpanded()}>
-        <div class="p-3 space-y-3 bg-gray-50/50 dark:bg-[#0d1117]/50 rounded-b-lg">
+        <div class="space-y-3 rounded-b-lg bg-gray-50/50 p-3 dark:bg-[#0d1117]/50">
           <Switch
             fallback={
               <div>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                   Input
                 </span>
                 <div class="relative">
-                  <pre class="mt-1 max-h-60 overflow-y-auto rounded-md bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 p-3 text-xs font-mono">
+                  <pre class="mt-1 max-h-60 overflow-y-auto rounded-md border border-gray-200 bg-white p-3 font-mono text-xs dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300">
                     {JSON.stringify(props.part.state?.input, null, 2)}
                   </pre>
                   <button
-                    class="absolute top-1 right-1 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                    class="absolute top-1 right-1 rounded p-1 hover:bg-gray-100 dark:hover:bg-[#21262d]"
                     title="Copy"
                     onClick={(e) => {
                       e.stopPropagation()
@@ -325,15 +325,15 @@ const ToolCall: Component<Props> = (props) => {
           >
             <Match when={props.part.tool === 'bash'}>
               <div>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                   Command
                 </span>
-                <div class="mt-1 relative group">
-                  <pre class="max-h-60 overflow-y-auto rounded-md bg-[#1e1e1e] text-gray-100 p-3 text-xs font-mono whitespace-pre-wrap border border-gray-800">
+                <div class="group relative mt-1">
+                  <pre class="max-h-60 overflow-y-auto rounded-md border border-gray-800 bg-[#1e1e1e] p-3 font-mono text-xs whitespace-pre-wrap text-gray-100">
                     {getBashInput()?.command}
                   </pre>
                   <button
-                    class="absolute top-1 right-1 p-1 rounded hover:bg-gray-800/40"
+                    class="absolute top-1 right-1 rounded p-1 hover:bg-gray-800/40"
                     title="Copy"
                     onClick={(e) => {
                       e.stopPropagation()
@@ -360,24 +360,24 @@ const ToolCall: Component<Props> = (props) => {
             <Match when={props.part.tool === 'edit'}>
               <div class="space-y-3">
                 <div>
-                  <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                     File
                   </span>
                   <div class="mt-1">
-                    <code class="rounded bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 px-2 py-1 text-xs font-mono">
+                    <code class="rounded border border-gray-200 bg-white px-2 py-1 font-mono text-xs dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300">
                       {getEditInput()?.filePath}
                     </code>
                   </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <div class="text-xs font-semibold text-red-500/80 uppercase tracking-wider mb-1">Replace</div>
+                    <div class="mb-1 text-xs font-semibold tracking-wider text-red-500/80 uppercase">Replace</div>
                     <div class="relative">
-                      <pre class="max-h-40 overflow-y-auto rounded-md bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 text-red-700 dark:text-red-300 p-2 text-xs font-mono whitespace-pre-wrap">
+                      <pre class="max-h-40 overflow-y-auto rounded-md border border-red-100 bg-red-50 p-2 font-mono text-xs whitespace-pre-wrap text-red-700 dark:border-red-900/20 dark:bg-red-900/10 dark:text-red-300">
                         {getEditInput()?.oldString}
                       </pre>
                       <button
-                        class="absolute top-1 right-1 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                        class="absolute top-1 right-1 rounded p-1 hover:bg-gray-100 dark:hover:bg-[#21262d]"
                         title="Copy"
                         onClick={(e) => {
                           e.stopPropagation()
@@ -401,13 +401,13 @@ const ToolCall: Component<Props> = (props) => {
                     </div>
                   </div>
                   <div>
-                    <div class="text-xs font-semibold text-green-500/80 uppercase tracking-wider mb-1">With</div>
+                    <div class="mb-1 text-xs font-semibold tracking-wider text-green-500/80 uppercase">With</div>
                     <div class="relative">
-                      <pre class="max-h-40 overflow-y-auto rounded-md bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/20 text-green-700 dark:text-green-300 p-2 text-xs font-mono whitespace-pre-wrap">
+                      <pre class="max-h-40 overflow-y-auto rounded-md border border-green-100 bg-green-50 p-2 font-mono text-xs whitespace-pre-wrap text-green-700 dark:border-green-900/20 dark:bg-green-900/10 dark:text-green-300">
                         {getEditInput()?.newString}
                       </pre>
                       <button
-                        class="absolute top-1 right-1 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                        class="absolute top-1 right-1 rounded p-1 hover:bg-gray-100 dark:hover:bg-[#21262d]"
                         title="Copy"
                         onClick={(e) => {
                           e.stopPropagation()
@@ -435,18 +435,18 @@ const ToolCall: Component<Props> = (props) => {
             </Match>
             <Match when={props.part.tool === 'write'}>
               <div>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                   File
                 </span>
                 <div class="mt-1 mb-2">
-                  <code class="rounded bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 px-2 py-1 text-xs font-mono">
+                  <code class="rounded border border-gray-200 bg-white px-2 py-1 font-mono text-xs dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300">
                     {getWriteInput()?.filePath}
                   </code>
                 </div>
-                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                   Content
                 </span>
-                <pre class="mt-1 max-h-60 overflow-y-auto rounded-md bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 p-3 text-xs font-mono">
+                <pre class="mt-1 max-h-60 overflow-y-auto rounded-md border border-gray-200 bg-white p-3 font-mono text-xs dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300">
                   {getWriteInput()?.content}
                 </pre>
               </div>
@@ -455,15 +455,15 @@ const ToolCall: Component<Props> = (props) => {
 
           <Show when={getOutput() !== undefined}>
             <div>
-              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <span class="text-xs font-semibold tracking-wider text-gray-500 uppercase dark:text-gray-400">
                 Output
               </span>
               <div class="relative">
-                <pre class="mt-1 max-h-60 overflow-y-auto rounded-md bg-white dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] dark:text-gray-300 p-3 text-xs font-mono whitespace-pre-wrap">
+                <pre class="mt-1 max-h-60 overflow-y-auto rounded-md border border-gray-200 bg-white p-3 font-mono text-xs whitespace-pre-wrap dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300">
                   {typeof getOutput() === 'string' ? getOutput() : JSON.stringify(getOutput(), null, 2)}
                 </pre>
                 <button
-                  class="absolute top-1 right-1 p-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                  class="absolute top-1 right-1 rounded p-1 hover:bg-gray-100 dark:hover:bg-[#21262d]"
                   title="Copy"
                   onClick={(e) => {
                     e.stopPropagation()
@@ -489,8 +489,8 @@ const ToolCall: Component<Props> = (props) => {
           </Show>
           <Show when={getError()}>
             <div>
-              <span class="text-xs font-semibold text-red-500 uppercase tracking-wider">Error</span>
-              <pre class="mt-1 max-h-60 overflow-y-auto rounded-md bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 text-red-600 dark:text-red-400 p-3 text-xs font-mono whitespace-pre-wrap">
+              <span class="text-xs font-semibold tracking-wider text-red-500 uppercase">Error</span>
+              <pre class="mt-1 max-h-60 overflow-y-auto rounded-md border border-red-100 bg-red-50 p-3 font-mono text-xs whitespace-pre-wrap text-red-600 dark:border-red-900/20 dark:bg-red-900/10 dark:text-red-400">
                 {typeof getError() === 'string' ? (getError() as string) : JSON.stringify(getError())}
               </pre>
             </div>

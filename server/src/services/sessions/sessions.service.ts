@@ -47,7 +47,7 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
                 s.directory === realFolder ||
                 s.directory === realFolder + '/'
             )
-            .map((s) => ({ ...s, ...(allMetadata[s.id] || {}) }))
+            .map((s) => ({ ...s, ...allMetadata[s.id] }))
         : sessions
 
       res.json(filtered)

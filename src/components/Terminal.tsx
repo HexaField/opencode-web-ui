@@ -156,11 +156,11 @@ export default function TerminalComponent(props: Props) {
   }
 
   return (
-    <div class="flex h-full flex-col w-full bg-[#1e1e1e]">
+    <div class="flex h-full w-full flex-col bg-[#1e1e1e]">
       <Show when={isMobile()}>
-        <div class="flex overflow-x-auto bg-gray-800 p-2 gap-2 text-white text-sm h-12 flex-shrink-0 items-center no-scrollbar">
+        <div class="no-scrollbar flex h-12 flex-shrink-0 items-center gap-2 overflow-x-auto bg-gray-800 p-2 text-sm text-white">
           <button
-            class="px-3 py-1 bg-gray-600 rounded hover:bg-gray-500 active:bg-gray-400 whitespace-nowrap flex items-center justify-center min-w-[40px]"
+            class="flex min-w-[40px] items-center justify-center rounded bg-gray-600 px-3 py-1 whitespace-nowrap hover:bg-gray-500 active:bg-gray-400"
             onClick={toggleKeyboard}
             title="Toggle Keyboard"
           >
@@ -170,7 +170,7 @@ export default function TerminalComponent(props: Props) {
               viewBox="0 0 24 24"
               stroke-width="1.5"
               stroke="currentColor"
-              class="w-5 h-5"
+              class="h-5 w-5"
             >
               <path
                 stroke-linecap="round"
@@ -180,61 +180,61 @@ export default function TerminalComponent(props: Props) {
             </svg>
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('\x1b')}
           >
             Esc
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('\t')}
           >
             Tab
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('\x1b[A')}
           >
             ↑
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('\x1b[B')}
           >
             ↓
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('\x1b[D')}
           >
             ←
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('\x1b[C')}
           >
             →
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('/')}
           >
             /
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('-')}
           >
             -
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('|')}
           >
             |
           </button>
           <button
-            class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 active:bg-gray-500 whitespace-nowrap"
+            class="rounded bg-gray-700 px-3 py-1 whitespace-nowrap hover:bg-gray-600 active:bg-gray-500"
             onClick={() => sendKey('\x03')}
           >
             Ctrl+C

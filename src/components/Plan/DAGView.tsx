@@ -242,7 +242,7 @@ export default function DAGView(props: Props) {
     return (
       <div
         data-testid={`node-${props.node.task.title}`}
-        class="absolute bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-lg shadow-sm flex flex-col transition-all"
+        class="absolute flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm transition-all dark:border-[#30363d] dark:bg-[#161b22]"
         style={{
           left: `${props.node.x}px`,
           top: `${props.node.y}px`,
@@ -251,18 +251,18 @@ export default function DAGView(props: Props) {
         }}
       >
         {/* Header / Content */}
-        <div class="node-content p-3 flex flex-col h-full relative z-10">
-          <div class="font-medium text-sm truncate text-gray-900 dark:text-gray-100" title={props.node.task.title}>
+        <div class="node-content relative z-10 flex h-full flex-col p-3">
+          <div class="truncate text-sm font-medium text-gray-900 dark:text-gray-100" title={props.node.task.title}>
             {props.node.task.title}
           </div>
-          <div class="text-xs text-gray-500 mt-1 flex items-center gap-2">
+          <div class="mt-1 flex items-center gap-2 text-xs text-gray-500">
             <span
-              class={`px-1.5 py-0.5 rounded-full text-[10px] uppercase font-bold ${
+              class={`rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase ${
                 props.node.task.status === 'done'
-                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                   : props.node.task.status === 'in-progress'
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
               }`}
             >
               {props.node.task.status}
@@ -272,7 +272,7 @@ export default function DAGView(props: Props) {
 
         {/* Children Container */}
         {props.node.children.length > 0 && (
-          <div class="absolute top-[40px] left-[40px] right-[40px] bottom-[40px]">
+          <div class="absolute top-[40px] right-[40px] bottom-[40px] left-[40px]">
             <For each={props.node.children}>{(child) => <NodeView node={child} />}</For>
           </div>
         )}
@@ -282,18 +282,18 @@ export default function DAGView(props: Props) {
 
   return (
     <div
-      class="w-full h-full overflow-hidden bg-gray-50 dark:bg-[#0d1117] relative cursor-move select-none touch-none"
+      class="relative h-full w-full cursor-move touch-none overflow-hidden bg-gray-50 select-none dark:bg-[#0d1117]"
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
     >
       <div
-        class="absolute top-0 left-0 transition-transform duration-75 ease-out origin-top-left"
+        class="absolute top-0 left-0 origin-top-left transition-transform duration-75 ease-out"
         style={{ transform: `translate(${translate().x}px, ${translate().y}px)` }}
       >
         {/* Edges Layer */}
         <svg
           data-testid="dag-svg"
-          class="absolute top-0 left-0 pointer-events-none overflow-visible z-0"
+          class="pointer-events-none absolute top-0 left-0 z-0 overflow-visible"
           style={{ width: `${layout().width}px`, height: `${layout().height}px` }}
         >
           <For each={layout().edges}>
@@ -339,7 +339,7 @@ export default function DAGView(props: Props) {
         <For each={layout().nodes}>{(node) => <NodeView node={node} />}</For>
       </div>
 
-      <div class="absolute bottom-4 right-4 bg-white dark:bg-[#161b22] p-2 rounded shadow text-xs text-gray-500 pointer-events-none">
+      <div class="pointer-events-none absolute right-4 bottom-4 rounded bg-white p-2 text-xs text-gray-500 shadow dark:bg-[#161b22]">
         Drag to pan • {layout().flatNodes.length} tasks
       </div>
     </div>

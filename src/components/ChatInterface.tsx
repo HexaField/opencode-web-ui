@@ -325,7 +325,7 @@ export default function ChatInterface(props: Props) {
   }
 
   return (
-    <div class="flex flex-col h-full bg-white dark:bg-[#0d1117] transition-colors duration-200">
+    <div class="flex h-full flex-col bg-white transition-colors duration-200 dark:bg-[#0d1117]">
       <AgentSettingsModal
         isOpen={isAgentSettingsOpen()}
         onClose={() => setIsAgentSettingsOpen(false)}
@@ -338,13 +338,13 @@ export default function ChatInterface(props: Props) {
 
       <div
         ref={(el) => (scrollContainer = el as HTMLDivElement | undefined)}
-        class="flex-1 overflow-y-auto overflow-x-hidden p-1 md:p-2 flex flex-col"
+        class="flex flex-1 flex-col overflow-x-hidden overflow-y-auto p-1 md:p-2"
       >
         <For each={messages}>
           {(msg) => {
             const isUser = msg.info.role === 'user'
             return (
-              <div class={`flex flex-col gap-1 w-full ${isUser ? 'items-end m-2' : 'items-start'}`}>
+              <div class={`flex w-full flex-col gap-1 ${isUser ? "m-2 items-end" : 'items-start'}`}>
                 <For each={msg.parts}>
                   {(part) => (
                     <>
@@ -359,21 +359,18 @@ export default function ChatInterface(props: Props) {
                             <>
                               <div
                                 data-testid={`message-${msg.info.role}`}
-                                class={`
-                            max-w-[85%] md:max-w-[75%] rounded-xl px-2 py-1 border shadow-sm
-                            ${
-                              isUser
-                                ? 'bg-[#ddf4ff] dark:bg-[#1f6feb]/15 text-gray-900 dark:text-gray-100 border-[#54aeff]/40 dark:border-[#1f6feb]/40 rounded-br-sm'
-                                : 'bg-white dark:bg-[#161b22] text-gray-900 dark:text-gray-100 border-gray-200 dark:border-[#30363d] rounded-bl-sm'
-                            }
-                          `}
+                                class={`max-w-[85%] rounded-xl border px-2 py-1 shadow-sm md:max-w-[75%] ${
+                                  isUser
+                                    ? "rounded-br-sm border-[#54aeff]/40 bg-[#ddf4ff] text-gray-900 dark:border-[#1f6feb]/40 dark:bg-[#1f6feb]/15 dark:text-gray-100"
+                                    : "rounded-bl-sm border-gray-200 bg-white text-gray-900 dark:border-[#30363d] dark:bg-[#161b22] dark:text-gray-100"
+                                } `}
                               >
                                 <Show
                                   when={isUser}
                                   fallback={
                                     <div>
                                       <div
-                                        class="prose prose-sm dark:prose-invert max-w-none break-words leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-sm"
+                                        class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
                                         style={{ 'font-size': '14px' }}
                                         innerHTML={DOMPurify.sanitize(
                                           marked.parse((part as { text: string }).text, { async: false })
@@ -383,7 +380,7 @@ export default function ChatInterface(props: Props) {
                                   }
                                 >
                                   <div>
-                                    <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                                    <pre class="font-sans text-sm leading-relaxed whitespace-pre-wrap">
                                       {(part as { text: string }).text}
                                     </pre>
                                   </div>
@@ -393,7 +390,7 @@ export default function ChatInterface(props: Props) {
                               {/* Copy button placed beneath the message, outside the message border, aligned based on sender */}
                               <div class={`mt-0.5 ${isUser ? 'self-end' : 'self-start'}`}>
                                 <button
-                                  class="pt-0 pb-0.5 px-1 rounded hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                                  class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
                                   title="Copy"
                                   aria-label="Copy message"
                                   onClick={(e) => {
@@ -437,18 +434,18 @@ export default function ChatInterface(props: Props) {
           }}
         </For>
         <Show when={loading()}>
-          <div class="flex items-center gap-2 p-2 self-start ml-2 text-gray-500 dark:text-gray-400 text-sm">
-            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+          <div class="ml-2 flex items-center gap-2 self-start p-2 text-sm text-gray-500 dark:text-gray-400">
+            <div class="h-2 w-2 animate-bounce rounded-full bg-gray-400" style="animation-delay: 0ms"></div>
+            <div class="h-2 w-2 animate-bounce rounded-full bg-gray-400" style="animation-delay: 150ms"></div>
+            <div class="h-2 w-2 animate-bounce rounded-full bg-gray-400" style="animation-delay: 300ms"></div>
           </div>
         </Show>
       </div>
-      <div class="p-3 md:p-4 border-t border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#0d1117]">
-        <div class="flex gap-2 max-w-4xl mx-auto items-end">
+      <div class="border-t border-gray-200 bg-white p-3 md:p-4 dark:border-[#30363d] dark:bg-[#0d1117]">
+        <div class="mx-auto flex max-w-4xl items-end gap-2">
           <button
             onClick={() => setIsAgentSettingsOpen(true)}
-            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors mb-0.5"
+            class="mb-0.5 rounded-md p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#21262d] dark:hover:text-gray-200"
             title={`Agent: ${currentAgent() || 'Default'}\nModel: ${currentModel() || 'Default'}`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -460,7 +457,7 @@ export default function ChatInterface(props: Props) {
             </svg>
           </button>
           <textarea
-            class="flex-1 border border-gray-300 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] text-gray-900 dark:text-gray-100 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+            class="flex-1 resize-none rounded-md border border-gray-300 bg-[#f6f8fa] p-2 text-sm text-gray-900 transition-all focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-[#30363d] dark:bg-[#010409] dark:text-gray-100"
             rows={1}
             style={{ 'min-height': '42px', 'max-height': '120px' }}
             value={input()}
@@ -481,7 +478,7 @@ export default function ChatInterface(props: Props) {
             when={!isAgentRunning()}
             fallback={
               <button
-                class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-md font-medium transition-colors shadow-sm"
+                class="rounded-md bg-red-600 p-2 font-medium text-white shadow-sm transition-colors hover:bg-red-700"
                 onClick={() => void abort()}
                 title="Stop"
               >
@@ -492,7 +489,7 @@ export default function ChatInterface(props: Props) {
             }
           >
             <button
-              class="bg-[#0969da] hover:bg-[#0860ca] text-white p-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              class="rounded-md bg-[#0969da] p-2 font-medium text-white shadow-sm transition-colors hover:bg-[#0860ca] disabled:cursor-not-allowed disabled:opacity-50"
               onClick={() => void sendMessage()}
               disabled={loading()}
               title="Send"

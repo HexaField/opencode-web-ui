@@ -229,24 +229,24 @@ export default function FilesView(props: Props) {
   }
 
   return (
-    <div class="flex h-full w-full relative">
+    <div class="relative flex h-full w-full">
       <Show when={fileToDelete()}>
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div class="bg-white dark:bg-[#161b22] p-4 rounded-lg shadow-xl border border-gray-200 dark:border-[#30363d] w-96">
-            <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Delete File</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">
+          <div class="w-96 rounded-lg border border-gray-200 bg-white p-4 shadow-xl dark:border-[#30363d] dark:bg-[#161b22]">
+            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">Delete File</h3>
+            <p class="mb-4 text-gray-600 dark:text-gray-400">
               Are you sure you want to delete <span class="font-mono text-sm">{fileToDelete()?.split('/').pop()}</span>?
             </p>
             <div class="flex justify-end gap-2">
               <button
                 onClick={() => setFileToDelete(null)}
-                class="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#21262d] rounded"
+                class="rounded px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => void deleteFileHandler()}
-                class="px-3 py-1 text-sm bg-red-600 text-white hover:bg-red-700 rounded"
+                class="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
               >
                 Delete
               </button>
@@ -256,10 +256,10 @@ export default function FilesView(props: Props) {
       </Show>
       <Show when={isCreatingFile()}>
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div class="bg-white dark:bg-[#161b22] p-4 rounded-lg shadow-xl border border-gray-200 dark:border-[#30363d] w-80">
-            <h3 class="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">New File</h3>
+          <div class="w-80 rounded-lg border border-gray-200 bg-white p-4 shadow-xl dark:border-[#30363d] dark:bg-[#161b22]">
+            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">New File</h3>
             <input
-              class="w-full border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 rounded px-2 py-1 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="mb-4 w-full rounded border border-gray-300 bg-white px-2 py-1 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
               placeholder="filename.ext"
               value={newFileName()}
               onInput={(e) => setNewFileName(e.currentTarget.value)}
@@ -272,13 +272,13 @@ export default function FilesView(props: Props) {
             <div class="flex justify-end gap-2">
               <button
                 onClick={() => setIsCreatingFile(false)}
-                class="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#21262d] rounded"
+                class="rounded px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => void createFile()}
-                class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded"
+                class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
               >
                 Create
               </button>
@@ -289,14 +289,14 @@ export default function FilesView(props: Props) {
       <div
         class={`${
           isSidebarOpen() ? 'w-64' : 'w-0'
-        } border-r border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] flex flex-col shrink-0 transition-all duration-200 overflow-hidden`}
+        } flex shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-[#f6f8fa] transition-all duration-200 dark:border-[#30363d] dark:bg-[#010409]`}
       >
-        <div class="p-2 font-medium text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-[#30363d] flex items-center justify-between">
+        <div class="flex items-center justify-between border-b border-gray-200 p-2 text-sm font-medium text-gray-600 dark:border-[#30363d] dark:text-gray-400">
           <div class="flex items-center gap-2">
             <span>Files</span>
             <button
               onClick={() => setIsCreatingFile(true)}
-              class="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded hover:bg-gray-200 dark:hover:bg-[#21262d]"
+              class="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-blue-600 dark:hover:bg-[#21262d] dark:hover:text-blue-400"
               title="New File"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -310,7 +310,7 @@ export default function FilesView(props: Props) {
           </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-[#21262d]"
+            class="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-[#21262d] dark:hover:text-gray-300"
             title="Hide File Tree"
           >
             <svg
@@ -333,19 +333,19 @@ export default function FilesView(props: Props) {
           />
         </div>
       </div>
-      <div class="flex-1 h-full overflow-hidden relative group">
-        <div class="w-full h-full" ref={editorContainer}>
+      <div class="group relative h-full flex-1 overflow-hidden">
+        <div class="h-full w-full" ref={editorContainer}>
           {/* Monaco Editor */}
         </div>
 
         {/* Floating Palette */}
-        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 z-20">
+        <div class="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 transform flex-col items-center gap-2">
           <Show
             when={isPaletteOpen()}
             fallback={
               <button
                 onClick={() => setIsPaletteOpen(true)}
-                class="bg-white dark:bg-[#161b22] p-2 rounded-full shadow-lg border border-gray-200 dark:border-[#30363d] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-transform hover:scale-110"
+                class="rounded-full border border-gray-200 bg-white p-2 text-gray-500 shadow-lg transition-transform hover:scale-110 hover:text-gray-700 dark:border-[#30363d] dark:bg-[#161b22] dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path
@@ -357,10 +357,10 @@ export default function FilesView(props: Props) {
               </button>
             }
           >
-            <div class="flex items-center gap-1 bg-white dark:bg-[#161b22] p-1.5 rounded-lg shadow-xl border border-gray-200 dark:border-[#30363d] animate-in fade-in slide-in-from-bottom-2">
+            <div class="animate-in fade-in slide-in-from-bottom-2 flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1.5 shadow-xl dark:border-[#30363d] dark:bg-[#161b22]">
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen())}
-                class={`p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] text-gray-600 dark:text-gray-400 ${!isSidebarOpen() ? 'bg-gray-100 dark:bg-[#21262d]' : ''}`}
+                class={`rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d] ${!isSidebarOpen() ? "bg-gray-100 dark:bg-[#21262d]" : ''}`}
                 title={isSidebarOpen() ? 'Collapse File Tree' : 'Expand File Tree'}
               >
                 <svg
@@ -374,11 +374,11 @@ export default function FilesView(props: Props) {
                 </svg>
               </button>
 
-              <div class="w-px h-4 bg-gray-200 dark:bg-[#30363d] mx-1" />
+              <div class="mx-1 h-4 w-px bg-gray-200 dark:bg-[#30363d]" />
 
               <button
                 onClick={undo}
-                class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] text-gray-600 dark:text-gray-400"
+                class="rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
                 title="Undo"
               >
                 <svg
@@ -399,7 +399,7 @@ export default function FilesView(props: Props) {
 
               <button
                 onClick={redo}
-                class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] text-gray-600 dark:text-gray-400"
+                class="rounded-md p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
                 title="Redo"
               >
                 <svg
@@ -418,11 +418,11 @@ export default function FilesView(props: Props) {
                 </svg>
               </button>
 
-              <div class="w-px h-4 bg-gray-200 dark:bg-[#30363d] mx-1" />
+              <div class="mx-1 h-4 w-px bg-gray-200 dark:bg-[#30363d]" />
 
               <button
                 onClick={() => props.selectedFile && setFileToDelete(props.selectedFile)}
-                class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                class="rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-[#21262d] dark:hover:text-red-400"
                 title="Delete File"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -436,7 +436,7 @@ export default function FilesView(props: Props) {
 
               <button
                 onClick={() => void saveFile()}
-                class={`p-2 rounded-md hover:bg-gray-100 dark:hover:bg-[#21262d] flex items-center gap-2 ${isDirty() ? 'text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}
+                class={`flex items-center gap-2 rounded-md p-2 hover:bg-gray-100 dark:hover:bg-[#21262d] ${isDirty() ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400"}`}
                 title="Save (Cmd+S)"
               >
                 <svg
@@ -454,7 +454,7 @@ export default function FilesView(props: Props) {
                   />
                 </svg>
                 <Show when={isDirty()}>
-                  <span class="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400" />
+                  <span class="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400" />
                 </Show>
               </button>
 

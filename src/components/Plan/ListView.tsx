@@ -208,7 +208,7 @@ export default function ListView(props: Props) {
 
     return (
       <div
-        class={`flex flex-col rounded transition-colors ${dragOverTaskId() === itemProps.task.id ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : ''}`}
+        class={`flex flex-col rounded transition-colors ${dragOverTaskId() === itemProps.task.id ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-900/30" : ''}`}
         draggable="true"
         data-task-id={itemProps.task.id}
         onDragStart={(e) => handleDragStart(e, itemProps.task.id)}
@@ -216,9 +216,9 @@ export default function ListView(props: Props) {
         onDragLeave={onDragLeave}
         onDrop={onDrop}
       >
-        <div class="flex items-center gap-2 py-1 group hover:bg-gray-50 dark:hover:bg-[#161b22] rounded px-2 -mx-2">
+        <div class="group -mx-2 flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-50 dark:hover:bg-[#161b22]">
           <button
-            class={`text-gray-400 hover:text-blue-500 transition-transform ${isExpanded() ? 'rotate-90' : ''}`}
+            class={`text-gray-400 transition-transform hover:text-blue-500 ${isExpanded() ? 'rotate-90' : ''}`}
             onClick={(e) => {
               e.stopPropagation()
               setIsExpanded(!isExpanded())
@@ -232,7 +232,7 @@ export default function ListView(props: Props) {
               />
             </svg>
           </button>
-          <div class="w-2 h-2 rounded-full bg-gray-400 shrink-0 mt-1.5"></div>
+          <div class="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gray-400"></div>
           <div class="flex-1">
             <Show
               when={isEditing()}
@@ -249,13 +249,13 @@ export default function ListView(props: Props) {
                 onInput={(e) => setEditTitle(e.currentTarget.value)}
                 onBlur={handleSave}
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-                class="w-full px-2 py-1 bg-white dark:bg-[#0d1117] border border-blue-500 rounded outline-none"
+                class="w-full rounded border border-blue-500 bg-white px-2 py-1 outline-none dark:bg-[#0d1117]"
                 autofocus
               />
             </Show>
           </div>
 
-          <div class="opacity-100 md:opacity-0 md:group-hover:opacity-100 flex items-center gap-2">
+          <div class="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100">
             <Show when={props.onStartSession}>
               <button
                 class="text-gray-400 hover:text-green-500"
@@ -309,7 +309,7 @@ export default function ListView(props: Props) {
           </div>
 
           <div
-            class="touch-none p-1 text-gray-400 cursor-grab active:cursor-grabbing hover:text-gray-600 dark:hover:text-gray-300"
+            class="cursor-grab touch-none p-1 text-gray-400 hover:text-gray-600 active:cursor-grabbing dark:hover:text-gray-300"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={() => void handleTouchEnd()}
@@ -322,9 +322,9 @@ export default function ListView(props: Props) {
         </div>
 
         <Show when={isExpanded()}>
-          <div class="ml-8 mb-2 mr-2">
+          <div class="mr-2 mb-2 ml-8">
             <textarea
-              class="w-full p-2 text-sm border rounded-md dark:bg-[#0d1117] dark:border-[#30363d] focus:ring-2 focus:ring-blue-500 outline-none resize-y"
+              class="w-full resize-y rounded-md border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117]"
               rows={3}
               value={description()}
               onInput={(e) => setDescription(e.currentTarget.value)}
@@ -335,21 +335,21 @@ export default function ListView(props: Props) {
         </Show>
 
         <Show when={isAddingSubtask()}>
-          <form onSubmit={handleAddSubtask} class="ml-6 mt-1 mb-2 flex gap-2">
+          <form onSubmit={handleAddSubtask} class="mt-1 mb-2 ml-6 flex gap-2">
             <input
               type="text"
               value={subtaskTitle()}
               onInput={(e) => setSubtaskTitle(e.currentTarget.value)}
               placeholder="Subtask title..."
-              class="flex-1 px-2 py-1 text-sm rounded border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="flex-1 rounded border border-gray-300 bg-white px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none dark:border-[#30363d] dark:bg-[#0d1117]"
               autofocus
             />
-            <button type="submit" class="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="submit" class="rounded bg-blue-600 px-2 py-1 text-sm text-white hover:bg-blue-700">
               Add
             </button>
             <button
               type="button"
-              class="px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d] rounded"
+              class="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
               onClick={() => setIsAddingSubtask(false)}
             >
               Cancel
@@ -357,7 +357,7 @@ export default function ListView(props: Props) {
           </form>
         </Show>
 
-        <div class="ml-6 border-l border-gray-200 dark:border-[#30363d] pl-2">
+        <div class="ml-6 border-l border-gray-200 pl-2 dark:border-[#30363d]">
           <For each={itemProps.task.children}>{(child) => <TaskItem task={child} level={itemProps.level + 1} />}</For>
         </div>
       </div>
@@ -365,7 +365,7 @@ export default function ListView(props: Props) {
   }
 
   return (
-    <div class="max-w-3xl mx-auto">
+    <div class="mx-auto max-w-3xl">
       <div class="mb-6">
         <form onSubmit={handleAddTask} class="flex gap-2">
           <input
@@ -373,11 +373,11 @@ export default function ListView(props: Props) {
             value={newTaskTitle()}
             onInput={(e) => setNewTaskTitle(e.currentTarget.value)}
             placeholder="Add a new task..."
-            class="flex-1 px-4 py-2 rounded-md border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-[#30363d] dark:bg-[#0d1117]"
           />
           <button
             type="submit"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
             Add
           </button>
@@ -386,16 +386,16 @@ export default function ListView(props: Props) {
 
       <div class="space-y-1">
         <For each={taskTree()}>{(task) => <TaskItem task={task} level={0} />}</For>
-        {props.tasks.length === 0 && <div class="text-center text-gray-500 py-10">No tasks yet. Add one above!</div>}
+        {props.tasks.length === 0 && <div class="py-10 text-center text-gray-500">No tasks yet. Add one above!</div>}
       </div>
 
       <Show when={draggedTaskId()}>
         <div
           data-drop-zone="root"
-          class={`mt-8 p-8 border-2 border-dashed rounded-lg text-center transition-colors cursor-pointer ${
+          class={`mt-8 cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
             dragOverTaskId() === 'root'
-              ? 'border-blue-500 text-blue-500 bg-blue-50 dark:bg-blue-900/10'
-              : 'border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10'
+              ? "border-blue-500 bg-blue-50 text-blue-500 dark:bg-blue-900/10"
+              : "border-gray-300 text-gray-500 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-500 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-blue-900/10"
           }`}
           onDragOver={(e) => {
             e.preventDefault()

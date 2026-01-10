@@ -38,15 +38,15 @@ export default function DiffView(props: Props) {
   })
 
   return (
-    <div class="h-full flex flex-col bg-white dark:bg-[#010409] border-r border-gray-200 dark:border-[#30363d]">
-      <div class="p-4 border-b border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#010409] flex justify-between items-center">
+    <div class="flex h-full flex-col border-r border-gray-200 bg-white dark:border-[#30363d] dark:bg-[#010409]">
+      <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 p-4 dark:border-[#30363d] dark:bg-[#010409]">
         <h2 class="font-bold text-gray-700 dark:text-gray-200">Source Control</h2>
         <button
           onClick={() => void scanRepos()}
           title="Rescan Repositories"
           class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -60,11 +60,11 @@ export default function DiffView(props: Props) {
       <div class="flex-1 overflow-y-auto">
         <Show
           when={!loading()}
-          fallback={<div class="p-4 text-gray-500 text-sm text-center">Scanning for repositories...</div>}
+          fallback={<div class="p-4 text-center text-sm text-gray-500">Scanning for repositories...</div>}
         >
           <Show
             when={repos().length > 0}
-            fallback={<div class="p-4 text-gray-500 text-sm text-center">No repositories found.</div>}
+            fallback={<div class="p-4 text-center text-sm text-gray-500">No repositories found.</div>}
           >
             <For each={repos()}>{(repoPath) => <RepoControl repoPath={repoPath} rootDir={props.folder} />}</For>
           </Show>

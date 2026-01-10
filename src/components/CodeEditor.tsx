@@ -206,16 +206,16 @@ export default function CodeEditor(props: Props) {
   }
 
   return (
-    <div class="h-full w-full flex flex-col relative group">
-      <div class="h-9 bg-gray-50 dark:bg-[#161b22] flex items-center px-3 border-b border-gray-200 dark:border-[#30363d] justify-between shrink-0 select-none">
-        <div class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 overflow-hidden">
+    <div class="group relative flex h-full w-full flex-col">
+      <div class="flex h-9 shrink-0 items-center justify-between border-b border-gray-200 bg-gray-50 px-3 select-none dark:border-[#30363d] dark:bg-[#161b22]">
+        <div class="flex items-center gap-2 overflow-hidden text-sm text-gray-700 dark:text-gray-300">
           <span class="truncate font-medium" title={props.filePath}>
             {props.filePath.split('/').pop()}
           </span>
-          <span class="text-xs text-gray-400 truncate dir-rtl text-left" title={props.filePath}>
+          <span class="dir-rtl truncate text-left text-xs text-gray-400" title={props.filePath}>
             {props.filePath.replace(props.folder, '')}
           </span>
-          {isDirty() && <span class="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0" />}
+          {isDirty() && <span class="h-2 w-2 shrink-0 rounded-full bg-blue-600 dark:bg-blue-400" />}
         </div>
         <div class="flex items-center gap-2">
           <button
@@ -242,7 +242,7 @@ export default function CodeEditor(props: Props) {
           </button>
         </div>
       </div>
-      <div class="flex-1 overflow-hidden relative bg-white dark:bg-[#0d1117]" ref={editorContainer}></div>
+      <div class="relative flex-1 overflow-hidden bg-white dark:bg-[#0d1117]" ref={editorContainer}></div>
     </div>
   )
 }

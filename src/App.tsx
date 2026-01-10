@@ -29,7 +29,7 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div class="h-screen w-screen bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+      <div class="h-screen w-screen bg-white font-sans text-gray-900 transition-colors duration-200 dark:bg-[#0d1117] dark:text-gray-100">
         {folder() ? (
           isMobile() ? (
             <Workspace folder={folder()!} onBack={() => setFolder(null)} />
@@ -37,7 +37,7 @@ function App() {
             <DesktopWorkspace folder={folder()!} onBack={() => setFolder(null)} />
           )
         ) : (
-          <div class="flex items-center justify-center h-full p-4">
+          <div class="flex h-full items-center justify-center p-4">
             <div class="w-full max-w-2xl">
               <FolderBrowser onSelectFolder={setFolder} />
             </div>

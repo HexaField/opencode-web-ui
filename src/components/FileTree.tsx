@@ -107,7 +107,7 @@ export default function FileTree(props: Props) {
   }
 
   return (
-    <div class="overflow-y-auto h-full text-sm">
+    <div class="h-full overflow-y-auto text-sm">
       <For each={entries()}>
         {(entry) => (
           <FileTreeNode
@@ -194,7 +194,7 @@ function FileTreeNode(props: {
   return (
     <div>
       <div
-        class={`flex items-center py-1 px-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-[#161b22] ${props.selectedPath === props.path ? 'bg-blue-100 dark:bg-[#1f6feb]/20' : ''}`}
+        class={`flex cursor-pointer items-center px-2 py-1 hover:bg-gray-100 dark:hover:bg-[#161b22] ${props.selectedPath === props.path ? "bg-blue-100 dark:bg-[#1f6feb]/20" : ''}`}
         style={{ 'padding-left': `${props.level * 12 + 8}px` }}
         draggable={!props.isDirectory}
         onDragStart={(e) => {
@@ -211,7 +211,7 @@ function FileTreeNode(props: {
           }
         }}
       >
-        <span class="mr-1 text-gray-500 w-4 text-center inline-block">
+        <span class="mr-1 inline-block w-4 text-center text-gray-500">
           {props.isDirectory ? (isExpanded() ? '▼' : '▶') : '📄'}
         </span>
         <span class={`truncate ${statusColor()}`}>{props.name}</span>

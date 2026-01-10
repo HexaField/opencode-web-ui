@@ -53,13 +53,13 @@ export default function FolderBrowser(props: Props) {
   }
 
   return (
-    <div class="p-4 bg-white dark:bg-[#0d1117] rounded-xl shadow-sm border border-gray-200 dark:border-[#30363d] transition-colors duration-200">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors duration-200 dark:border-[#30363d] dark:bg-[#0d1117]">
       <div class="mb-4 flex flex-col gap-2">
-        <div class="flex justify-between items-center">
+        <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <button
               onClick={handleUp}
-              class="px-2 py-1 bg-gray-100 dark:bg-[#21262d] text-gray-700 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-[#30363d] transition-colors"
+              class="rounded bg-gray-100 px-2 py-1 text-gray-700 transition-colors hover:bg-gray-200 dark:bg-[#21262d] dark:text-gray-200 dark:hover:bg-[#30363d]"
               disabled={!currentPath()}
             >
               ⬆️
@@ -67,7 +67,7 @@ export default function FolderBrowser(props: Props) {
             <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Select Folder</h2>
           </div>
           <button
-            class="bg-[#2da44e] hover:bg-[#2c974b] text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm"
+            class="rounded-md bg-[#2da44e] px-4 py-2 font-medium text-white shadow-sm transition-colors hover:bg-[#2c974b]"
             onClick={() => props.onSelectFolder(currentPath())}
           >
             Select this folder
@@ -75,23 +75,23 @@ export default function FolderBrowser(props: Props) {
         </div>
         <div class="flex gap-2">
           <input
-            class="flex-1 border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#010409] text-gray-900 dark:text-gray-100 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="flex-1 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-[#30363d] dark:bg-[#010409] dark:text-gray-100"
             value={inputPath()}
             onInput={(e) => setInputPath(e.currentTarget.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGo()}
             placeholder="Enter path..."
           />
           <button
-            class="bg-gray-100 dark:bg-[#21262d] text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-md text-sm hover:bg-gray-200 dark:hover:bg-[#30363d] transition-colors border border-gray-200 dark:border-[#30363d]"
+            class="rounded-md border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-200 dark:border-[#30363d] dark:bg-[#21262d] dark:text-gray-200 dark:hover:bg-[#30363d]"
             onClick={handleGo}
           >
             Go
           </button>
           <button
-            class={`px-3 py-1.5 rounded-md text-sm transition-colors border ${
+            class={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
               ignoreDotFiles()
-                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
-                : 'bg-gray-100 dark:bg-[#21262d] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#30363d]'
+                ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                : "border-gray-200 bg-gray-100 text-gray-700 dark:border-[#30363d] dark:bg-[#21262d] dark:text-gray-200"
             }`}
             onClick={() => setIgnoreDotFiles(!ignoreDotFiles())}
             title="Toggle ignoring dot files"
@@ -100,13 +100,13 @@ export default function FolderBrowser(props: Props) {
           </button>
         </div>
       </div>
-      <div class="text-sm text-gray-500 dark:text-gray-400 mb-2 font-mono px-1">Current: {currentPath() || 'Root'}</div>
-      {error() && <div class="text-red-500 dark:text-red-400 text-sm mb-2 px-1">Error: {error()}</div>}
-      <div class="border border-gray-200 dark:border-[#30363d] rounded-md h-96 overflow-y-auto bg-white dark:bg-[#0d1117]">
+      <div class="mb-2 px-1 font-mono text-sm text-gray-500 dark:text-gray-400">Current: {currentPath() || 'Root'}</div>
+      {error() && <div class="mb-2 px-1 text-sm text-red-500 dark:text-red-400">Error: {error()}</div>}
+      <div class="h-96 overflow-y-auto rounded-md border border-gray-200 bg-white dark:border-[#30363d] dark:bg-[#0d1117]">
         <For each={entries().filter((e) => !ignoreDotFiles() || !e.name.startsWith('.'))}>
           {(entry) => (
             <div
-              class="cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-[#161b22] flex items-center border-b border-gray-100 dark:border-[#21262d] last:border-b-0 text-gray-700 dark:text-gray-300 transition-colors"
+              class="flex cursor-pointer items-center border-b border-gray-100 p-2 text-gray-700 transition-colors last:border-b-0 hover:bg-gray-50 dark:border-[#21262d] dark:text-gray-300 dark:hover:bg-[#161b22]"
               onClick={() => handleEntryClick(entry)}
             >
               <span class="mr-2">{entry.isDirectory ? '📁' : '📄'}</span>

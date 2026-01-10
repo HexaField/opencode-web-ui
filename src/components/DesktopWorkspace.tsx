@@ -228,27 +228,27 @@ export default function DesktopWorkspace(props: Props) {
   }
 
   return (
-    <div class="flex h-screen w-screen overflow-hidden bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div class="flex h-screen w-screen overflow-hidden bg-white text-gray-900 transition-colors duration-200 dark:bg-[#0d1117] dark:text-gray-100">
       <SettingsModal isOpen={isSettingsOpen()} onClose={() => setIsSettingsOpen(false)} onChangeFolder={props.onBack} />
 
       {/* Modals */}
       <Show when={fileToDelete()}>
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div class="bg-white dark:bg-[#161b22] p-4 rounded-lg shadow-xl border border-gray-200 dark:border-[#30363d] w-96">
-            <h3 class="text-lg font-semibold mb-2">Delete File</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">
+          <div class="w-96 rounded-lg border border-gray-200 bg-white p-4 shadow-xl dark:border-[#30363d] dark:bg-[#161b22]">
+            <h3 class="mb-2 text-lg font-semibold">Delete File</h3>
+            <p class="mb-4 text-gray-600 dark:text-gray-400">
               Are you sure you want to delete <span class="font-mono text-sm">{fileToDelete()?.split('/').pop()}</span>?
             </p>
             <div class="flex justify-end gap-2">
               <button
                 onClick={() => setFileToDelete(null)}
-                class="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#21262d] rounded"
+                class="rounded px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => void deleteFileHandler()}
-                class="px-3 py-1 text-sm bg-red-600 text-white hover:bg-red-700 rounded"
+                class="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
               >
                 Delete
               </button>
@@ -259,10 +259,10 @@ export default function DesktopWorkspace(props: Props) {
 
       <Show when={isCreatingFile()}>
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div class="bg-white dark:bg-[#161b22] p-4 rounded-lg shadow-xl border border-gray-200 dark:border-[#30363d] w-80">
-            <h3 class="text-lg font-semibold mb-2">New File</h3>
+          <div class="w-80 rounded-lg border border-gray-200 bg-white p-4 shadow-xl dark:border-[#30363d] dark:bg-[#161b22]">
+            <h3 class="mb-2 text-lg font-semibold">New File</h3>
             <input
-              class="w-full border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] rounded px-2 py-1 mb-4"
+              class="mb-4 w-full rounded border border-gray-300 bg-white px-2 py-1 dark:border-[#30363d] dark:bg-[#0d1117]"
               placeholder="filename.ext"
               value={newFileName()}
               onInput={(e) => setNewFileName(e.currentTarget.value)}
@@ -275,13 +275,13 @@ export default function DesktopWorkspace(props: Props) {
             <div class="flex justify-end gap-2">
               <button
                 onClick={() => setIsCreatingFile(false)}
-                class="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#21262d] rounded"
+                class="rounded px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => void createFile()}
-                class="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded"
+                class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
               >
                 Create
               </button>
@@ -292,38 +292,38 @@ export default function DesktopWorkspace(props: Props) {
 
       {/* LEFT SIDEBAR */}
       <div
-        class={`flex flex-col border-r border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] transition-all duration-0 overflow-hidden relative ${!isSidebarOpen() ? 'w-0 border-r-0' : ''}`}
+        class={`relative flex flex-col overflow-hidden border-r border-gray-200 bg-[#f6f8fa] transition-all duration-0 dark:border-[#30363d] dark:bg-[#010409] ${!isSidebarOpen() ? "w-0 border-r-0" : ''}`}
         style={{ width: isSidebarOpen() ? `${sidebarWidth()}px` : '0px' }}
       >
         {/* Sidebar Tabs */}
-        <div class="flex items-center p-1 border-b border-gray-200 dark:border-[#30363d] gap-1 shrink-0">
+        <div class="flex shrink-0 items-center gap-1 border-b border-gray-200 p-1 dark:border-[#30363d]">
           <button
-            class={`px-3 py-1 text-sm rounded-sm flex-1 ${leftTab() === 'files' ? 'bg-white dark:bg-[#161b22] shadow-sm font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'files' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('files')}
           >
             Files
           </button>
           <button
-            class={`px-3 py-1 text-sm rounded-sm flex-1 ${leftTab() === 'changes' ? 'bg-white dark:bg-[#161b22] shadow-sm font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'changes' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('changes')}
           >
             Changes
           </button>
           <button
-            class={`px-3 py-1 text-sm rounded-sm flex-1 ${leftTab() === 'plan' ? 'bg-white dark:bg-[#161b22] shadow-sm font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'plan' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('plan')}
           >
             Plan
           </button>
           <button
-            class={`px-3 py-1 text-sm rounded-sm flex-1 ${leftTab() === 'terminal' ? 'bg-white dark:bg-[#161b22] shadow-sm font-medium' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'terminal' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('terminal')}
           >
             Terminal
           </button>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            class="px-2 py-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 rounded-sm hover:bg-gray-200 dark:hover:bg-[#21262d]"
+            class="rounded-sm px-2 py-1 text-gray-500 hover:bg-gray-200 hover:text-gray-800 dark:hover:bg-[#21262d] dark:hover:text-gray-200"
             title="Hide Sidebar"
           >
             <svg
@@ -339,13 +339,13 @@ export default function DesktopWorkspace(props: Props) {
         </div>
 
         {/* Sidebar Content */}
-        <div class="flex-1 overflow-hidden relative">
-          <div class="h-full flex flex-col" style={{ display: leftTab() === 'files' ? 'flex' : 'none' }}>
-            <div class="h-full flex flex-col">
+        <div class="relative flex-1 overflow-hidden">
+          <div class="flex h-full flex-col" style={{ display: leftTab() === 'files' ? 'flex' : 'none' }}>
+            <div class="flex h-full flex-col">
               <div class="flex items-center justify-between p-2 text-xs font-semibold text-gray-500 uppercase">
                 <span>Explorer</span>
                 <div class="flex gap-1">
-                  <button onClick={() => setIsCreatingFile(true)} class="hover:text-blue-600 p-1" title="New File">
+                  <button onClick={() => setIsCreatingFile(true)} class="p-1 hover:text-blue-600" title="New File">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fill-rule="evenodd"
@@ -365,10 +365,10 @@ export default function DesktopWorkspace(props: Props) {
                 />
               </div>
               {/* Settings Button at bottom of files tab */}
-              <div class="p-2 border-t border-gray-200 dark:border-[#30363d]">
+              <div class="border-t border-gray-200 p-2 dark:border-[#30363d]">
                 <button
                   onClick={() => setIsSettingsOpen(true)}
-                  class="flex items-center gap-2 w-full px-2 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#21262d] rounded"
+                  class="flex w-full items-center gap-2 rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-[#21262d]"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -395,28 +395,28 @@ export default function DesktopWorkspace(props: Props) {
               </div>
             </div>
           </div>
-          <div class="h-full flex flex-col" style={{ display: leftTab() === 'changes' ? 'flex' : 'none' }}>
+          <div class="flex h-full flex-col" style={{ display: leftTab() === 'changes' ? 'flex' : 'none' }}>
             <DiffView folder={props.folder} />
           </div>
-          <div class="h-full flex flex-col" style={{ display: leftTab() === 'plan' ? 'flex' : 'none' }}>
+          <div class="flex h-full flex-col" style={{ display: leftTab() === 'plan' ? 'flex' : 'none' }}>
             <PlanView onStartSession={handleStartSession} />
           </div>
-          <div class="h-full flex flex-col" style={{ display: leftTab() === 'terminal' ? 'flex' : 'none' }}>
+          <div class="flex h-full flex-col" style={{ display: leftTab() === 'terminal' ? 'flex' : 'none' }}>
             <Terminal active={leftTab() === 'terminal'} folder={props.folder} />
           </div>
         </div>
 
         {/* Resize Handle */}
         <div
-          class="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 z-10 opacity-0 hover:opacity-100 transition-opacity"
+          class="absolute top-0 right-0 z-10 h-full w-1 cursor-col-resize opacity-0 transition-opacity hover:bg-blue-500 hover:opacity-100"
           onMouseDown={startResizeLeft}
         ></div>
       </div>
 
       {/* Toggle Sidebar Button (when closed) */}
       <Show when={!isSidebarOpen()}>
-        <div class="h-full w-8 border-r border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] flex flex-col items-center py-4 gap-4 shrink-0">
-          <button onClick={() => setIsSidebarOpen(true)} class="p-1 hover:bg-gray-200 dark:hover:bg-[#21262d] rounded">
+        <div class="flex h-full w-8 shrink-0 flex-col items-center gap-4 border-r border-gray-200 bg-[#f6f8fa] py-4 dark:border-[#30363d] dark:bg-[#010409]">
+          <button onClick={() => setIsSidebarOpen(true)} class="rounded p-1 hover:bg-gray-200 dark:hover:bg-[#21262d]">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               class="h-5 w-5 text-gray-500"
@@ -434,11 +434,11 @@ export default function DesktopWorkspace(props: Props) {
       </Show>
 
       {/* MAIN CONTENT AREA (Editors) */}
-      <div class="flex-1 flex overflow-hidden bg-white dark:bg-[#0d1117] relative">
+      <div class="relative flex flex-1 overflow-hidden bg-white dark:bg-[#0d1117]">
         <Show
           when={panes().length > 0}
           fallback={
-            <div class="flex-1 flex items-center justify-center text-gray-400">
+            <div class="flex flex-1 items-center justify-center text-gray-400">
               <div class="text-center">
                 <p class="mb-2">No files open</p>
                 <p class="text-sm">Select a file from the sidebar to start editing</p>
@@ -449,17 +449,17 @@ export default function DesktopWorkspace(props: Props) {
           <For each={panes()}>
             {(path, index) => (
               <div
-                class="flex-1 h-full overflow-hidden relative border-r border-gray-200 dark:border-[#30363d] last:border-r-0"
+                class="relative h-full flex-1 overflow-hidden border-r border-gray-200 last:border-r-0 dark:border-[#30363d]"
                 onClick={() => setActivePaneIndex(index())}
               >
                 {/* Drag overlay for splitting */}
                 <div
-                  class="absolute inset-0 z-20 hidden pointer-events-none"
+                  class="pointer-events-none absolute inset-0 z-20 hidden"
                   classList={{ hidden: false }} // Always active for drop detection logic in solid-js usually needs state
                 >
                   {/* We implement drag and drop zones manually here or on the container */}
                   <div
-                    class="absolute left-0 top-0 bottom-0 w-8 bg-blue-500/20 opacity-0 transition-opacity z-30"
+                    class="absolute top-0 bottom-0 left-0 z-30 w-8 bg-blue-500/20 opacity-0 transition-opacity"
                     ondragenter={(e) => {
                       e.preventDefault()
                       e.currentTarget.style.opacity = '1'
@@ -478,7 +478,7 @@ export default function DesktopWorkspace(props: Props) {
                     }}
                   ></div>
                   <div
-                    class="absolute right-0 top-0 bottom-0 w-8 bg-blue-500/20 opacity-0 transition-opacity z-30"
+                    class="absolute top-0 right-0 bottom-0 z-30 w-8 bg-blue-500/20 opacity-0 transition-opacity"
                     ondragenter={(e) => {
                       e.preventDefault()
                       e.currentTarget.style.opacity = '1'
@@ -512,15 +512,15 @@ export default function DesktopWorkspace(props: Props) {
 
       {/* RIGHT SIDEBAR (Chat) */}
       <div
-        class={`flex flex-col border-l border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#0d1117] transition-all duration-0 overflow-hidden relative ${!isChatOpen() ? 'w-0 border-l-0' : ''}`}
+        class={`relative flex flex-col overflow-hidden border-l border-gray-200 bg-white transition-all duration-0 dark:border-[#30363d] dark:bg-[#0d1117] ${!isChatOpen() ? "w-0 border-l-0" : ''}`}
         style={{ width: isChatOpen() ? `${chatWidth()}px` : '0px' }}
       >
         {/* Chat Header */}
-        <div class="flex items-center justify-between p-2 border-b border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409]">
+        <div class="flex items-center justify-between border-b border-gray-200 bg-[#f6f8fa] p-2 dark:border-[#30363d] dark:bg-[#010409]">
           <div class="flex items-center gap-2">
             <button
               onClick={() => setIsChatOpen(false)}
-              class="p-1 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 rounded-sm hover:bg-gray-200 dark:hover:bg-[#21262d]"
+              class="rounded-sm p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-800 dark:hover:bg-[#21262d] dark:hover:text-gray-200"
               title="Hide Chat"
             >
               <svg
@@ -533,13 +533,13 @@ export default function DesktopWorkspace(props: Props) {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>
-            <div class="font-medium text-sm">Chat</div>
+            <div class="text-sm font-medium">Chat</div>
           </div>
 
           {/* Session Dropdown/Selector */}
-          <div class="flex-1 mx-2 relative group">
+          <div class="group relative mx-2 flex-1">
             <Show when={currentSessionId()}>
-              <div class="text-xs truncate bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded px-2 py-1 cursor-pointer">
+              <div class="cursor-pointer truncate rounded border border-gray-200 bg-white px-2 py-1 text-xs dark:border-[#30363d] dark:bg-[#161b22]">
                 Session: {currentSessionId()?.slice(0, 8)}...
               </div>
             </Show>
@@ -548,7 +548,7 @@ export default function DesktopWorkspace(props: Props) {
           <div class="flex gap-1">
             <button
               onClick={() => setCurrentSessionId(null)}
-              class="p-1 hover:bg-gray-200 dark:hover:bg-[#21262d] rounded"
+              class="rounded p-1 hover:bg-gray-200 dark:hover:bg-[#21262d]"
               title="Sessions"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -557,7 +557,7 @@ export default function DesktopWorkspace(props: Props) {
             </button>
             <button
               onClick={() => setIsChatOpen(false)}
-              class="p-1 hover:bg-gray-200 dark:hover:bg-[#21262d] rounded hidden"
+              class="hidden rounded p-1 hover:bg-gray-200 dark:hover:bg-[#21262d]"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path
@@ -571,7 +571,7 @@ export default function DesktopWorkspace(props: Props) {
         </div>
 
         {/* Chat Content or Session List */}
-        <div class="flex-1 overflow-hidden relative">
+        <div class="relative flex-1 overflow-hidden">
           <Show
             when={currentSessionId()}
             fallback={
@@ -590,7 +590,7 @@ export default function DesktopWorkspace(props: Props) {
 
         {/* Resize Handle */}
         <div
-          class="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-blue-500 z-10 opacity-0 hover:opacity-100 transition-opacity"
+          class="absolute top-0 left-0 z-10 h-full w-1 cursor-col-resize opacity-0 transition-opacity hover:bg-blue-500 hover:opacity-100"
           onMouseDown={startResizeChat}
         ></div>
       </div>
@@ -600,7 +600,7 @@ export default function DesktopWorkspace(props: Props) {
         <div class="absolute right-4 bottom-4 z-50">
           <button
             onClick={() => setIsChatOpen(true)}
-            class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-transform hover:scale-105"
+            class="rounded-full bg-blue-600 p-3 text-white shadow-lg transition-transform hover:scale-105 hover:bg-blue-700"
             title="Open Chat"
           >
             <svg

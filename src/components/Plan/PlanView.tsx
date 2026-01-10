@@ -23,34 +23,34 @@ export default function PlanView(props: Props) {
   })
 
   return (
-    <div id="plan-view-container" class="flex flex-col h-full w-full bg-white dark:bg-[#0d1117]">
-      <div class="flex items-center gap-2 p-2 border-b border-gray-200 dark:border-[#30363d] justify-between">
+    <div id="plan-view-container" class="flex h-full w-full flex-col bg-white dark:bg-[#0d1117]">
+      <div class="flex items-center justify-between gap-2 border-b border-gray-200 p-2 dark:border-[#30363d]">
         <div class="flex items-center gap-2">
           <button
-            class={`px-3 py-1 rounded text-sm font-medium ${
+            class={`rounded px-3 py-1 text-sm font-medium ${
               subView() === 'list'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]'
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
             }`}
             onClick={() => setSubView('list')}
           >
             List
           </button>
           <button
-            class={`px-3 py-1 rounded text-sm font-medium ${
+            class={`rounded px-3 py-1 text-sm font-medium ${
               subView() === 'kanban'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]'
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
             }`}
             onClick={() => setSubView('kanban')}
           >
             Kanban
           </button>
           <button
-            class={`px-3 py-1 rounded text-sm font-medium ${
+            class={`rounded px-3 py-1 text-sm font-medium ${
               subView() === 'dag'
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]'
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100"
+                : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
             }`}
             onClick={() => setSubView('dag')}
           >
@@ -58,7 +58,7 @@ export default function PlanView(props: Props) {
           </button>
         </div>
         <button
-          class="px-3 py-1 rounded text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
+          class="rounded px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#21262d]"
           onClick={() => setIsTagsModalOpen(true)}
         >
           Manage Tags
@@ -67,7 +67,7 @@ export default function PlanView(props: Props) {
 
       <div class="flex-1 overflow-auto p-4">
         <Show when={tasks.loading}>
-          <div class="flex items-center justify-center h-full text-gray-500">Loading tasks...</div>
+          <div class="flex h-full items-center justify-center text-gray-500">Loading tasks...</div>
         </Show>
 
         <Show when={!tasks.loading && tasks()}>

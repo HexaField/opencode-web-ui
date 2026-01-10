@@ -66,7 +66,7 @@ export default function SessionList(props: Props) {
   }
 
   return (
-    <div class="w-full border-r border-gray-200 dark:border-[#30363d] bg-[#f6f8fa] dark:bg-[#010409] flex flex-col h-full transition-colors duration-200">
+    <div class="flex h-full w-full flex-col border-r border-gray-200 bg-[#f6f8fa] transition-colors duration-200 dark:border-[#30363d] dark:bg-[#010409]">
       <Show when={isAgentManagerOpen()}>
         <AgentManager
           folder={props.folder}
@@ -77,12 +77,12 @@ export default function SessionList(props: Props) {
         />
       </Show>
 
-      <div class="p-3 border-b border-gray-200 dark:border-[#30363d] flex justify-between items-center gap-2">
-        <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100 shrink-0 hidden sm:block">Sessions</h3>
-        <div class="flex items-center gap-1 min-w-0 flex-1 sm:flex-none justify-end">
+      <div class="flex items-center justify-between gap-2 border-b border-gray-200 p-3 dark:border-[#30363d]">
+        <h3 class="hidden shrink-0 text-sm font-semibold text-gray-900 sm:block dark:text-gray-100">Sessions</h3>
+        <div class="flex min-w-0 flex-1 items-center justify-end gap-1 sm:flex-none">
           <button
             onClick={() => setIsAgentManagerOpen(true)}
-            class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-gray-200 dark:hover:bg-[#21262d]"
+            class="rounded p-1 text-gray-500 transition-colors hover:bg-gray-200 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-[#21262d] dark:hover:text-blue-400"
             title="Manage Agents"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -90,17 +90,17 @@ export default function SessionList(props: Props) {
             </svg>
           </button>
 
-          <div class="relative flex-1 min-w-[100px] max-w-[150px]">
+          <div class="relative max-w-[150px] min-w-[100px] flex-1">
             <select
               value={selectedAgent()}
               onChange={(e) => setSelectedAgent(e.currentTarget.value)}
-              class="w-full text-xs py-1.5 pl-2 pr-6 border border-gray-200 dark:border-[#30363d] rounded bg-white dark:bg-[#0d1117] text-gray-700 dark:text-gray-300 focus:ring-1 focus:ring-blue-500 outline-none appearance-none truncate"
+              class="w-full appearance-none truncate rounded border border-gray-200 bg-white py-1.5 pr-6 pl-2 text-xs text-gray-700 outline-none focus:ring-1 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300"
             >
               <option value="">Default</option>
               <For each={agents()}>{(agent) => <option value={agent.name}>{agent.name}</option>}</For>
             </select>
-            <div class="absolute inset-y-0 right-0 flex items-center px-1 pointer-events-none text-gray-500">
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-gray-500">
+              <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </div>
@@ -108,7 +108,7 @@ export default function SessionList(props: Props) {
 
           <button
             onClick={() => void handleCreateSession()}
-            class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors p-1 rounded hover:bg-gray-200 dark:hover:bg-[#21262d] shrink-0"
+            class="shrink-0 rounded p-1 text-gray-500 transition-colors hover:bg-gray-200 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-[#21262d] dark:hover:text-blue-400"
             title="New Session"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -122,26 +122,23 @@ export default function SessionList(props: Props) {
         </div>
       </div>
       {error() && (
-        <div class="p-2 text-red-500 text-xs bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900">
+        <div class="border-b border-red-100 bg-red-50 p-2 text-xs text-red-500 dark:border-red-900 dark:bg-red-900/20">
           {error()}
         </div>
       )}
-      <div class="overflow-y-auto flex-1 p-2 space-y-1">
+      <div class="flex-1 space-y-1 overflow-y-auto p-2">
         <For each={sessions()}>
           {(session) => (
             <div
-              class={`
-                px-3 py-2 rounded-md cursor-pointer text-sm transition-colors
-                ${
-                  props.currentSessionId === session.id
-                    ? 'bg-white dark:bg-[#21262d] shadow-sm text-gray-900 dark:text-gray-100 font-medium border border-gray-200 dark:border-[#363b42]'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[#161b22] hover:text-gray-900 dark:hover:text-gray-200'
-                }
-              `}
+              class={`cursor-pointer rounded-md px-3 py-2 text-sm transition-colors ${
+                props.currentSessionId === session.id
+                  ? "border border-gray-200 bg-white font-medium text-gray-900 shadow-sm dark:border-[#363b42] dark:bg-[#21262d] dark:text-gray-100"
+                  : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-[#161b22] dark:hover:text-gray-200"
+              } `}
               onClick={() => props.onSelectSession(session.id)}
             >
               <div class="truncate">{session.title || session.id}</div>
-              <div class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5">
+              <div class="mt-0.5 truncate text-xs text-gray-400 dark:text-gray-500">
                 {session.id.substring(0, 8)}...
               </div>
             </div>

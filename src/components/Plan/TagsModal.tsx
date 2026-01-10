@@ -21,9 +21,9 @@ export default function TagsModal(props: Props) {
 
   return (
     <Show when={props.isOpen}>
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div class="bg-white dark:bg-[#161b22] rounded-lg shadow-xl w-96 max-w-full p-4 border border-gray-200 dark:border-[#30363d]">
-          <div class="flex justify-between items-center mb-4">
+      <div class="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+        <div class="w-96 max-w-full rounded-lg border border-gray-200 bg-white p-4 shadow-xl dark:border-[#30363d] dark:bg-[#161b22]">
+          <div class="mb-4 flex items-center justify-between">
             <h2 class="text-lg font-semibold">Manage Tags</h2>
             <button
               onClick={props.onClose}
@@ -44,26 +44,26 @@ export default function TagsModal(props: Props) {
               type="color"
               value={newTagColor()}
               onInput={(e) => setNewTagColor(e.currentTarget.value)}
-              class="w-10 h-10 p-1 rounded border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117]"
+              class="h-10 w-10 rounded border border-gray-300 bg-white p-1 dark:border-[#30363d] dark:bg-[#0d1117]"
             />
             <input
               type="text"
               value={newTagName()}
               onInput={(e) => setNewTagName(e.currentTarget.value)}
               placeholder="New tag name..."
-              class="flex-1 px-3 py-2 rounded border border-gray-300 dark:border-[#30363d] bg-white dark:bg-[#0d1117] focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="flex-1 rounded border border-gray-300 bg-white px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-[#30363d] dark:bg-[#0d1117]"
             />
-            <button type="submit" class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button type="submit" class="rounded bg-blue-600 px-3 py-2 text-white hover:bg-blue-700">
               Add
             </button>
           </form>
 
-          <div class="space-y-2 max-h-60 overflow-y-auto">
+          <div class="max-h-60 space-y-2 overflow-y-auto">
             <For each={props.tags}>
               {(tag) => (
-                <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-[#0d1117] rounded border border-gray-200 dark:border-[#30363d]">
+                <div class="flex items-center justify-between rounded border border-gray-200 bg-gray-50 p-2 dark:border-[#30363d] dark:bg-[#0d1117]">
                   <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 rounded-full" style={{ 'background-color': tag.color }}></div>
+                    <div class="h-4 w-4 rounded-full" style={{ 'background-color': tag.color }}></div>
                     <span>{tag.name}</span>
                   </div>
                 </div>

@@ -105,15 +105,15 @@ export default function Workspace(props: Props) {
   }
 
   return (
-    <div class="flex fixed inset-0 overflow-hidden bg-white dark:bg-[#0d1117] transition-colors duration-200">
+    <div class="fixed inset-0 flex overflow-hidden bg-white transition-colors duration-200 dark:bg-[#0d1117]">
       <SettingsModal isOpen={isSettingsOpen()} onClose={() => setIsSettingsOpen(false)} onChangeFolder={props.onBack} />
 
-      <div class="flex-1 flex flex-col h-full w-full bg-white dark:bg-[#0d1117]">
-        <div class="h-14 border-b border-gray-200 dark:border-[#30363d] flex items-center px-4 bg-[#f6f8fa] dark:bg-[#010409] justify-between shrink-0 gap-2">
+      <div class="flex h-full w-full flex-1 flex-col bg-white dark:bg-[#0d1117]">
+        <div class="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-gray-200 bg-[#f6f8fa] px-4 dark:border-[#30363d] dark:bg-[#010409]">
           <div class="flex items-center gap-3 overflow-hidden">
             {view() === 'chat' && currentSessionId() && (
               <button
-                class="md:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                class="-ml-2 p-2 text-gray-500 hover:text-gray-700 md:hidden dark:text-gray-400 dark:hover:text-gray-200"
                 onClick={() => setCurrentSessionId(null)}
               >
                 <svg
@@ -128,52 +128,52 @@ export default function Workspace(props: Props) {
               </button>
             )}
 
-            <div class="flex bg-gray-200 dark:bg-[#21262d] rounded-md p-1">
+            <div class="flex rounded-md bg-gray-200 p-1 dark:bg-[#21262d]">
               <button
-                class={`px-3 py-1 rounded-sm text-sm font-medium transition-all ${
+                class={`rounded-sm px-3 py-1 text-sm font-medium transition-all ${
                   view() === 'chat'
-                    ? 'bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-[#0d1117] dark:text-gray-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
                 onClick={() => setView('chat')}
               >
                 Chat
               </button>
               <button
-                class={`px-3 py-1 rounded-sm text-sm font-medium transition-all ${
+                class={`rounded-sm px-3 py-1 text-sm font-medium transition-all ${
                   view() === 'changes'
-                    ? 'bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-[#0d1117] dark:text-gray-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
                 onClick={() => setView('changes')}
               >
                 Changes
               </button>
               <button
-                class={`px-3 py-1 rounded-sm text-sm font-medium transition-all ${
+                class={`rounded-sm px-3 py-1 text-sm font-medium transition-all ${
                   view() === 'files'
-                    ? 'bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-[#0d1117] dark:text-gray-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
                 onClick={() => setView('files')}
               >
                 Files
               </button>
               <button
-                class={`px-3 py-1 rounded-sm text-sm font-medium transition-all ${
+                class={`rounded-sm px-3 py-1 text-sm font-medium transition-all ${
                   view() === 'plan'
-                    ? 'bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-[#0d1117] dark:text-gray-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
                 onClick={() => setView('plan')}
               >
                 Plan
               </button>
               <button
-                class={`px-3 py-1 rounded-sm text-sm font-medium transition-all ${
+                class={`rounded-sm px-3 py-1 text-sm font-medium transition-all ${
                   view() === 'terminal'
-                    ? 'bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-[#0d1117] dark:text-gray-100"
+                    : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
                 onClick={() => setView('terminal')}
               >
@@ -181,8 +181,8 @@ export default function Workspace(props: Props) {
               </button>
             </div>
 
-            <div class="hidden md:block h-4 w-px bg-gray-300 dark:bg-[#30363d] mx-1"></div>
-            <div class="hidden md:block font-medium truncate text-gray-600 dark:text-gray-400 text-sm">
+            <div class="mx-1 hidden h-4 w-px bg-gray-300 md:block dark:bg-[#30363d]"></div>
+            <div class="hidden truncate text-sm font-medium text-gray-600 md:block dark:text-gray-400">
               {props.folder}
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function Workspace(props: Props) {
           {/* Settings Button */}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            class="flex p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-200 dark:hover:bg-[#21262d] transition-colors"
+            class="flex rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#21262d] dark:hover:text-gray-200"
             title="Settings"
           >
             <svg
@@ -215,14 +215,11 @@ export default function Workspace(props: Props) {
             </svg>
           </button>
         </div>
-        <div class="flex-1 overflow-hidden relative">
+        <div class="relative flex-1 overflow-hidden">
           {view() === 'chat' && (
             <div class="flex h-full w-full">
               <div
-                class={`
-                  border-r border-gray-200 dark:border-[#30363d] shrink-0 flex flex-col
-                  ${currentSessionId() ? 'hidden md:flex md:w-64' : 'flex w-full md:w-64'}
-                `}
+                class={`flex shrink-0 flex-col border-r border-gray-200 dark:border-[#30363d] ${currentSessionId() ? "hidden md:flex md:w-64" : "flex w-full md:w-64"} `}
               >
                 <SessionList
                   folder={props.folder}
@@ -231,16 +228,13 @@ export default function Workspace(props: Props) {
                 />
               </div>
               <div
-                class={`
-                  flex-1 h-full overflow-hidden relative
-                  ${!currentSessionId() ? 'hidden md:block' : 'block'}
-                `}
+                class={`relative h-full flex-1 overflow-hidden ${!currentSessionId() ? "hidden md:block" : 'block'} `}
               >
                 {currentSessionId() ? (
                   <ChatInterface folder={props.folder} sessionId={currentSessionId()!} />
                 ) : (
-                  <div class="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 gap-4">
-                    <div class="p-4 bg-gray-50 dark:bg-[#161b22] rounded-full">
+                  <div class="flex h-full flex-col items-center justify-center gap-4 text-gray-500 dark:text-gray-400">
+                    <div class="rounded-full bg-gray-50 p-4 dark:bg-[#161b22]">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         class="h-12 w-12 text-gray-400 dark:text-gray-600"
@@ -272,7 +266,7 @@ export default function Workspace(props: Props) {
           <div class="h-full w-full" style={{ display: view() === 'plan' ? 'block' : 'none' }}>
             <PlanView onStartSession={handleStartSession} />
           </div>
-          <div class="h-full w-full flex flex-col" style={{ display: view() === 'terminal' ? 'flex' : 'none' }}>
+          <div class="flex h-full w-full flex-col" style={{ display: view() === 'terminal' ? 'flex' : 'none' }}>
             <Terminal active={view() === 'terminal'} folder={props.folder} />
           </div>
         </div>

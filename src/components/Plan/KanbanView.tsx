@@ -35,31 +35,31 @@ export default function KanbanView(props: Props) {
       <For each={COLUMNS}>
         {(column) => (
           <div
-            class="flex-1 min-w-[250px] flex flex-col bg-gray-50 dark:bg-[#161b22] rounded-lg border border-gray-200 dark:border-[#30363d]"
+            class="flex min-w-[250px] flex-1 flex-col rounded-lg border border-gray-200 bg-gray-50 dark:border-[#30363d] dark:bg-[#161b22]"
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, column.id)}
           >
-            <div class="p-3 font-medium border-b border-gray-200 dark:border-[#30363d] flex justify-between items-center">
+            <div class="flex items-center justify-between border-b border-gray-200 p-3 font-medium dark:border-[#30363d]">
               <span>{column.title}</span>
-              <span class="text-xs text-gray-500 bg-gray-200 dark:bg-[#21262d] px-2 py-0.5 rounded-full">
+              <span class="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500 dark:bg-[#21262d]">
                 {props.tasks.filter((t) => t.status === column.id).length}
               </span>
             </div>
-            <div class="flex-1 p-2 overflow-y-auto space-y-2">
+            <div class="flex-1 space-y-2 overflow-y-auto p-2">
               <For each={props.tasks.filter((t) => t.status === column.id)}>
                 {(task) => (
                   <div
-                    class="p-3 bg-white dark:bg-[#0d1117] rounded border border-gray-200 dark:border-[#30363d] shadow-sm cursor-move hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
+                    class="cursor-move rounded border border-gray-200 bg-white p-3 shadow-sm transition-colors hover:border-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:hover:border-blue-500"
                     draggable={true}
                     onDragStart={(e) => handleDragStart(e, task.id)}
                   >
                     <div class="text-sm">{task.title}</div>
                     {task.tags?.length > 0 && (
-                      <div class="flex flex-wrap gap-1 mt-2">
+                      <div class="mt-2 flex flex-wrap gap-1">
                         <For each={task.tags}>
                           {(tag) => (
                             <span
-                              class="text-[10px] px-1.5 py-0.5 rounded text-white"
+                              class="rounded px-1.5 py-0.5 text-[10px] text-white"
                               style={{ 'background-color': tag.color || '#6b7280' }}
                             >
                               {tag.name}

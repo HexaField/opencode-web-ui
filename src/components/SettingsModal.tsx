@@ -13,14 +13,14 @@ export default function SettingsModal(props: Props) {
   return (
     <Show when={props.isOpen}>
       <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
         onClick={props.onClose}
       >
         <div
-          class="w-full max-w-sm bg-white dark:bg-[#161b22] rounded-xl shadow-2xl border border-gray-200 dark:border-[#30363d] overflow-hidden"
+          class="w-full max-w-sm overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-[#30363d] dark:bg-[#161b22]"
           onClick={(e) => e.stopPropagation()}
         >
-          <div class="px-4 py-3 border-b border-gray-200 dark:border-[#30363d] flex justify-between items-center bg-gray-50 dark:bg-[#0d1117]">
+          <div class="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-[#30363d] dark:bg-[#0d1117]">
             <h2 class="font-semibold text-gray-900 dark:text-gray-100">Settings</h2>
             <button
               onClick={props.onClose}
@@ -30,39 +30,39 @@ export default function SettingsModal(props: Props) {
             </button>
           </div>
 
-          <div class="p-4 space-y-6">
+          <div class="space-y-6 p-4">
             {/* Theme Section */}
             <div>
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
+              <h3 class="mb-3 text-sm font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
                 Appearance
               </h3>
               <div class="grid grid-cols-3 gap-2">
                 <button
                   onClick={() => setTheme('light')}
-                  class={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+                  class={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
                     theme() === 'light'
-                      ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400'
-                      : 'bg-white dark:bg-[#0d1117] border-gray-300 dark:border-[#30363d] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#21262d]'
+                      ? "border-blue-500 bg-blue-50 text-blue-600 dark:border-blue-400 dark:bg-blue-900/20 dark:text-blue-400"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300 dark:hover:bg-[#21262d]"
                   }`}
                 >
                   Light
                 </button>
                 <button
                   onClick={() => setTheme('dark')}
-                  class={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+                  class={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
                     theme() === 'dark'
-                      ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400'
-                      : 'bg-white dark:bg-[#0d1117] border-gray-300 dark:border-[#30363d] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#21262d]'
+                      ? "border-blue-500 bg-blue-50 text-blue-600 dark:border-blue-400 dark:bg-blue-900/20 dark:text-blue-400"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300 dark:hover:bg-[#21262d]"
                   }`}
                 >
                   Dark
                 </button>
                 <button
                   onClick={() => setTheme('system')}
-                  class={`px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+                  class={`rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
                     theme() === 'system'
-                      ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/20 dark:border-blue-400 dark:text-blue-400'
-                      : 'bg-white dark:bg-[#0d1117] border-gray-300 dark:border-[#30363d] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#21262d]'
+                      ? "border-blue-500 bg-blue-50 text-blue-600 dark:border-blue-400 dark:bg-blue-900/20 dark:text-blue-400"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-300 dark:hover:bg-[#21262d]"
                   }`}
                 >
                   System
@@ -72,7 +72,7 @@ export default function SettingsModal(props: Props) {
 
             {/* Workspace Section */}
             <div>
-              <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wider">
+              <h3 class="mb-3 text-sm font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
                 Workspace
               </h3>
               <button
@@ -80,7 +80,7 @@ export default function SettingsModal(props: Props) {
                   props.onChangeFolder()
                   props.onClose()
                 }}
-                class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors font-medium text-sm"
+                class="flex w-full items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
               >
                 Change Folder
               </button>

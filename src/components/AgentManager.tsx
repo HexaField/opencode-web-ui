@@ -162,14 +162,14 @@ ${c.systemPrompt}`
   }
 
   return (
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-0 md:p-4">
-      <div class="bg-white dark:bg-[#0d1117] w-full h-full md:w-[800px] md:h-[600px] md:rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-200 dark:border-[#30363d]">
-        <div class="p-4 border-b border-gray-200 dark:border-[#30363d] flex justify-between items-center bg-[#f6f8fa] dark:bg-[#010409]">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-0 md:p-4">
+      <div class="flex h-full w-full flex-col overflow-hidden border border-gray-200 bg-white shadow-xl md:h-[600px] md:w-[800px] md:rounded-lg dark:border-[#30363d] dark:bg-[#0d1117]">
+        <div class="flex items-center justify-between border-b border-gray-200 bg-[#f6f8fa] p-4 dark:border-[#30363d] dark:bg-[#010409]">
           <div class="flex items-center gap-3">
             <Show when={isEditing()}>
               <button
                 onClick={() => setIsEditing(false)}
-                class="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                class="text-gray-500 hover:text-gray-700 md:hidden dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path
@@ -180,7 +180,7 @@ ${c.systemPrompt}`
                 </svg>
               </button>
             </Show>
-            <h2 class="font-semibold text-lg text-gray-900 dark:text-gray-100">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {isEditing() ? (editName() ? 'Edit Agent' : 'New Agent') : 'Manage Agents'}
             </h2>
           </div>
@@ -200,30 +200,24 @@ ${c.systemPrompt}`
           </button>
         </div>
 
-        <div class="flex-1 flex overflow-hidden relative">
+        <div class="relative flex flex-1 overflow-hidden">
           {/* Sidebar List */}
           <div
-            class={`
-            w-full md:w-64 border-r border-gray-200 dark:border-[#30363d] flex flex-col bg-[#f6f8fa] dark:bg-[#010409]
-            ${isEditing() ? 'hidden md:flex' : 'flex'}
-          `}
+            class={`flex w-full flex-col border-r border-gray-200 bg-[#f6f8fa] md:w-64 dark:border-[#30363d] dark:bg-[#010409] ${isEditing() ? "hidden md:flex" : 'flex'} `}
           >
             <div class="p-2">
               <button
                 onClick={() => startEdit()}
-                class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
+                class="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
               >
                 New Agent
               </button>
             </div>
-            <div class="flex-1 overflow-y-auto p-2 space-y-1">
+            <div class="flex-1 space-y-1 overflow-y-auto p-2">
               <For each={agents()}>
                 {(agent) => (
                   <div
-                    class={`
-                      flex items-center justify-between px-3 py-2 rounded-md cursor-pointer text-sm group
-                      ${selectedAgent() === agent.name ? 'bg-white dark:bg-[#21262d] shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-[#161b22]'}
-                    `}
+                    class={`group flex cursor-pointer items-center justify-between rounded-md px-3 py-2 text-sm ${selectedAgent() === agent.name ? "bg-white shadow-sm dark:bg-[#21262d]" : "hover:bg-gray-200 dark:hover:bg-[#161b22]"} `}
                     onClick={() => {
                       setSelectedAgent(agent.name)
                       startEdit(agent)
@@ -235,7 +229,7 @@ ${c.systemPrompt}`
                         e.stopPropagation()
                         void handleDelete(agent.name)
                       }}
-                      class="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 p-1"
+                      class="p-1 text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-700"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path
@@ -253,28 +247,25 @@ ${c.systemPrompt}`
 
           {/* Editor Area */}
           <div
-            class={`
-            flex-1 flex-col overflow-hidden bg-white dark:bg-[#0d1117]
-            ${isEditing() ? 'flex' : 'hidden md:flex'}
-          `}
+            class={`flex-1 flex-col overflow-hidden bg-white dark:bg-[#0d1117] ${isEditing() ? 'flex' : "hidden md:flex"} `}
           >
             <Show
               when={isEditing()}
               fallback={
-                <div class="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                <div class="flex flex-1 items-center justify-center text-gray-500 dark:text-gray-400">
                   Select an agent to edit or create a new one
                 </div>
               }
             >
-              <div class="flex-1 overflow-y-auto p-6 space-y-6">
+              <div class="flex-1 space-y-6 overflow-y-auto p-6">
                 {error() && (
-                  <div class="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md text-sm">
+                  <div class="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                     {error()}
                   </div>
                 )}
 
                 <div>
-                  <label for="agent-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label for="agent-name" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Name
                   </label>
                   <input
@@ -282,7 +273,7 @@ ${c.systemPrompt}`
                     type="text"
                     value={editName()}
                     onInput={(e) => setEditName(e.currentTarget.value)}
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                    class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                     placeholder="my-agent"
                   />
                 </div>
@@ -290,7 +281,7 @@ ${c.systemPrompt}`
                 <div>
                   <label
                     for="agent-description"
-                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300"
                   >
                     Description
                   </label>
@@ -299,27 +290,27 @@ ${c.systemPrompt}`
                     type="text"
                     value={config().description}
                     onInput={(e) => setConfig({ ...config(), description: e.currentTarget.value })}
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                    class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                   />
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <label for="agent-model" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label for="agent-model" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Model
                     </label>
                     <select
                       id="agent-model"
                       value={config().model}
                       onChange={(e) => setConfig({ ...config(), model: e.currentTarget.value })}
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                     >
                       <option value="">Default</option>
                       <For each={models()}>{(model) => <option value={model}>{model}</option>}</For>
                     </select>
                   </div>
                   <div>
-                    <label for="agent-mode" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label for="agent-mode" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Mode
                     </label>
                     <select
@@ -328,7 +319,7 @@ ${c.systemPrompt}`
                       onChange={(e) =>
                         setConfig({ ...config(), mode: e.currentTarget.value as 'primary' | 'subagent' })
                       }
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                      class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                     >
                       <option value="primary">Primary</option>
                       <option value="subagent">Subagent</option>
@@ -337,7 +328,7 @@ ${c.systemPrompt}`
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Tool Permissions
                   </label>
                   <div class="space-y-2">
@@ -358,33 +349,33 @@ ${c.systemPrompt}`
                             }
                             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span class="text-sm text-gray-700 dark:text-gray-300 capitalize">{tool}</span>
+                          <span class="text-sm text-gray-700 capitalize dark:text-gray-300">{tool}</span>
                         </label>
                       )}
                     </For>
                   </div>
                 </div>
 
-                <div class="flex-1 flex flex-col min-h-[200px]">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">System Prompt</label>
+                <div class="flex min-h-[200px] flex-1 flex-col">
+                  <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">System Prompt</label>
                   <textarea
                     value={config().systemPrompt}
                     onInput={(e) => setConfig({ ...config(), systemPrompt: e.currentTarget.value })}
-                    class="flex-1 w-full px-3 py-2 border border-gray-300 dark:border-[#30363d] rounded-md bg-white dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+                    class="w-full flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                   />
                 </div>
               </div>
 
-              <div class="p-4 border-t border-gray-200 dark:border-[#30363d] flex justify-end gap-2 bg-[#f6f8fa] dark:bg-[#010409]">
+              <div class="flex justify-end gap-2 border-t border-gray-200 bg-[#f6f8fa] p-4 dark:border-[#30363d] dark:bg-[#010409]">
                 <button
                   onClick={() => setIsEditing(false)}
-                  class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#21262d] rounded-md transition-colors"
+                  class="rounded-md px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-[#21262d]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => void handleSave()}
-                  class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                  class="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
                 >
                   Save Agent
                 </button>
