@@ -105,7 +105,7 @@ export default function Workspace(props: Props) {
   }
 
   return (
-    <div class="flex h-screen w-screen overflow-hidden relative bg-white dark:bg-[#0d1117] transition-colors duration-200">
+    <div class="flex fixed inset-0 overflow-hidden bg-white dark:bg-[#0d1117] transition-colors duration-200">
       <SettingsModal isOpen={isSettingsOpen()} onClose={() => setIsSettingsOpen(false)} onChangeFolder={props.onBack} />
 
       <div class="flex-1 flex flex-col h-full w-full bg-white dark:bg-[#0d1117]">
