@@ -4,7 +4,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 
-const testFolder = path.join(os.tmpdir(), 'opencode-e2e-mobile-' + Date.now())
+const testFolder = path.join(os.tmpdir(), 'opencode-e2e-mobile-' + Date.now() + '-' + Math.floor(Math.random() * 10000))
 
 test.use({
   viewport: { width: 375, height: 667 },
@@ -13,6 +13,8 @@ test.use({
 })
 
 test.describe('Mobile View', () => {
+  test.describe.configure({ mode: 'serial' })
+
   test.beforeAll(() => {
     if (!fs.existsSync(testFolder)) {
       fs.mkdirSync(testFolder, { recursive: true })
@@ -59,5 +61,16 @@ test.describe('Mobile View', () => {
     // Check delete button
     const deleteButton = page.locator('button[title="Delete"]').first()
     await expect(deleteButton).toBeVisible()
+  })
+
+  test('should show terminal keyboard toggle on mobile', async ({ page }) => {
+    await page.goto(`/?folder=${encodeURIComponent(testFolder)}&view=terminal`)
+
+    // Check if the toggle button is visible
+    const toggleButton = page.getByTitle('Toggle Keyboard')
+    await expect(toggleButton).toBeVisible()
+
+    // Click to ensure no errors
+    await toggleButton.click()
   })
 })

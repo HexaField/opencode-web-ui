@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { exec as _exec, ExecOptions } from 'child_process'
+import * as fs from 'fs/promises'
 import * as path from 'path'
 import { promisify } from 'util'
 
@@ -123,6 +124,9 @@ export class RadicleService {
   }
 
   async getTasks(folder: string): Promise<Task[]> {
+    if (!(await this.isRepo(folder))) {
+      return this.getJsonTasks(folder)
+    }
     const rid = await this.getRid(folder)
     // Get all issue OIDs
     // rad cob list returns OIDs, one per line
@@ -187,6 +191,24 @@ export class RadicleService {
   }
 
   async createTask(folder: string, task: Partial<Task>): Promise<Task> {
+    if (!(await this.isRepo(folder))) {
+      const tasks = await this.getJsonTasks(folder)
+      const newTask: Task = {
+        id: Date.now().toString(),
+        title: task.title || 'Untitled',
+        description: task.description || '',
+        status: task.status || 'todo',
+        parent_id: task.parent_id || null,
+        position: task.position || 0,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+        tags: [],
+        dependencies: task.dependencies || []
+      }
+      tasks.push(newTask)
+      await this.saveJsonTasks(folder, tasks)
+      return newTask
+    }
     const metadata: TaskMetadata = {
       parent_id: task.parent_id,
       position: task.position,
@@ -235,6 +257,16 @@ export class RadicleService {
   }
 
   async updateTask(folder: string, id: string, updates: Partial<Task>): Promise<void> {
+    if (!(await this.isRepo(folder))) {
+      const tasks = await this.getJsonTasks(folder)
+      const taskIndex = tasks.findIndex((t) => t.id === id)
+      if (taskIndex !== -1) {
+        tasks[taskIndex] = { ...tasks[taskIndex], ...updates }
+        tasks[taskIndex].updated_at = Date.now()
+        await this.saveJsonTasks(folder, tasks)
+      }
+      return
+    }
     // We need to fetch the current description to preserve metadata if we are only updating title/status
     // Or if we are updating metadata, we need to merge it.
 
@@ -308,6 +340,12 @@ export class RadicleService {
   }
 
   async deleteTask(folder: string, id: string): Promise<void> {
+    if (!(await this.isRepo(folder))) {
+      let tasks = await this.getJsonTasks(folder)
+      tasks = tasks.filter((t) => t.id !== id)
+      await this.saveJsonTasks(folder, tasks)
+      return
+    }
     await exec(`rad issue delete ${id} --no-announce`, { cwd: folder })
   }
 
@@ -323,11 +361,54 @@ export class RadicleService {
   }
 
   async addTag(folder: string, taskId: string, tagName: string): Promise<void> {
+    if (!(await this.isRepo(folder))) {
+      const tasks = await this.getJsonTasks(folder)
+      const taskIndex = tasks.findIndex((t) => t.id === taskId)
+      if (taskIndex !== -1) {
+        const newTag: Tag = { id: tagName, name: tagName, color: '#888888' }
+        if (!tasks[taskIndex].tags.some((t) => t.id === tagName)) {
+          tasks[taskIndex].tags.push(newTag)
+          await this.saveJsonTasks(folder, tasks)
+        }
+      }
+      return
+    }
     await exec(`rad issue label ${taskId} --add "${tagName}" --no-announce`, { cwd: folder })
   }
 
   async removeTag(folder: string, taskId: string, tagName: string): Promise<void> {
+    if (!(await this.isRepo(folder))) {
+      const tasks = await this.getJsonTasks(folder)
+      const taskIndex = tasks.findIndex((t) => t.id === taskId)
+      if (taskIndex !== -1) {
+        tasks[taskIndex].tags = tasks[taskIndex].tags.filter((t) => t.name !== tagName)
+        await this.saveJsonTasks(folder, tasks)
+      }
+      return
+    }
     await exec(`rad issue label ${taskId} --delete "${tagName}" --no-announce`, { cwd: folder })
+  }
+
+  // JSON Fallback methods
+  private async getJsonPath(folder: string): Promise<string> {
+    const dir = path.join(folder, '.opencode')
+    await fs.mkdir(dir, { recursive: true })
+    return path.join(dir, 'tasks.json')
+  }
+
+  private async getJsonTasks(folder: string): Promise<Task[]> {
+    try {
+      const filePath = await this.getJsonPath(folder)
+      const data = await fs.readFile(filePath, 'utf-8')
+      return JSON.parse(data)
+    } catch {
+      return []
+    }
+  }
+
+  private async saveJsonTasks(folder: string, tasks: Task[]): Promise<void> {
+    const filePath = await this.getJsonPath(folder)
+    await fs.writeFile(filePath, JSON.stringify(tasks, null, 2))
   }
 }
 

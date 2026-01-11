@@ -8,7 +8,7 @@ import { promisify } from 'util'
 const execAsync = promisify(exec)
 const TEST_DIR_PREFIX = 'opencode-e2e-git-'
 
-test.describe.skip('Git Integration E2E', () => {
+test.describe('Git Integration E2E', () => {
   let testDir: string
 
   test.beforeAll(async () => {
@@ -53,15 +53,16 @@ test.describe.skip('Git Integration E2E', () => {
 
     // 6. Verify file appears in Changes (Unstaged)
     // It should be under "Changes" section
-    await expect(page.getByText('feature.txt')).toBeVisible()
+    await expect(page.getByTitle('feature.txt')).toBeVisible()
     // Check status icon/text (A or ?)
     // The UI shows '?' for untracked
 
     // 7. Stage the file
     // Find the checkbox associated with feature.txt
-    // We can find the row containing 'feature.txt' and then the checkbox within it
-    const fileRow = page.locator('div').filter({ hasText: 'feature.txt' }).last()
-    await fileRow.getByRole('checkbox').check()
+    // We can find the row containing 'feature.txt' and then the button within it
+    const fileRow = page.locator('.group').filter({ hasText: 'feature.txt' }).first()
+    await fileRow.hover()
+    await fileRow.getByRole('button', { name: '+' }).click()
 
     // 8. Verify it moved to Staged Changes
     // We should see "Staged Changes" header
@@ -75,6 +76,8 @@ test.describe.skip('Git Integration E2E', () => {
     await expect(page.locator('textarea[placeholder*="Message"]')).toBeEmpty()
 
     // 10. Verify changes are gone
+    await page.reload()
+    await page.click('button:has-text("Changes")')
     await expect(page.getByText('No changes detected')).toBeVisible({ timeout: 10000 })
 
     // 11. Verify commit in backend
@@ -86,8 +89,7 @@ test.describe.skip('Git Integration E2E', () => {
     await page.reload()
     await page.click('button:has-text("Changes")')
 
-    // Check the select value
-    const branchSelect = page.locator('select').first()
-    await expect(branchSelect).toHaveValue('new-branch')
+    // Check the branch name is displayed
+    await expect(page.getByText('new-branch')).toBeVisible()
   })
 })

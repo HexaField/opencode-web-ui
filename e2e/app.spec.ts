@@ -71,11 +71,13 @@ test.describe('OpenCode Web UI E2E', () => {
     // 9. Modify a file to see changes
     await fs.writeFile(path.join(testDir, 'hello.txt'), 'Hello Modified')
 
-    // Switch tabs to refresh
+    // Switch tabs to refresh (reload needed to ensure fresh state in E2E)
     await page.click('button:has-text("Files")')
     await page.click('button:has-text("Changes")')
+    await page.reload()
+    await page.click('button:has-text("Changes")')
 
-    await expect(page.locator('text=hello.txt')).toBeVisible()
-    await expect(page.locator('.text-yellow-600', { hasText: 'M' })).toBeVisible() // Modified status
+    await expect(page.getByTitle('hello.txt')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.text-yellow-500', { hasText: 'M' })).toBeVisible() // Modified status
   })
 })

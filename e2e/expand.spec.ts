@@ -26,8 +26,12 @@ test.describe('Task Expansion and Description', () => {
   })
 
   test.afterAll(() => {
-    if (fs.existsSync(testFolder)) {
-      fs.rmSync(testFolder, { recursive: true, force: true })
+    try {
+      if (fs.existsSync(testFolder)) {
+        fs.rmSync(testFolder, { recursive: true, force: true, maxRetries: 3 })
+      }
+    } catch (e) {
+      console.warn('Failed to cleanup test dir:', e)
     }
   })
 

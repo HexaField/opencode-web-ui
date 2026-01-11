@@ -259,9 +259,15 @@ export default function RepoControl(props: Props) {
       </div>
 
       <div class="flex-1 space-y-6 overflow-y-auto px-4 pb-4">
-        <div>
-          <div class="mb-2 flex items-center justify-between">
-            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Staged Changes</h3>
+        <Show when={gitFiles().length === 0}>
+          <div class="flex h-32 flex-col items-center justify-center text-gray-500">
+            <p>No changes detected</p>
+          </div>
+        </Show>
+        <Show when={gitFiles().length > 0}>
+          <div>
+            <div class="mb-2 flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Staged Changes</h3>
             <div class="flex items-center space-x-2">
               <span class="text-xs text-gray-500">{stagedFiles().length}</span>
               <button
@@ -366,6 +372,7 @@ export default function RepoControl(props: Props) {
             </For>
           </div>
         </div>
+        </Show>
       </div>
     </div>
   )

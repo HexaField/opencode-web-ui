@@ -50,6 +50,11 @@ export default function Workspace(props: Props) {
     }
 
     window.history.replaceState({}, '', url)
+
+    // Trigger git update when switching to changes view to ensure fresh data
+    if (v === 'changes') {
+      window.dispatchEvent(new Event('git-updated'))
+    }
   })
 
   createEffect(() => {

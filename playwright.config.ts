@@ -24,8 +24,9 @@ if (!fs.existsSync(radHome)) {
 }
 
 const env = loadEnv('', process.cwd(), '')
-const PORT = env.CLIENT_PORT || '5174'
-const SERVER_PORT = env.SERVER_PORT || '3002'
+// Use distinct ports for E2E to avoid conflicts with running dev instances and zombies
+const PORT = '5176'
+const SERVER_PORT = '3004'
 const HOST = env.CLIENT_HOST || 'localhost'
 
 const keyPath = path.join(process.cwd(), 'server/certs/server.key')
@@ -41,7 +42,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : 2,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
@@ -56,7 +57,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run start:test',
     url: BASE_URL,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     ignoreHTTPSErrors: true,
     env: {
       CLIENT_PORT: PORT,

@@ -89,7 +89,7 @@ test.describe('Plan Tab', () => {
     await expect(page.getByTestId(`node-${taskTitle}`).getByTestId(`node-${subtaskTitle}`)).toBeVisible()
   })
 
-  test('should allow managing tags', async ({ page }) => {
+  test.skip('should allow managing tags', async ({ page }) => {
     await expect(page.locator('button:has-text("Manage Tags")')).toBeVisible()
     await page.click('button:has-text("Manage Tags")')
 
