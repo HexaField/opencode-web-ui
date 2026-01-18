@@ -2,13 +2,153 @@ import express from 'express'
 import * as fs from 'fs/promises'
 import * as os from 'os'
 import * as path from 'path'
+import fg from 'fast-glob'
 import { AuthenticatedRequest, validate, withClient } from '../../middleware'
 import { OpencodeManager } from '../../opencode'
 import { unwrap } from '../../utils'
 import { FolderQuerySchema } from '../common/common.schema'
-import { FileReadSchema, FSDeleteSchema, FSListSchema, FSReadSchema, FSWriteSchema } from './files.schema'
+import {
+  FileReadSchema,
+  FSDeleteSchema,
+  FSListSchema,
+  FSReadSchema,
+  FSSearchSchema,
+  FSWriteSchema
+} from './files.schema'
 
 export function registerFilesRoutes(app: express.Application, manager: OpencodeManager) {
+  app.post('/api/fs/search', validate(FSSearchSchema), async (req, res) => {
+    const { query, folder, isRegex, isCaseSensitive, matchWholeWord, useGitIgnore, include, exclude } = req.body as {
+      query: string
+      folder: string
+      isRegex?: boolean
+      isCaseSensitive?: boolean
+      matchWholeWord?: boolean
+      useGitIgnore?: boolean
+      include?: string[]
+      exclude?: string[]
+    }
+
+    if (!folder || !query) {
+      res.status(400).json({ error: 'Missing folder or query' })
+      return
+    }
+
+    try {
+      const results: { fileName: string; fullPath: string; matches: any[] }[] = []
+      const includePatterns = include && include.length > 0 ? include : undefined
+      // Default excludes - will be augmented with .gitignore if enabled
+      let excludePatterns = exclude || ['**/node_modules/**', '**/.git/**']
+
+      if (useGitIgnore) {
+        try {
+          const gitignorePath = path.join(folder, '.gitignore')
+          const gitignoreContent = await fs.readFile(gitignorePath, 'utf-8')
+          const gitignoreLines = gitignoreContent
+            .split('\n')
+            .map((l) => l.trim())
+            .filter((l) => l && !l.startsWith('#'))
+            // Convert gitignore patterns to GLOB-like patterns if needed
+            // NOTE: This is a simplification. A full gitignore parser is complex.
+            // We map common patterns to our simple glob matcher.
+            .map((l) => {
+              if (l.startsWith('!')) return null // Negation not supported yet
+              if (l.endsWith('/')) return `**/${l}**` // dir
+              if (l.includes('*')) return `**/${l}` // glob
+              // If it's a file/folder name without slashes, it matches anywhere
+              if (!l.includes('/')) return `**/${l}/**` // Assume dir or file
+              // If it has slashes, it might be relative to root
+              if (l.startsWith('/')) return l.substring(1) // Rooted
+              return l
+            })
+            .filter((l) => l !== null) as string[]
+
+          // We also need to add file variants for the "Assume dir or file" case above
+          // because **/${l}/** only matches directories or inside them.
+          // But l could be a file.
+          const gitignoreFilePatterns: string[] = []
+          gitignoreContent
+            .split('\n')
+            .map((l) => l.trim())
+            .filter((l) => l && !l.startsWith('#') && !l.startsWith('!') && !l.endsWith('/') && !l.includes('/'))
+            .forEach((l) => gitignoreFilePatterns.push(`**/${l}`))
+
+          excludePatterns = [...excludePatterns, ...gitignoreLines, ...gitignoreFilePatterns]
+        } catch (_e) {
+          // No .gitignore or read error
+        }
+      }
+
+      let searchRegex: RegExp
+      const flags = isCaseSensitive ? 'g' : 'gi'
+
+      try {
+        if (isRegex) {
+          searchRegex = new RegExp(query, flags)
+        } else {
+          const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          if (matchWholeWord) {
+            searchRegex = new RegExp(`\\b${escaped}\\b`, flags)
+          } else {
+            searchRegex = new RegExp(escaped, flags)
+          }
+        }
+      } catch (_e) {
+        res.status(400).json({ error: 'Invalid Regex' })
+        return
+      }
+
+      const entries = await fg(includePatterns || ['**/*'], {
+        cwd: folder,
+        ignore: excludePatterns,
+        absolute: true,
+        dot: true,
+        onlyFiles: true,
+        suppressErrors: true
+      })
+
+      await Promise.all(
+        entries.map(async (fullPath) => {
+          try {
+            const content = await fs.readFile(fullPath, 'utf-8')
+            const relativePath = path.relative(folder, fullPath)
+            const matches: any[] = []
+            const lines = content.split('\n')
+
+            lines.forEach((lineText, lineIdx) => {
+              searchRegex.lastIndex = 0
+              let match
+              while ((match = searchRegex.exec(lineText)) !== null) {
+                matches.push({
+                  line: lineIdx + 1,
+                  character: match.index,
+                  matchText: match[0],
+                  lineText: lineText.trim()
+                })
+              }
+            })
+
+            if (matches.length > 0) {
+              results.push({
+                fileName: relativePath,
+                fullPath: fullPath,
+                matches
+              })
+            }
+          } catch (_err) {
+            // Ignore read errors
+          }
+        })
+      )
+
+      res.json({ results })
+    } catch (error) {
+      console.error(error)
+      const msg = error instanceof Error ? error.message : String(error)
+      res.status(500).json({ error: msg })
+    }
+  })
+
   app.get('/api/files/status', validate(FolderQuerySchema), withClient(manager), async (req, res) => {
     try {
       const client = (req as AuthenticatedRequest).opencodeClient!

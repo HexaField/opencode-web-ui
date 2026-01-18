@@ -3,6 +3,7 @@ import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { deleteFile, readFSFile, writeFile } from '../api/files'
 import { useTheme } from '../theme'
 import FileTree from './FileTree'
+import SearchPanel from './SearchPanel'
 
 // Configure Monaco workers
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
@@ -44,6 +45,10 @@ export default function FilesView(props: Props) {
   const [newFileName, setNewFileName] = createSignal('')
   const [lastUpdated, setLastUpdated] = createSignal(Date.now())
   const [fileToDelete, setFileToDelete] = createSignal<string | null>(null)
+  const [activeTab, setActiveTab] = createSignal<'files' | 'search'>('files')
+  const [targetPosition, setTargetPosition] = createSignal<{ path: string; line: number; character: number } | null>(
+    null
+  )
 
   let editorContainer: HTMLDivElement | undefined
   let cleanupListeners: (() => void) | undefined
@@ -61,6 +66,7 @@ export default function FilesView(props: Props) {
   // Load file content
   createEffect(() => {
     const file = props.selectedFile
+    const _ = lastUpdated()
     const ed = editor()
     if (file && ed) {
       readFSFile(file)
@@ -81,6 +87,14 @@ export default function FilesView(props: Props) {
             }
             ed.setModel(model)
             setIsDirty(false)
+
+            const target = targetPosition()
+            if (target && target.path === file) {
+              ed.revealPositionInCenter({ lineNumber: target.line, column: target.character + 1 })
+              ed.setPosition({ lineNumber: target.line, column: target.character + 1 })
+              ed.focus()
+              setTargetPosition(null)
+            }
           }
         })
         .catch(console.error)
@@ -188,6 +202,20 @@ export default function FilesView(props: Props) {
     }
   }
 
+  const navigateToMatch = (path: string, line: number, character: number) => {
+    if (props.selectedFile === path) {
+      const ed = editor()
+      if (ed) {
+        ed.revealPositionInCenter({ lineNumber: line, column: character + 1 })
+        ed.setPosition({ lineNumber: line, column: character + 1 })
+        ed.focus()
+      }
+    } else {
+      setTargetPosition({ path, line, character })
+      props.onSelectFile(path)
+    }
+  }
+
   const undo = () => {
     editor()?.trigger('keyboard', 'undo', null)
   }
@@ -291,27 +319,33 @@ export default function FilesView(props: Props) {
           isSidebarOpen() ? 'w-64' : 'w-0'
         } flex shrink-0 flex-col overflow-hidden border-r border-gray-200 bg-[#f6f8fa] transition-all duration-200 dark:border-[#30363d] dark:bg-[#010409]`}
       >
-        <div class="flex items-center justify-between border-b border-gray-200 p-2 text-sm font-medium text-gray-600 dark:border-[#30363d] dark:text-gray-400">
-          <div class="flex items-center gap-2">
-            <span>Files</span>
+        <div class="flex items-center justify-between border-b border-gray-200 px-2 py-1 text-sm font-medium dark:border-[#30363d]">
+          <div class="flex gap-4">
             <button
-              onClick={() => setIsCreatingFile(true)}
-              class="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-blue-600 dark:hover:bg-[#21262d] dark:hover:text-blue-400"
-              title="New File"
+              onClick={() => setActiveTab('files')}
+              class={`border-b-2 py-1 ${
+                activeTab() === 'files'
+                  ? "border-blue-500 text-gray-900 dark:text-gray-200"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fill-rule="evenodd"
-                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                  clip-rule="evenodd"
-                />
-              </svg>
+              Files
+            </button>
+            <button
+              onClick={() => setActiveTab('search')}
+              class={`border-b-2 py-1 ${
+                activeTab() === 'search'
+                  ? "border-blue-500 text-gray-900 dark:text-gray-200"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              Search
             </button>
           </div>
           <button
             onClick={() => setIsSidebarOpen(false)}
             class="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:hover:bg-[#21262d] dark:hover:text-gray-300"
-            title="Hide File Tree"
+            title="Hide Sidebar"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -324,13 +358,41 @@ export default function FilesView(props: Props) {
             </svg>
           </button>
         </div>
+
         <div class="flex-1 overflow-hidden">
-          <FileTree
-            rootPath={props.folder}
-            onSelectFile={props.onSelectFile}
-            selectedPath={props.selectedFile}
-            lastUpdated={lastUpdated()}
-          />
+          <Show
+            when={activeTab() === 'files'}
+            fallback={
+              <SearchPanel
+                folder={props.folder}
+                onNavigate={navigateToMatch}
+                onFileChanged={() => setLastUpdated(Date.now())}
+              />
+            }
+          >
+            <div class="flex items-center justify-between border-b border-gray-100 p-2 dark:border-[#21262d]">
+              <span class="text-xs font-semibold text-gray-500">EXPLORER</span>
+              <button
+                onClick={() => setIsCreatingFile(true)}
+                class="rounded p-1 text-gray-500 hover:bg-gray-200 hover:text-blue-600 dark:hover:bg-[#21262d] dark:hover:text-blue-400"
+                title="New File"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            <FileTree
+              rootPath={props.folder}
+              onSelectFile={props.onSelectFile}
+              selectedPath={props.selectedFile}
+              lastUpdated={lastUpdated()}
+            />
+          </Show>
         </div>
       </div>
       <div class="group relative h-full flex-1 overflow-hidden">

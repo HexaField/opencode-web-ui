@@ -20,14 +20,14 @@ A web-based interface for OpenCode, built with SolidJS, Tailwind CSS, and Vite.
 ### Prerequisites
 
 - Node.js (v18+ recommended)
-- npm
+- pnpm
 
 ### Installation
 
 1. Clone the repository.
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 
 ### Running the Application
@@ -35,7 +35,7 @@ A web-based interface for OpenCode, built with SolidJS, Tailwind CSS, and Vite.
 Start both the server and the client in development mode:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 - Client: http://localhost:5173
@@ -43,7 +43,7 @@ npm run dev
 
 ### Running Tests
 
-- E2E Tests: `npm run test:e2e`
+- E2E Tests: `pnpm test:e2e`
 
 ## License
 

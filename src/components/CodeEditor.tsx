@@ -35,11 +35,14 @@ interface Props {
   folder: string
   onClose?: () => void
   onFocus?: () => void
+  targetPosition?: { line: number; character: number } | null
+  onNavigationComplete?: () => void
 }
 
 export default function CodeEditor(props: Props) {
   const [editor, setEditor] = createSignal<monaco.editor.IStandaloneCodeEditor | undefined>(undefined)
   const [isDirty, setIsDirty] = createSignal(false)
+  const [isLoaded, setIsLoaded] = createSignal(false)
   let editorContainer: HTMLDivElement | undefined
   const { isDark } = useTheme()
 
@@ -52,6 +55,7 @@ export default function CodeEditor(props: Props) {
   createEffect(() => {
     const file = props.filePath
     const ed = editor()
+    setIsLoaded(false)
     if (file && ed) {
       readFSFile(file)
         .then((data) => {
@@ -59,24 +63,40 @@ export default function CodeEditor(props: Props) {
             const uri = monaco.Uri.file(file)
             let model = monaco.editor.getModel(uri)
             if (!model) {
-              model = monaco.editor.createModel(
-                data.content,
-                undefined, // auto-detect language
-                uri
-              )
+              model = monaco.editor.createModel(data.content, undefined, uri)
             } else if (model.getValue() !== data.content) {
-              // Only update if different to avoid cursor jumping if we were the ones who saved
-              // But here we are loading from disk, so maybe we should always update?
-              // For now, let's assume if it's dirty we don't overwrite from disk unless forced (not handled here)
-              // Simple check:
               if (!isDirty()) {
                 model.setValue(data.content)
               }
             }
             ed.setModel(model)
+            setIsLoaded(true)
+
+            // Initial navigation if pending
+            if (props.targetPosition) {
+              ed.revealPositionInCenter({
+                lineNumber: props.targetPosition.line,
+                column: props.targetPosition.character + 1
+              })
+              ed.setPosition({ lineNumber: props.targetPosition.line, column: props.targetPosition.character + 1 })
+              ed.focus()
+              props.onNavigationComplete?.()
+            }
           }
         })
         .catch(console.error)
+    }
+  })
+
+  // Handle navigation requests when already loaded
+  createEffect(() => {
+    const target = props.targetPosition
+    const ed = editor()
+    if (isLoaded() && target && ed) {
+      ed.revealPositionInCenter({ lineNumber: target.line, column: target.character + 1 })
+      ed.setPosition({ lineNumber: target.line, column: target.character + 1 })
+      ed.focus()
+      props.onNavigationComplete?.()
     }
   })
 

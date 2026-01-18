@@ -7,6 +7,7 @@ import ChatInterface from './ChatInterface'
 import CodeEditor from './CodeEditor'
 import DiffView from './DiffView'
 import FileTree from './FileTree'
+import SearchPanel from './SearchPanel'
 import PlanView from './Plan/PlanView'
 import SessionList from './SessionList'
 import SettingsModal from './SettingsModal'
@@ -22,9 +23,14 @@ export default function DesktopWorkspace(props: Props) {
   const [currentSessionId, setCurrentSessionId] = createSignal<string | null>(params.get('session'))
 
   // Left sidebar state
-  const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan' | 'terminal'>('files')
+  const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan' | 'terminal' | 'search'>('files')
   const [isSidebarOpen, setIsSidebarOpen] = createSignal(true)
   const [sidebarWidth, setSidebarWidth] = createSignal(260)
+  const [navigationTarget, setNavigationTarget] = createSignal<{
+    path: string
+    line: number
+    character: number
+  } | null>(null)
 
   // Chat/Right sidebar state
   const [chatWidth, setChatWidth] = createSignal(350)
@@ -304,6 +310,12 @@ export default function DesktopWorkspace(props: Props) {
             Files
           </button>
           <button
+            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'search' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
+            onClick={() => setLeftTab('search')}
+          >
+            Search
+          </button>
+          <button
             class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'changes' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('changes')}
           >
@@ -394,6 +406,16 @@ export default function DesktopWorkspace(props: Props) {
                 </button>
               </div>
             </div>
+          </div>
+          <div class="flex h-full flex-col" style={{ display: leftTab() === 'search' ? 'flex' : 'none' }}>
+            <SearchPanel
+              folder={props.folder}
+              onNavigate={(path, line, character) => {
+                setNavigationTarget({ path, line, character })
+                openFile(path)
+              }}
+              onFileChanged={() => setLastUpdated(Date.now())}
+            />
           </div>
           <div class="flex h-full flex-col" style={{ display: leftTab() === 'changes' ? 'flex' : 'none' }}>
             <DiffView folder={props.folder} />
@@ -503,6 +525,8 @@ export default function DesktopWorkspace(props: Props) {
                   folder={props.folder}
                   onClose={() => closePane(index())}
                   onFocus={() => setActivePaneIndex(index())}
+                  targetPosition={navigationTarget()?.path === path ? navigationTarget() : null}
+                  onNavigationComplete={() => setNavigationTarget(null)}
                 />
               </div>
             )}

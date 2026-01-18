@@ -268,110 +268,110 @@ export default function RepoControl(props: Props) {
           <div>
             <div class="mb-2 flex items-center justify-between">
               <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Staged Changes</h3>
-            <div class="flex items-center space-x-2">
-              <span class="text-xs text-gray-500">{stagedFiles().length}</span>
-              <button
-                onClick={() => void handleUnstageAll()}
-                class="text-gray-500 hover:text-gray-700 dark:hover:text-white"
-                title="Unstage All Changes"
-              >
-                -
-              </button>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-gray-500">{stagedFiles().length}</span>
+                <button
+                  onClick={() => void handleUnstageAll()}
+                  class="text-gray-500 hover:text-gray-700 dark:hover:text-white"
+                  title="Unstage All Changes"
+                >
+                  -
+                </button>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <For each={stagedFiles()}>
+                {(file) => (
+                  <div class="group">
+                    <div class="flex items-center justify-between rounded border border-transparent bg-white p-2 hover:border-gray-200 dark:bg-[#161b22] dark:hover:bg-[#21262d]">
+                      <div class="flex items-center space-x-2 overflow-hidden">
+                        <button
+                          onClick={() => void toggleDiff(file.path)}
+                          class="text-gray-400 hover:text-gray-600 dark:hover:text-white"
+                        >
+                          <span
+                            class={`inline-block transform transition-transform ${expanded()[file.path] ? 'rotate-90' : ''}`}
+                          >
+                            ▶
+                          </span>
+                        </button>
+                        <span class="truncate font-mono text-sm text-gray-700 dark:text-gray-300" title={file.path}>
+                          {file.path}
+                        </span>
+                        <span class="w-4 text-xs text-green-500">{file.x}</span>
+                      </div>
+                      <button
+                        onClick={() => void handleUnstage(file.path)}
+                        class="text-xs text-gray-500 opacity-0 group-hover:opacity-100 hover:text-gray-700 dark:hover:text-white"
+                      >
+                        -
+                      </button>
+                    </div>
+                    <Show when={expanded()[file.path]}>
+                      <div class="mt-1 overflow-x-auto rounded bg-gray-50 p-2 font-mono text-xs whitespace-pre text-gray-600 dark:bg-[#0d1117] dark:text-gray-400">
+                        <DiffContent diff={diffs()[file.path] || ''} />
+                      </div>
+                    </Show>
+                  </div>
+                )}
+              </For>
             </div>
           </div>
-          <div class="space-y-1">
-            <For each={stagedFiles()}>
-              {(file) => (
-                <div class="group">
-                  <div class="flex items-center justify-between rounded border border-transparent bg-white p-2 hover:border-gray-200 dark:bg-[#161b22] dark:hover:bg-[#21262d]">
-                    <div class="flex items-center space-x-2 overflow-hidden">
-                      <button
-                        onClick={() => void toggleDiff(file.path)}
-                        class="text-gray-400 hover:text-gray-600 dark:hover:text-white"
-                      >
-                        <span
-                          class={`inline-block transform transition-transform ${expanded()[file.path] ? 'rotate-90' : ''}`}
-                        >
-                          ▶
-                        </span>
-                      </button>
-                      <span class="truncate font-mono text-sm text-gray-700 dark:text-gray-300" title={file.path}>
-                        {file.path}
-                      </span>
-                      <span class="w-4 text-xs text-green-500">{file.x}</span>
-                    </div>
-                    <button
-                      onClick={() => void handleUnstage(file.path)}
-                      class="text-xs text-gray-500 opacity-0 group-hover:opacity-100 hover:text-gray-700 dark:hover:text-white"
-                    >
-                      -
-                    </button>
-                  </div>
-                  <Show when={expanded()[file.path]}>
-                    <div class="mt-1 overflow-x-auto rounded bg-gray-50 p-2 font-mono text-xs whitespace-pre text-gray-600 dark:bg-[#0d1117] dark:text-gray-400">
-                      <DiffContent diff={diffs()[file.path] || ''} />
-                    </div>
-                  </Show>
-                </div>
-              )}
-            </For>
-          </div>
-        </div>
 
-        <div>
-          <div class="mb-2 flex items-center justify-between">
-            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Changes</h3>
-            <div class="flex items-center space-x-2">
-              <span class="text-xs text-gray-500">{unstagedFiles().length}</span>
-              <button
-                onClick={() => void handleStageAll()}
-                class="text-gray-500 hover:text-gray-700 dark:hover:text-white"
-                title="Stage All Changes"
-              >
-                +
-              </button>
+          <div>
+            <div class="mb-2 flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400">Changes</h3>
+              <div class="flex items-center space-x-2">
+                <span class="text-xs text-gray-500">{unstagedFiles().length}</span>
+                <button
+                  onClick={() => void handleStageAll()}
+                  class="text-gray-500 hover:text-gray-700 dark:hover:text-white"
+                  title="Stage All Changes"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div class="space-y-1">
+              <For each={unstagedFiles()}>
+                {(file) => (
+                  <div class="group">
+                    <div class="flex items-center justify-between rounded border border-transparent bg-white p-2 hover:border-gray-200 dark:bg-[#161b22] dark:hover:bg-[#21262d]">
+                      <div class="flex items-center space-x-2 overflow-hidden">
+                        <button
+                          onClick={() => void toggleDiff(file.path)}
+                          class="text-gray-400 hover:text-gray-600 dark:hover:text-white"
+                        >
+                          <span
+                            class={`inline-block transform transition-transform ${expanded()[file.path] ? 'rotate-90' : ''}`}
+                          >
+                            ▶
+                          </span>
+                        </button>
+                        <span class="truncate font-mono text-sm text-gray-700 dark:text-gray-300" title={file.path}>
+                          {file.path}
+                        </span>
+                        <span class={`w-4 text-xs ${file.y === '?' ? 'text-green-500' : 'text-yellow-500'}`}>
+                          {file.y === '?' ? 'U' : file.y}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => void handleStage(file.path)}
+                        class="text-xs text-gray-500 opacity-0 group-hover:opacity-100 hover:text-gray-700 dark:hover:text-white"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <Show when={expanded()[file.path]}>
+                      <div class="mt-1 overflow-x-auto rounded bg-gray-50 p-2 font-mono text-xs whitespace-pre text-gray-600 dark:bg-[#0d1117] dark:text-gray-400">
+                        <DiffContent diff={diffs()[file.path] || ''} />
+                      </div>
+                    </Show>
+                  </div>
+                )}
+              </For>
             </div>
           </div>
-          <div class="space-y-1">
-            <For each={unstagedFiles()}>
-              {(file) => (
-                <div class="group">
-                  <div class="flex items-center justify-between rounded border border-transparent bg-white p-2 hover:border-gray-200 dark:bg-[#161b22] dark:hover:bg-[#21262d]">
-                    <div class="flex items-center space-x-2 overflow-hidden">
-                      <button
-                        onClick={() => void toggleDiff(file.path)}
-                        class="text-gray-400 hover:text-gray-600 dark:hover:text-white"
-                      >
-                        <span
-                          class={`inline-block transform transition-transform ${expanded()[file.path] ? 'rotate-90' : ''}`}
-                        >
-                          ▶
-                        </span>
-                      </button>
-                      <span class="truncate font-mono text-sm text-gray-700 dark:text-gray-300" title={file.path}>
-                        {file.path}
-                      </span>
-                      <span class={`w-4 text-xs ${file.y === '?' ? 'text-green-500' : 'text-yellow-500'}`}>
-                        {file.y === '?' ? 'U' : file.y}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => void handleStage(file.path)}
-                      class="text-xs text-gray-500 opacity-0 group-hover:opacity-100 hover:text-gray-700 dark:hover:text-white"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <Show when={expanded()[file.path]}>
-                    <div class="mt-1 overflow-x-auto rounded bg-gray-50 p-2 font-mono text-xs whitespace-pre text-gray-600 dark:bg-[#0d1117] dark:text-gray-400">
-                      <DiffContent diff={diffs()[file.path] || ''} />
-                    </div>
-                  </Show>
-                </div>
-              )}
-            </For>
-          </div>
-        </div>
         </Show>
       </div>
     </div>
