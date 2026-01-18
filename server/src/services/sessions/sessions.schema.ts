@@ -46,3 +46,21 @@ export type CreateSessionRequest = z.infer<typeof CreateSessionSchema>
 export type GetSessionRequest = z.infer<typeof GetSessionSchema>
 export type UpdateSessionRequest = z.infer<typeof UpdateSessionSchema>
 export type SessionPromptRequest = z.infer<typeof SessionPromptSchema>
+
+export const RevertSessionSchema = z.object({
+  query: FolderQueryShape,
+  params: z.object({
+    id: z.string()
+  }),
+  body: z.object({
+    messageID: z.string().optional(),
+    partID: z.string().optional()
+  })
+})
+
+export const UnrevertSessionSchema = z.object({
+  query: FolderQueryShape,
+  params: z.object({
+    id: z.string()
+  })
+})

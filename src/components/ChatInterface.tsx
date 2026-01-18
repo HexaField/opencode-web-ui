@@ -2,7 +2,15 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { createStore, reconcile, unwrap } from 'solid-js/store'
-import { abortSession, getSession, getSessionStatus, promptSession, updateSession } from '../api/sessions'
+import {
+  abortSession,
+  getSession,
+  getSessionStatus,
+  promptSession,
+  revertSession,
+  unrevertSession,
+  updateSession
+} from '../api/sessions'
 import { Message, Session, ToolPart } from '../types'
 import AgentSettingsModal from './AgentSettingsModal'
 import ThoughtChain from './ThoughtChain'
@@ -324,6 +332,52 @@ export default function ChatInterface(props: Props) {
     }
   }
 
+  const undo = async () => {
+    if (!props.sessionId || loading()) return
+    setLoading(true)
+    try {
+      const currentMessages = unwrap(messages)
+      if (currentMessages.length === 0) return
+
+      const lastMsg = currentMessages[currentMessages.length - 1]
+      // If temporary, ignore?
+      if (lastMsg.info.id.startsWith('temp-')) return
+
+      await revertSession(props.folder, props.sessionId, lastMsg.info.id)
+      await fetchSession()
+    } catch (err) {
+      console.error('Failed to undo:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const redo = async () => {
+    if (!props.sessionId || loading()) return
+    setLoading(true)
+    try {
+      await unrevertSession(props.folder, props.sessionId)
+      await fetchSession()
+    } catch (err) {
+      console.error('Failed to redo:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const revertTo = async (messageId: string) => {
+    if (!props.sessionId || loading()) return
+    setLoading(true)
+    try {
+      await revertSession(props.folder, props.sessionId, messageId)
+      await fetchSession()
+    } catch (err) {
+      console.error('Failed to revert to message:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div class="flex h-full flex-col bg-white transition-colors duration-200 dark:bg-[#0d1117]">
       <AgentSettingsModal
@@ -335,6 +389,49 @@ export default function ChatInterface(props: Props) {
         currentModel={currentModel()}
         onSave={handleUpdateSession}
       />
+
+      <div class="flex items-center justify-end gap-1 border-b border-gray-200 bg-white p-2 px-4 dark:border-[#30363d] dark:bg-[#0d1117]">
+        <button
+          onClick={() => void undo()}
+          disabled={loading() || messages.length === 0}
+          class="rounded-md p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-[#21262d] dark:hover:text-gray-200"
+          title="Undo"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 7v6h6" />
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+          </svg>
+        </button>
+        <button
+          onClick={() => void redo()}
+          disabled={loading()}
+          class="rounded-md p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-[#21262d] dark:hover:text-gray-200"
+          title="Redo"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 7v6h-6" />
+            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+          </svg>
+        </button>
+      </div>
 
       <div
         ref={(el) => (scrollContainer = el as HTMLDivElement | undefined)}
@@ -387,8 +484,33 @@ export default function ChatInterface(props: Props) {
                                 </Show>
                               </div>
 
-                              {/* Copy button placed beneath the message, outside the message border, aligned based on sender */}
-                              <div class={`mt-0.5 ${isUser ? 'self-end' : 'self-start'}`}>
+                              {/* Buttons placed beneath the message, outside the message border, aligned based on sender */}
+                              <div class={`mt-0.5 flex gap-1 ${isUser ? 'self-end' : 'self-start'}`}>
+                                <Show when={isUser}>
+                                  <button
+                                    class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                                    title="Revert to this message"
+                                    aria-label="Revert to this message"
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      void revertTo(msg.info.id)
+                                    }}
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      class="h-3 w-3 text-gray-500 dark:text-gray-400"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="1.5"
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                    >
+                                      <polyline points="1 4 1 10 7 10" />
+                                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                                    </svg>
+                                  </button>
+                                </Show>
                                 <button
                                   class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
                                   title="Copy"

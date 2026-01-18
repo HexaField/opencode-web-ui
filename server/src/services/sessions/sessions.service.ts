@@ -15,7 +15,14 @@ import { AuthenticatedRequest, validate, withClient } from '../../middleware'
 import { OpencodeManager } from '../../opencode'
 import { unwrap } from '../../utils'
 import { FolderQuerySchema } from '../common/common.schema'
-import { CreateSessionSchema, GetSessionSchema, SessionPromptSchema, UpdateSessionSchema } from './sessions.schema'
+import {
+  CreateSessionSchema,
+  GetSessionSchema,
+  RevertSessionSchema,
+  SessionPromptSchema,
+  UnrevertSessionSchema,
+  UpdateSessionSchema
+} from './sessions.schema'
 
 interface SessionWithHistory extends Session {
   history?: { info: Message; parts: Part[] }[]
@@ -96,7 +103,19 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
 
       if (raw && typeof raw === 'object' && raw !== null) {
         const obj = raw as Record<string, unknown>
-        obj.history = msgData
+
+        let validMessages = msgData
+        // Filter messages if revert is active
+        if (obj.revert && typeof obj.revert === 'object') {
+          const revertData = obj.revert as { messageID: string }
+          const revertIndex = msgData.findIndex((m: any) => m.info.id === revertData.messageID)
+          if (revertIndex !== -1) {
+            // Exclude the reverted message and everything after it
+            validMessages = msgData.slice(0, revertIndex)
+          }
+        }
+
+        obj.history = validMessages
         Object.assign(obj, metadata)
         res.json(obj)
       } else {
@@ -198,7 +217,18 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
       const messages = await client.session.messages({ path: { id } })
       const msgData = unwrap(messages)
       if (raw && typeof raw === 'object' && raw !== null) {
-        raw.history = msgData
+        let validMessages = msgData
+        // Filter messages if revert is active
+        const revertData = (raw as any).revert as { messageID: string } | undefined
+        if (revertData && revertData.messageID) {
+          const revertIndex = msgData.findIndex((m: any) => m.info.id === revertData.messageID)
+          if (revertIndex !== -1) {
+            // Exclude the reverted message and everything after it
+            validMessages = msgData.slice(0, revertIndex)
+          }
+        }
+
+        raw.history = validMessages
       }
 
       if (raw) {
@@ -343,6 +373,41 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
       if (data && typeof data === 'object') Object.assign(data, metadata)
 
       res.json(data)
+    } catch (error) {
+      console.error(error)
+      const msg = error instanceof Error ? error.message : String(error)
+      res.status(500).json({ error: msg })
+    }
+  })
+
+  app.post('/api/sessions/:id/revert', validate(RevertSessionSchema), withClient(manager), async (req, res) => {
+    try {
+      const client = (req as AuthenticatedRequest).opencodeClient!
+      const { id } = req.params
+      const { messageID, partID } = req.body as { messageID?: string; partID?: string }
+
+      // @ts-ignore - The SDK definition might be strict about body content, but at runtime this is correct
+      const result = await client.session.revert({
+        path: { id },
+        body: messageID ? { messageID, partID } : undefined
+      })
+      res.json(unwrap(result))
+    } catch (error) {
+      console.error(error)
+      const msg = error instanceof Error ? error.message : String(error)
+      res.status(500).json({ error: msg })
+    }
+  })
+
+  app.post('/api/sessions/:id/unrevert', validate(UnrevertSessionSchema), withClient(manager), async (req, res) => {
+    try {
+      const client = (req as AuthenticatedRequest).opencodeClient!
+      const { id } = req.params
+
+      const result = await client.session.unrevert({
+        path: { id }
+      })
+      res.json(unwrap(result))
     } catch (error) {
       console.error(error)
       const msg = error instanceof Error ? error.message : String(error)

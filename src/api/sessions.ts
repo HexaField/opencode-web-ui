@@ -59,3 +59,21 @@ export async function getSessionStatus(folder: string, id: string): Promise<{ st
   if (!res.ok) throw new Error('Failed to get session status')
   return res.json() as Promise<{ status: string }>
 }
+
+export async function revertSession(folder: string, id: string, messageID?: string): Promise<unknown> {
+  const res = await fetch(`${API_BASE}/sessions/${id}/revert?folder=${encodeURIComponent(folder)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messageID })
+  })
+  if (!res.ok) throw new Error('Failed to revert session')
+  return res.json()
+}
+
+export async function unrevertSession(folder: string, id: string): Promise<unknown> {
+  const res = await fetch(`${API_BASE}/sessions/${id}/unrevert?folder=${encodeURIComponent(folder)}`, {
+    method: 'POST'
+  })
+  if (!res.ok) throw new Error('Failed to unrevert session')
+  return res.json()
+}
