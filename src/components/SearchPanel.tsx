@@ -222,8 +222,6 @@ export default function SearchPanel(props: Props) {
           const lineMatches = matchesByLine[lineNum].sort((a, b) => b.character - a.character)
 
           for (const m of lineMatches) {
-            // Double check match text
-            const _actual = lineText.substring(m.character, m.character + m.matchText.length)
             // If file changed on disk since search, this might be wrong.
             // But for now assume consistent.
             const before = lineText.substring(0, m.character)

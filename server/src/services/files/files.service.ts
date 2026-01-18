@@ -74,7 +74,7 @@ export function registerFilesRoutes(app: express.Application, manager: OpencodeM
             .forEach((l) => gitignoreFilePatterns.push(`**/${l}`))
 
           excludePatterns = [...excludePatterns, ...gitignoreLines, ...gitignoreFilePatterns]
-        } catch (_e) {
+        } catch {
           // No .gitignore or read error
         }
       }
@@ -93,7 +93,7 @@ export function registerFilesRoutes(app: express.Application, manager: OpencodeM
             searchRegex = new RegExp(escaped, flags)
           }
         }
-      } catch (_e) {
+      } catch {
         res.status(400).json({ error: 'Invalid Regex' })
         return
       }
@@ -135,7 +135,7 @@ export function registerFilesRoutes(app: express.Application, manager: OpencodeM
                 matches
               })
             }
-          } catch (_err) {
+          } catch {
             // Ignore read errors
           }
         })
