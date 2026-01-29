@@ -38,7 +38,8 @@ export const SessionPromptSchema = z.object({
   body: z.object({
     parts: z.array(z.any()), // TODO: Define stricter types for parts
     model: z.string().optional(),
-    agent: z.string().optional()
+    agent: z.string().optional(),
+    messageID: z.string().optional()
   })
 })
 
@@ -46,6 +47,19 @@ export type CreateSessionRequest = z.infer<typeof CreateSessionSchema>
 export type GetSessionRequest = z.infer<typeof GetSessionSchema>
 export type UpdateSessionRequest = z.infer<typeof UpdateSessionSchema>
 export type SessionPromptRequest = z.infer<typeof SessionPromptSchema>
+
+export const BranchSessionSchema = z.object({
+  query: FolderQueryShape,
+  params: z.object({
+    id: z.string()
+  }),
+  body: z.object({
+    parts: z.array(z.any()),
+    model: z.string().optional(),
+    agent: z.string().optional(),
+    messageID: z.string() // Required for branching (the split point)
+  })
+})
 
 export const RevertSessionSchema = z.object({
   query: FolderQueryShape,

@@ -54,6 +54,15 @@ export default function FilesView(props: Props) {
   let cleanupListeners: (() => void) | undefined
   const { isDark } = useTheme()
 
+  // Listen for global fs-updated event
+  createEffect(() => {
+    const handleFsUpdate = () => {
+      setLastUpdated(Date.now())
+    }
+    window.addEventListener('fs-updated', handleFsUpdate)
+    onCleanup(() => window.removeEventListener('fs-updated', handleFsUpdate))
+  })
+
   createEffect(() => {
     localStorage.setItem('opencode_sidebar_open', String(isSidebarOpen()))
   })

@@ -38,6 +38,9 @@ vi.mock('../src/radicle', () => {
         tasks.delete(id)
         return Promise.resolve()
       }),
+      createTag: vi.fn((_folder: string, name: string, color: string) => {
+        return Promise.resolve({ id: name.toLowerCase(), name, color })
+      }),
       getTags: vi.fn(() => Promise.resolve([])),
       addTag: vi.fn((_folder: string, taskId: string, tagId: string) => {
         const task = tasks.get(taskId)
@@ -161,9 +164,15 @@ describe('Tasks API Tests', () => {
   })
 
   it('should delete a task', async () => {
+    // Ensure task exists (fix for state dependency order)
+    const createRes = await request(app)
+      .post('/api/tasks?folder=' + encodeURIComponent(tempDir))
+      .send({ title: 'Task to delete', status: 'todo' })
+    const createdTask = createRes.body as Task
+
     const listRes = await request(app).get('/api/tasks?folder=' + encodeURIComponent(tempDir))
     const tasks = listRes.body as Task[]
-    const taskId = tasks[0].id
+    const taskId = tasks.find((t) => t.id === createdTask.id)?.id || tasks[0].id
 
     const res = await request(app).delete(`/api/tasks/${taskId}?folder=` + encodeURIComponent(tempDir))
 

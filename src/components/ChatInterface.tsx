@@ -4,6 +4,8 @@ import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
 import { createStore, reconcile, unwrap } from 'solid-js/store'
 import {
   abortSession,
+  branchSession,
+  createSession,
   getSession,
   getSessionStatus,
   promptSession,
@@ -19,6 +21,7 @@ import ToolCall from './ToolCall'
 interface Props {
   folder: string
   sessionId: string
+  onSessionChange: (id: string) => void
 }
 
 export default function ChatInterface(props: Props) {
@@ -29,6 +32,8 @@ export default function ChatInterface(props: Props) {
   const [currentModel, setCurrentModel] = createSignal<string>('')
   const [isAgentSettingsOpen, setIsAgentSettingsOpen] = createSignal(false)
   const [agentStatus, setAgentStatus] = createSignal<string>('idle')
+  const [editingMessageId, setEditingMessageId] = createSignal<string | null>(null)
+  const [editText, setEditText] = createSignal('')
 
   // Determine if an agent is currently running for this session by
   // checking status from backend or message history fallback
@@ -118,6 +123,11 @@ export default function ChatInterface(props: Props) {
   const detachScrollListener = () => {
     if (!scrollContainer) return
     scrollContainer.removeEventListener('scroll', onUserScroll)
+  }
+
+  const triggerRefresh = () => {
+    window.dispatchEvent(new Event('git-updated'))
+    window.dispatchEvent(new Event('fs-updated'))
   }
 
   const fetchSession = async () => {
@@ -339,12 +349,18 @@ export default function ChatInterface(props: Props) {
       const currentMessages = unwrap(messages)
       if (currentMessages.length === 0) return
 
-      const lastMsg = currentMessages[currentMessages.length - 1]
-      // If temporary, ignore?
-      if (lastMsg.info.id.startsWith('temp-')) return
+      // Find last user message to edit
+      const lastUserMsg = [...currentMessages].reverse().find((m) => m.info.role === 'user')
+      if (!lastUserMsg) return
 
-      await revertSession(props.folder, props.sessionId, lastMsg.info.id)
+      await revertSession(props.folder, props.sessionId, lastUserMsg.info.id)
       await fetchSession()
+
+      if (lastUserMsg.parts[0]?.type === 'text') {
+        setEditingMessageId(lastUserMsg.info.id)
+        setEditText((lastUserMsg.parts[0] as { text: string }).text)
+      }
+      triggerRefresh()
     } catch (err) {
       console.error('Failed to undo:', err)
     } finally {
@@ -358,10 +374,18 @@ export default function ChatInterface(props: Props) {
     try {
       await unrevertSession(props.folder, props.sessionId)
       await fetchSession()
+      triggerRefresh()
     } catch (err) {
       console.error('Failed to redo:', err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const startEditing = (msg: Message) => {
+    if (msg.parts[0]?.type === 'text') {
+      setEditingMessageId(msg.info.id)
+      setEditText((msg.parts[0] as { text: string }).text)
     }
   }
 
@@ -371,11 +395,83 @@ export default function ChatInterface(props: Props) {
     try {
       await revertSession(props.folder, props.sessionId, messageId)
       await fetchSession()
+      triggerRefresh()
     } catch (err) {
       console.error('Failed to revert to message:', err)
     } finally {
       setLoading(false)
     }
+  }
+
+  const waitForIdle = async (timeoutMs = 5000) => {
+    const start = Date.now()
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const { status } = await getSessionStatus(props.folder, props.sessionId)
+        if (status === 'idle') return true
+      } catch {
+        // ignore errors during poll
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+    return false
+  }
+
+  const submitEdit = async (msg: Message) => {
+    // If agent is running or we are waiting for a response, stop it first
+    if (isAgentRunning() || loading()) {
+      try {
+        await abortSession(props.folder, props.sessionId)
+        // Wait for session to actually become idle
+        await waitForIdle()
+      } catch (e) {
+        console.error('Failed to abort session before editing:', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (!props.sessionId) return
+    setLoading(true)
+    try {
+      const index = messages.findIndex((m) => m.info.id === msg.info.id)
+
+      // Case 1: Editing the first message -> Start a new session
+      if (index === 0) {
+        const newSession = await createSession(props.folder, {
+          agent: currentAgent() || undefined,
+          model: currentModel() || undefined
+        })
+        props.onSessionChange(newSession.id)
+        await promptSession(props.folder, newSession.id, {
+          parts: [{ type: 'text', text: editText() }]
+        })
+      }
+      // Case 2: Editing a subsequent message -> Atomic Branch
+      else if (index > 0) {
+        const prevId = messages[index].info.id
+
+        // Call the atomic branch endpoint
+        // This will fork the session at prevId and prompt the new session
+        const branchResult = await branchSession(props.folder, props.sessionId, {
+          messageID: prevId, // Fork from parent
+          parts: [{ type: 'text', text: editText() }],
+          agent: currentAgent() || undefined,
+          model: currentModel() || undefined
+        })
+        // Switch to the new branched session
+        props.onSessionChange(branchResult.id)
+      }
+    } catch (err) {
+      console.error('Failed to submit edit:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const cancelEdit = async () => {
+    setEditingMessageId(null)
+    // Client-side only cancellation
   }
 
   return (
@@ -442,58 +538,109 @@ export default function ChatInterface(props: Props) {
             const isUser = msg.info.role === 'user'
             return (
               <div class={`flex w-full flex-col gap-1 ${isUser ? "m-2 items-end" : 'items-start'}`}>
-                <For each={msg.parts}>
-                  {(part) => (
-                    <>
-                      <Show when={part.type === 'text'}>
-                        <Show
-                          when={
-                            !isUser &&
-                            currentModel().split('/').pop() === 'gemini-3-pro-preview' &&
-                            (part as { text: string }).text.startsWith('thought:')
-                          }
-                          fallback={
-                            <>
-                              <div
-                                data-testid={`message-${msg.info.role}`}
-                                class={`max-w-[85%] rounded-xl border px-2 py-1 shadow-sm md:max-w-[75%] ${
-                                  isUser
-                                    ? "rounded-br-sm border-[#54aeff]/40 bg-[#ddf4ff] text-gray-900 dark:border-[#1f6feb]/40 dark:bg-[#1f6feb]/15 dark:text-gray-100"
-                                    : "rounded-bl-sm border-gray-200 bg-white text-gray-900 dark:border-[#30363d] dark:bg-[#161b22] dark:text-gray-100"
-                                } `}
-                              >
-                                <Show
-                                  when={isUser}
-                                  fallback={
-                                    <div>
-                                      <div
-                                        class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-                                        style={{ 'font-size': '14px' }}
-                                        innerHTML={DOMPurify.sanitize(
-                                          marked.parse((part as { text: string }).text, { async: false })
-                                        )}
-                                      />
-                                    </div>
-                                  }
+                <Show when={msg.info.id !== editingMessageId()}>
+                  <For each={msg.parts}>
+                    {(part) => (
+                      <>
+                        <Show when={part.type === 'text'}>
+                          <Show
+                            when={
+                              !isUser &&
+                              currentModel().split('/').pop() === 'gemini-3-pro-preview' &&
+                              (part as { text: string }).text.startsWith('thought:')
+                            }
+                            fallback={
+                              <>
+                                <div
+                                  data-testid={`message-${msg.info.role}`}
+                                  class={`max-w-[85%] rounded-xl border px-2 py-1 shadow-sm md:max-w-[75%] ${
+                                    isUser
+                                      ? "rounded-br-sm border-[#54aeff]/40 bg-[#ddf4ff] text-gray-900 dark:border-[#1f6feb]/40 dark:bg-[#1f6feb]/15 dark:text-gray-100"
+                                      : "rounded-bl-sm border-gray-200 bg-white text-gray-900 dark:border-[#30363d] dark:bg-[#161b22] dark:text-gray-100"
+                                  } `}
                                 >
-                                  <div>
-                                    <pre class="font-sans text-sm leading-relaxed whitespace-pre-wrap">
-                                      {(part as { text: string }).text}
-                                    </pre>
-                                  </div>
-                                </Show>
-                              </div>
+                                  <Show
+                                    when={isUser}
+                                    fallback={
+                                      <div>
+                                        <div
+                                          class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                                          style={{ 'font-size': '14px' }}
+                                          innerHTML={DOMPurify.sanitize(
+                                            marked.parse((part as { text: string }).text, { async: false })
+                                          )}
+                                        />
+                                      </div>
+                                    }
+                                  >
+                                    <div>
+                                      <pre class="font-sans text-sm leading-relaxed whitespace-pre-wrap">
+                                        {(part as { text: string }).text}
+                                      </pre>
+                                    </div>
+                                  </Show>
+                                </div>
 
-                              {/* Buttons placed beneath the message, outside the message border, aligned based on sender */}
-                              <div class={`mt-0.5 flex gap-1 ${isUser ? 'self-end' : 'self-start'}`}>
-                                <Show when={isUser}>
+                                {/* Buttons placed beneath the message, outside the message border, aligned based on sender */}
+                                <div class={`mt-0.5 flex gap-1 ${isUser ? 'self-end' : 'self-start'}`}>
+                                  <Show when={isUser}>
+                                    <button
+                                      class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                                      title="Edit this message"
+                                      aria-label="Edit this message"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        startEditing(msg)
+                                      }}
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-3 w-3 text-gray-500 dark:text-gray-400"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.5"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                      >
+                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                                      title="Revert to this message"
+                                      aria-label="Revert to this message"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        void revertTo(msg.info.id)
+                                      }}
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-3 w-3 text-gray-500 dark:text-gray-400"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="1.5"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                      >
+                                        <polyline points="1 4 1 10 7 10" />
+                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                                      </svg>
+                                    </button>
+                                  </Show>
                                   <button
                                     class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
-                                    title="Revert to this message"
-                                    aria-label="Revert to this message"
+                                    title="Copy"
+                                    aria-label="Copy message"
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      void revertTo(msg.info.id)
+                                      try {
+                                        void navigator.clipboard.writeText((part as { text: string }).text)
+                                      } catch (err) {
+                                        console.error('Copy failed', err)
+                                      }
                                     }}
                                   >
                                     <svg
@@ -506,51 +653,63 @@ export default function ChatInterface(props: Props) {
                                       stroke-linecap="round"
                                       stroke-linejoin="round"
                                     >
-                                      <polyline points="1 4 1 10 7 10" />
-                                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                                      <rect x="9" y="4" width="11" height="11" rx="2" />
+                                      <rect x="4" y="9" width="11" height="11" rx="2" />
                                     </svg>
                                   </button>
-                                </Show>
-                                <button
-                                  class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
-                                  title="Copy"
-                                  aria-label="Copy message"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    try {
-                                      void navigator.clipboard.writeText((part as { text: string }).text)
-                                    } catch (err) {
-                                      console.error('Copy failed', err)
-                                    }
-                                  }}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-3 w-3 text-gray-500 dark:text-gray-400"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.5"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                  >
-                                    <rect x="9" y="4" width="11" height="11" rx="2" />
-                                    <rect x="4" y="9" width="11" height="11" rx="2" />
-                                  </svg>
-                                </button>
-                              </div>
-                            </>
-                          }
-                        >
-                          <ThoughtChain text={(part as { text: string }).text} />
+                                </div>
+                              </>
+                            }
+                          >
+                            <ThoughtChain text={(part as { text: string }).text} />
+                          </Show>
                         </Show>
-                      </Show>
-                      <Show when={part.type === 'tool'}>
-                        <ToolCall part={part as ToolPart} folder={props.folder} />
-                      </Show>
-                    </>
-                  )}
-                </For>
+                        <Show when={part.type === 'tool'}>
+                          <ToolCall part={part as ToolPart} folder={props.folder} />
+                        </Show>
+                      </>
+                    )}
+                  </For>
+                </Show>
+
+                <Show when={isUser && msg.info.id === editingMessageId()}>
+                  <div class="mt-2 w-full max-w-[85%] self-end rounded-xl border border-blue-500/50 bg-[#ddf4ff] p-2 shadow-sm md:max-w-[75%] dark:bg-[#1f6feb]/15">
+                    <textarea
+                      class="w-full resize-none bg-transparent p-1 text-sm text-gray-900 placeholder-gray-500 outline-none dark:text-gray-100"
+                      rows={3}
+                      value={editText()}
+                      onInput={(e) => setEditText(e.currentTarget.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          void submitEdit(msg)
+                        }
+                        if (e.key === 'Escape') {
+                          void cancelEdit()
+                        }
+                      }}
+                      placeholder="Edit your message..."
+                      autofocus
+                    />
+                    <div class="mt-1 flex justify-between text-xs text-gray-500">
+                      <span>Has Escape to delete</span>
+                      <div class="flex gap-2">
+                        <button
+                          onClick={() => setEditingMessageId(null)}
+                          class="hover:text-gray-700 dark:hover:text-gray-300"
+                        >
+                          Cancel View
+                        </button>
+                        <button
+                          onClick={() => void submitEdit(msg)}
+                          class="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </Show>
               </div>
             )
           }}

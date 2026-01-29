@@ -70,6 +70,25 @@ export async function revertSession(folder: string, id: string, messageID?: stri
   return res.json()
 }
 
+export async function branchSession(
+  folder: string,
+  id: string,
+  body: {
+    messageID: string
+    parts: { type: string; text: string }[]
+    agent?: string
+    model?: string
+  }
+): Promise<{ id: string }> {
+  const res = await fetch(`${API_BASE}/sessions/${id}/branch?folder=${encodeURIComponent(folder)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  if (!res.ok) throw new Error('Failed to branch session')
+  return res.json() as Promise<{ id: string }>
+}
+
 export async function unrevertSession(folder: string, id: string): Promise<unknown> {
   const res = await fetch(`${API_BASE}/sessions/${id}/unrevert?folder=${encodeURIComponent(folder)}`, {
     method: 'POST'

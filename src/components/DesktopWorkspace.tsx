@@ -606,7 +606,11 @@ export default function DesktopWorkspace(props: Props) {
               />
             }
           >
-            <ChatInterface folder={props.folder} sessionId={currentSessionId()!} />
+            <ChatInterface
+              folder={props.folder}
+              sessionId={currentSessionId()!}
+              onSessionChange={(id) => setCurrentSessionId(id)}
+            />
 
             {/* Back to list overlay button if needed, or just rely on the header button */}
           </Show>
