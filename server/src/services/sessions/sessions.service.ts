@@ -431,17 +431,19 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
       }
 
       // Don't await prompt result here to have client redirect to new session immediately
-      client.session.prompt({
-        path: { id: newSession.id },
-        body: promptBody
-      }).then((promptResult) => {
-        if ((promptResult as { error?: unknown }).error) {
-          const err = (promptResult as { error?: unknown }).error
-          console.error('Prompt error on branch:', err)
-          res.status(500).json({ error: err })
-          return
-        }
-      })
+      client.session
+        .prompt({
+          path: { id: newSession.id },
+          body: promptBody
+        })
+        .then((promptResult) => {
+          if ((promptResult as { error?: unknown }).error) {
+            const err = (promptResult as { error?: unknown }).error
+            console.error('Prompt error on branch:', err)
+            res.status(500).json({ error: err })
+            return
+          }
+        })
 
       // Return the new session details (could also return the message)
       // The frontend expects the new session ID to redirect

@@ -714,7 +714,7 @@ export default function ChatInterface(props: Props) {
             )
           }}
         </For>
-        <Show when={loading()}>
+        <Show when={loading() || isAgentRunning()}>
           <div class="ml-2 flex items-center gap-2 self-start p-2 text-sm text-gray-500 dark:text-gray-400">
             <div class="h-2 w-2 animate-bounce rounded-full bg-gray-400" style="animation-delay: 0ms"></div>
             <div class="h-2 w-2 animate-bounce rounded-full bg-gray-400" style="animation-delay: 150ms"></div>
