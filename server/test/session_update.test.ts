@@ -47,9 +47,6 @@ describe('Session Update Tests', () => {
       .patch(`/api/sessions/${sessionId}?folder=${encodeURIComponent(tempDir)}`)
       .send({ agent: 'test-agent', model: 'gpt-4' })
 
-    if (updateRes.status !== 200) {
-      console.log('Update response:', updateRes.body)
-    }
     expect(updateRes.status).toBe(200)
 
     // Verify update by fetching session
@@ -61,5 +58,14 @@ describe('Session Update Tests', () => {
     const body = getRes.body as SessionResponse
     expect(body.agent).toBe('test-agent')
     expect(body.model).toBe('gpt-4')
+  })
+
+  it('should get session status', async () => {
+    const statusRes = await request(app).get(`/api/sessions/${sessionId}/status?folder=${encodeURIComponent(tempDir)}`)
+
+    expect(statusRes.status).toBe(200)
+    const body = statusRes.body as { status: string }
+    expect(body.status).toBeDefined()
+    expect(['idle', 'running']).toContain(body.status)
   })
 })

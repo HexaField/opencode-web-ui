@@ -36,13 +36,8 @@ export default function ChatInterface(props: Props) {
   const [editText, setEditText] = createSignal('')
 
   // Determine if an agent is currently running for this session by
-  // checking status from backend or message history fallback
-  const isAgentRunning = () =>
-    agentStatus() === 'running' ||
-    messages.some(
-      (m) =>
-        m.info.role === 'assistant' && !(m.info.time && (m.info.time as unknown as { completed?: number }).completed)
-    )
+  // checking status from backend
+  const isAgentRunning = () => agentStatus() === 'running'
 
   const checkStatus = async () => {
     try {
@@ -135,7 +130,7 @@ export default function ChatInterface(props: Props) {
       const session = await getSession(props.folder, props.sessionId)
       if (session) {
         // Also check status when fetching session
-        void checkStatus()
+        await checkStatus()
 
         setCurrentAgent(session.agent || '')
         setCurrentModel(session.model || '')
@@ -174,6 +169,8 @@ export default function ChatInterface(props: Props) {
       setMessagesLoaded(false)
       setManualMode(false)
       detachScrollListener()
+      setEditingMessageId(null)
+      setEditText('')
 
       setLoading(true)
 
@@ -446,10 +443,13 @@ export default function ChatInterface(props: Props) {
         await promptSession(props.folder, newSession.id, {
           parts: [{ type: 'text', text: editText() }]
         })
+        setEditingMessageId(null)
+        setEditText('')
       }
       // Case 2: Editing a subsequent message -> Atomic Branch
       else if (index > 0) {
-        const prevId = messages[index].info.id
+        // Fork from parent
+        const prevId = messages[index - 1].info.id
 
         // Call the atomic branch endpoint
         // This will fork the session at prevId and prompt the new session
@@ -461,6 +461,8 @@ export default function ChatInterface(props: Props) {
         })
         // Switch to the new branched session
         props.onSessionChange(branchResult.id)
+        setEditingMessageId(null)
+        setEditText('')
       }
     } catch (err) {
       console.error('Failed to submit edit:', err)

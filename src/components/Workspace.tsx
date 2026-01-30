@@ -236,7 +236,11 @@ export default function Workspace(props: Props) {
                 class={`relative h-full flex-1 overflow-hidden ${!currentSessionId() ? "hidden md:block" : 'block'} `}
               >
                 {currentSessionId() ? (
-                  <ChatInterface folder={props.folder} sessionId={currentSessionId()!} onSessionChange={setCurrentSessionId} />
+                  <ChatInterface
+                    folder={props.folder}
+                    sessionId={currentSessionId()!}
+                    onSessionChange={setCurrentSessionId}
+                  />
                 ) : (
                   <div class="flex h-full flex-col items-center justify-center gap-4 text-gray-500 dark:text-gray-400">
                     <div class="rounded-full bg-gray-50 p-4 dark:bg-[#161b22]">

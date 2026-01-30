@@ -175,10 +175,10 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
   app.get('/api/sessions/:id/status', validate(GetSessionSchema), withClient(manager), async (req, res) => {
     try {
       const client = (req as AuthenticatedRequest).opencodeClient!
+      const folder = (req as AuthenticatedRequest).targetFolder!
       const { id } = req.params as { id: string }
 
-      // @ts-expect-error - Status method type definition might be missing in current SDK version
-      const result = await client.session.status({ path: { id } })
+      const result = await client.session.status({ query: { directory: folder } })
 
       const possibleError = (result as { error?: unknown }).error
       if (possibleError) {
@@ -187,17 +187,18 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
         return
       }
 
-      // If status result is wrapped or just returns the status string directly
-      // Adjust based on actual SDK response structure
-      const data = unwrap(result)
+      const allStatuses = unwrap(result) as Record<string, { type: string }>
+      const sessionStatus = allStatuses[id]
+      console.log(sessionStatus)
 
-      // If data is just a string (e.g. 'idle'), wrap it
-      if (typeof data === 'string') {
-        res.json({ status: data })
-      } else if (data && typeof data === 'object' && Object.keys(data).length > 0) {
-        res.json(data)
+      if (!sessionStatus) {
+        res.json({ status: 'idle' })
+        return
+      }
+
+      if (sessionStatus.type === 'busy' || sessionStatus.type === 'retry') {
+        res.json({ status: 'running' })
       } else {
-        // Default to idle if empty (SDK seems to return empty object when idle)
         res.json({ status: 'idle' })
       }
     } catch (error) {

@@ -85,7 +85,7 @@ describe('ChatInterface', () => {
   }
 
   it('renders messages and allows reverting', async () => {
-    render(() => <ChatInterface folder={folder} sessionId={sessionId} />)
+    render(() => <ChatInterface folder={folder} sessionId={sessionId} onSessionChange={vi.fn()} />)
     await loadMessages()
 
     expect(screen.getByText('Hello')).toBeTruthy()
@@ -93,7 +93,7 @@ describe('ChatInterface', () => {
   })
 
   it('enters edit mode and hides original content when editing a user message', async () => {
-    render(() => <ChatInterface folder={folder} sessionId={sessionId} />)
+    render(() => <ChatInterface folder={folder} sessionId={sessionId} onSessionChange={vi.fn()} />)
     await loadMessages()
 
     // Find edit button (title="Edit this message")
@@ -121,7 +121,9 @@ describe('ChatInterface', () => {
   })
 
   it('submits edited message', async () => {
+    vi.useRealTimers()
     // Override history to have [User, Assistant, User2] so we can test reverting to User2's predecessor (Assistant)
+    ;(sessionsApi.getSessionStatus as Mock).mockResolvedValue({ status: 'idle' })
     ;(sessionsApi.getSession as Mock).mockResolvedValue({
       id: sessionId,
       history: [
@@ -131,7 +133,7 @@ describe('ChatInterface', () => {
       ]
     })
 
-    render(() => <ChatInterface folder={folder} sessionId={sessionId} />)
+    render(() => <ChatInterface folder={folder} sessionId={sessionId} onSessionChange={vi.fn()} />)
     await loadMessages() // Waits for "Hello"
 
     // Find edit buttons. Expect 2 (one for msg-1, one for msg-3)
@@ -172,7 +174,7 @@ describe('ChatInterface', () => {
   })
 
   it('cancels edit on escape without reverting', async () => {
-    render(() => <ChatInterface folder={folder} sessionId={sessionId} />)
+    render(() => <ChatInterface folder={folder} sessionId={sessionId} onSessionChange={vi.fn()} />)
     await loadMessages()
 
     // Edit msg-1
@@ -202,7 +204,7 @@ describe('ChatInterface', () => {
       .mockResolvedValueOnce({ status: 'running' }) // Poll 1
       .mockResolvedValueOnce({ status: 'idle' }) // Poll 2
 
-    render(() => <ChatInterface folder={folder} sessionId={sessionId} />)
+    render(() => <ChatInterface folder={folder} sessionId={sessionId} onSessionChange={vi.fn()} />)
     await loadMessages()
 
     const editButtons = screen.getAllByTitle('Edit this message')
@@ -233,7 +235,7 @@ describe('ChatInterface', () => {
       ]
     })
 
-    render(() => <ChatInterface folder={folder} sessionId={sessionId} />)
+    render(() => <ChatInterface folder={folder} sessionId={sessionId} onSessionChange={vi.fn()} />)
     await loadMessages('User 1')
 
     const undoButton = screen.getByTitle('Undo')
