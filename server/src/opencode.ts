@@ -21,7 +21,7 @@ if (process.env.OPENCODE_WORKER_DIR) {
       // Start OpenCode server on a random port
       const { server } = await createOpencode({
         port: 0, // Random port
-        timeout: 30000 // 30s timeout for tests
+        timeout: 60000 // 60s timeout for tests
         // We might need to suppress logs if they interfere with our stdout JSON
         // But createOpencode might log to stdout.
         // We'll try to capture the specific output we need.

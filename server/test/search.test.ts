@@ -48,7 +48,11 @@ src/utils.ts
       isCaseSensitive: false
     })
 
+    if (res.status !== 200) {
+      console.log('Search failed:', res.status, res.text)
+    }
     expect(res.status).toBe(200)
+    expect(res.body.results).toBeDefined()
     const files = res.body.results.map((r: any) => r.fileName)
     expect(files).toContain('file1.txt')
     expect(files).toContain('src/file2.ts')

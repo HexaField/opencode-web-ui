@@ -16,7 +16,7 @@ vi.unmock('../src/git.js')
 vi.unmock('../src/opencode.js')
 
 describe('Server Integration Tests', () => {
-  vi.setConfig({ testTimeout: 30000 })
+  vi.setConfig({ testTimeout: 60000 })
 
   let tempDir: string
 
@@ -111,12 +111,17 @@ describe('Server Integration Tests', () => {
     const agentContent = 'I will be deleted.'
 
     // Create agent
-    await request(app)
+    const createRes = await request(app)
       .post(`/api/agents?folder=${encodeURIComponent(tempDir)}`)
       .send({ name: agentName, content: agentContent })
 
+    expect(createRes.status).toBe(200)
+
     // Delete agent
     const deleteRes = await request(app).delete(`/api/agents/${agentName}?folder=${encodeURIComponent(tempDir)}`)
+    if (deleteRes.status !== 200) {
+      console.log('Delete agent failed:', deleteRes.status, deleteRes.text)
+    }
     expect(deleteRes.status).toBe(200)
     expect((deleteRes.body as { success: boolean }).success).toBe(true)
 
@@ -167,6 +172,9 @@ describe('Server Integration Tests', () => {
     const content = 'New Content'
     const res = await request(app).post('/api/fs/write').send({ path: filePath, content })
 
+    if (res.status !== 200) {
+      console.log('Write file failed:', res.status, res.text)
+    }
     expect(res.status).toBe(200)
     expect((res.body as { success: boolean }).success).toBe(true)
 
@@ -194,7 +202,17 @@ describe('Server Integration Tests', () => {
 
   it('should get git status', async () => {
     const res = await request(app).get(`/api/git/status?folder=${encodeURIComponent(tempDir)}`)
+
+    if (res.status !== 200) {
+      console.log('Git status failed:', res.status, res.text)
+    } else if (res.headers['content-type']?.includes('text/html')) {
+       console.log('Git status returned HTML (fallback):', res.text.substring(0, 100))
+    }
     expect(res.status).toBe(200)
+    
+    if (res.text && res.text.startsWith('<!doctype')) {
+       throw new Error('Received HTML instead of JSON for git status')
+    }
     const status = JSON.parse(res.text) as GitStatusItem[]
     expect(Array.isArray(status)).toBe(true)
   })

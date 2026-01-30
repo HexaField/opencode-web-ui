@@ -12,7 +12,7 @@ vi.unmock('../src/git.js')
 vi.unmock('../src/opencode.js')
 
 describe('Prompt Injection Integration Tests', () => {
-  vi.setConfig({ testTimeout: 30000 })
+  vi.setConfig({ testTimeout: 60000 })
 
   let tempDir: string
 

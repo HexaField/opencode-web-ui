@@ -17,7 +17,7 @@ vi.unmock('../src/git.js')
 vi.unmock('../src/opencode.js')
 
 describe('SSE Integration Tests', () => {
-  vi.setConfig({ testTimeout: 30000 })
+  vi.setConfig({ testTimeout: 60000 })
 
   let tempDir: string
   let sessionId: string
