@@ -490,7 +490,6 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
       const { id } = req.params as { id: string }
       const { messageID, partID } = req.body as { messageID?: string; partID?: string }
 
-      // @ts-ignore - The SDK definition might be strict about body content, but at runtime this is correct
       const result = await client.session.revert({
         path: { id },
         body: messageID ? { messageID, partID } : undefined

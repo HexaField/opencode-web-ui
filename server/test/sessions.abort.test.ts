@@ -3,7 +3,7 @@ import * as os from 'os'
 import * as path from 'path'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { app } from '../src/server.js'
+import { app, manager } from '../src/server.js'
 
 // This test exercises aborting a running session against a real opencode instance.
 // It will start a session, send a prompt to trigger an agent run, then call the abort endpoint
@@ -20,8 +20,8 @@ describe('Session Abort Integration Test', () => {
   })
 
   afterAll(async () => {
+    manager.shutdown()
     await fs.rm(tempDir, { recursive: true, force: true })
-    // Do not shutdown the shared manager here; other tests rely on it
   })
 
   it('should abort a running session', async () => {

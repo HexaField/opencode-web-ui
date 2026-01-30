@@ -3,7 +3,7 @@ import * as os from 'os'
 import * as path from 'path'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { app } from '../src/server.js'
+import { app, manager } from '../src/server.js'
 
 describe('Session Revert Integration Test', () => {
   let tempDir: string
@@ -16,6 +16,7 @@ describe('Session Revert Integration Test', () => {
   })
 
   afterAll(async () => {
+    manager.shutdown()
     await fs.rm(tempDir, { recursive: true, force: true })
   })
 

@@ -30,7 +30,13 @@ vi.mock('../src/radicle', () => {
       updateTask: vi.fn((_folder: string, id: string, updates: Partial<MockTask>) => {
         const task = tasks.get(id)
         if (task) {
-          Object.assign(task, updates)
+          // Only assign defined properties
+          Object.keys(updates).forEach((key) => {
+            const k = key as keyof MockTask
+            if (updates[k] !== undefined) {
+              ;(task as any)[k] = updates[k]
+            }
+          })
         }
         return Promise.resolve()
       }),

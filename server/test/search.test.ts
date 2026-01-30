@@ -32,6 +32,8 @@ ignored.log
 src/utils.ts
     `.trim()
     )
+    // Wait for FS to settle
+    await new Promise((resolve) => setTimeout(resolve, 500))
   })
 
   afterAll(async () => {

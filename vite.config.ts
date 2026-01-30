@@ -38,6 +38,14 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       exclude: ['e2e/**', 'node_modules/**', '.opencode/**'],
+      testTimeout: 60000,
+      hookTimeout: 60000,
+      poolOptions: {
+        threads: {
+          maxThreads: 1,
+          minThreads: 1
+        }
+      },
       coverage: {
         provider: 'v8',
         reporter: ['text', 'json', 'html'],

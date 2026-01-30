@@ -23,7 +23,7 @@
     "format": "oxfmt --write"
   },
   "dependencies": {
-    "@opencode-ai/sdk": "1.1.1",
+    "@opencode-ai/sdk": "1.1.43",
     "@types/dompurify": "^3.2.0",
     "@types/marked": "^6.0.0",
     "@xterm/addon-fit": "^0.11.0",

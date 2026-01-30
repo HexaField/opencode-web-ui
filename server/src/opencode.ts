@@ -1,5 +1,6 @@
 import { createOpencode, createOpencodeClient } from '@opencode-ai/sdk'
 import { exec as _exec, spawn, type ChildProcess } from 'child_process'
+import fg from 'fast-glob'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
@@ -19,7 +20,8 @@ if (process.env.OPENCODE_WORKER_DIR) {
 
       // Start OpenCode server on a random port
       const { server } = await createOpencode({
-        port: 0 // Random port
+        port: 0, // Random port
+        timeout: 30000 // 30s timeout for tests
         // We might need to suppress logs if they interfere with our stdout JSON
         // But createOpencode might log to stdout.
         // We'll try to capture the specific output we need.

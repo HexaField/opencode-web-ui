@@ -245,6 +245,7 @@ describe('Server Integration Tests', () => {
 
     // 6. Commit
     const commitRes = await request(app).post('/api/git/commit').send({ folder: tempDir, message: 'Update test.txt' })
+    await new Promise((r) => setTimeout(r, 500))
 
     expect(commitRes.status).toBe(200)
 
