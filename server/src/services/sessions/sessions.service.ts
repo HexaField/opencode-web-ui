@@ -14,6 +14,7 @@ import * as fs from 'fs/promises'
 import { AuthenticatedRequest, validate, withClient } from '../../middleware'
 import { OpencodeManager, type OpencodeClient } from '../../opencode'
 import { unwrap } from '../../utils'
+import { parseAgent } from '../../utils/frontmatter.js'
 import { FolderQuerySchema } from '../common/common.schema'
 import {
   BranchSessionSchema,
@@ -124,7 +125,23 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
       const client = (req as AuthenticatedRequest).opencodeClient!
       const folder = (req as AuthenticatedRequest).targetFolder!
 
-      const { agent, model, ...sessionData } = req.body as { agent?: string; model?: string; [key: string]: unknown }
+      let { agent, model, ...sessionData } = req.body as { agent?: string; model?: string; [key: string]: unknown }
+
+      // If agent is specified but model is not, try to get model from agent config
+      if (agent && !model) {
+        try {
+          const agents = await manager.listAgents(folder)
+          const targetAgent = agents.find((a) => a.name === agent)
+          if (targetAgent) {
+            const { config } = parseAgent(targetAgent.content)
+            if (config.model) {
+              model = config.model
+            }
+          }
+        } catch (e) {
+          console.error('Failed to lookup agent model:', e)
+        }
+      }
 
       const session = await client.session.create({ body: sessionData })
       const data = unwrap(session)

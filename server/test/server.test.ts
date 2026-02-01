@@ -206,12 +206,12 @@ describe('Server Integration Tests', () => {
     if (res.status !== 200) {
       console.log('Git status failed:', res.status, res.text)
     } else if (res.headers['content-type']?.includes('text/html')) {
-       console.log('Git status returned HTML (fallback):', res.text.substring(0, 100))
+      console.log('Git status returned HTML (fallback):', res.text.substring(0, 100))
     }
     expect(res.status).toBe(200)
-    
+
     if (res.text && res.text.startsWith('<!doctype')) {
-       throw new Error('Received HTML instead of JSON for git status')
+      throw new Error('Received HTML instead of JSON for git status')
     }
     const status = JSON.parse(res.text) as GitStatusItem[]
     expect(Array.isArray(status)).toBe(true)

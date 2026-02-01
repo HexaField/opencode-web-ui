@@ -45,3 +45,15 @@ export const withClient =
       res.status(500).json({ error: `Failed to connect: ${msg}` })
     }
   }
+
+export const withFolder =
+  (_manager: OpencodeManager) => (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const folder = req.query.folder as string
+    if (!folder) {
+      res.status(400).json({ error: 'Missing folder query parameter' })
+      return
+    }
+    // Set targetFolder without forcing a client connection
+    ;(req as AuthenticatedRequest).targetFolder = folder
+    next()
+  }

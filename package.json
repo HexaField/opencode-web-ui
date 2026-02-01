@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "check": "pnpm run format && pnpm run lint && pnpm run test",
+    "check": "pnpm run format && tsc --noEmit && pnpm run lint && pnpm run test",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "oxlint --fix",
@@ -59,6 +59,7 @@
     "jsdom": "^27.3.0",
     "lightningcss": "1.30.2",
     "lint-staged": "^16.2.7",
+    "node-gyp": "^12.2.0",
     "oxfmt": "^0.23.0",
     "oxlint": "^1.38.0",
     "supertest": "^7.1.4",
@@ -77,5 +78,6 @@
     "*.{json,css,md,html}": [
       "oxfmt --write"
     ]
-  }
+  },
+  "packageManager": "pnpm@10.21.0"
 }

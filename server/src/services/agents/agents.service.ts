@@ -1,14 +1,23 @@
 import express from 'express'
-import { AuthenticatedRequest, validate, withClient } from '../../middleware'
+import { AuthenticatedRequest, validate, withFolder } from '../../middleware'
 import { OpencodeManager } from '../../opencode'
+import { parseAgent, serializeAgent, type AgentConfig } from '../../utils/frontmatter.js'
 import { FolderQuerySchema } from '../common/common.schema'
 import { CreateAgentSchema, DeleteAgentSchema } from './agents.schema'
 
 export function registerAgentsRoutes(app: express.Application, manager: OpencodeManager) {
-  app.get('/api/agents', validate(FolderQuerySchema), withClient(manager), async (req, res) => {
+  app.get('/api/agents', validate(FolderQuerySchema), withFolder(manager), async (req, res) => {
     try {
       const folder = (req as AuthenticatedRequest).targetFolder!
-      const agents = await manager.listAgents(folder)
+      const rawAgents = await manager.listAgents(folder)
+      const agents = rawAgents.map((agent) => {
+        const { config, prompt } = parseAgent(agent.content)
+        return {
+          ...agent,
+          config,
+          prompt
+        }
+      })
       res.json(agents)
     } catch (error) {
       console.error(error)
@@ -17,11 +26,19 @@ export function registerAgentsRoutes(app: express.Application, manager: Opencode
     }
   })
 
-  app.post('/api/agents', validate(CreateAgentSchema), withClient(manager), async (req, res) => {
+  app.post('/api/agents', validate(CreateAgentSchema), withFolder(manager), async (req, res) => {
     try {
       const folder = (req as AuthenticatedRequest).targetFolder!
-      const { name, content } = req.body as { name: string; content: string }
-      await manager.saveAgent(folder, name, content)
+      const body = req.body as { name: string; content?: string; config?: AgentConfig; prompt?: string }
+
+      let finalContent = body.content
+      if (!finalContent && body.config && body.prompt) {
+        finalContent = serializeAgent(body.config, body.prompt)
+      } else if (!finalContent) {
+        throw new Error('Missing content or config+prompt')
+      }
+
+      await manager.saveAgent(folder, body.name, finalContent)
       res.json({ success: true })
     } catch (error) {
       console.error(error)
@@ -30,7 +47,7 @@ export function registerAgentsRoutes(app: express.Application, manager: Opencode
     }
   })
 
-  app.delete('/api/agents/:name', validate(DeleteAgentSchema), withClient(manager), async (req, res) => {
+  app.delete('/api/agents/:name', validate(DeleteAgentSchema), withFolder(manager), async (req, res) => {
     try {
       const folder = (req as AuthenticatedRequest).targetFolder!
       const { name } = req.params

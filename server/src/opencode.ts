@@ -1,6 +1,5 @@
 import { createOpencode, createOpencodeClient } from '@opencode-ai/sdk'
 import { exec as _exec, spawn, type ChildProcess } from 'child_process'
-import fg from 'fast-glob'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { fileURLToPath } from 'url'

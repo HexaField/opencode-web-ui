@@ -2,9 +2,25 @@ import type { CreateAgentRequest } from '../../server/types'
 
 const API_BASE = '/api'
 
+export interface AgentPermission {
+  write: string
+  edit: string
+  bash: string
+  webfetch: string
+}
+
+export interface AgentConfig {
+  description: string
+  mode: 'primary' | 'subagent'
+  model: string
+  permission: AgentPermission
+}
+
 export interface Agent {
   name: string
   content: string
+  config: AgentConfig
+  prompt: string
 }
 
 export async function listAgents(folder: string): Promise<Agent[]> {

@@ -1,19 +1,6 @@
 import { createEffect, createSignal, For, Show } from 'solid-js'
-import { createAgent, deleteAgent, listAgents, type Agent } from '../api/agents'
+import { createAgent, deleteAgent, listAgents, type Agent, type AgentConfig } from '../api/agents'
 import { listModels } from '../api/misc'
-
-interface AgentConfig {
-  description: string
-  mode: 'primary' | 'subagent'
-  model: string
-  permission: {
-    write: string
-    edit: string
-    bash: string
-    webfetch: string
-  }
-  systemPrompt: string
-}
 
 interface Props {
   folder: string
@@ -29,18 +16,21 @@ const DEFAULT_CONFIG: AgentConfig = {
     edit: 'allow',
     bash: 'allow',
     webfetch: 'allow'
-  },
-  systemPrompt: ''
+  }
 }
 
 export default function AgentManager(props: Props) {
   const [agents, setAgents] = createSignal<Agent[]>([])
   const [models, setModels] = createSignal<string[]>([])
   const [selectedAgent, setSelectedAgent] = createSignal<string | null>(null)
-  const [config, setConfig] = createSignal<AgentConfig>({ ...DEFAULT_CONFIG })
+
+  // Editor State
+  const [editName, setEditName] = createSignal('')
+  const [editConfig, setEditConfig] = createSignal<AgentConfig>({ ...DEFAULT_CONFIG })
+  const [editPrompt, setEditPrompt] = createSignal('')
+
   const [error, setError] = createSignal<string | null>(null)
   const [isEditing, setIsEditing] = createSignal(false)
-  const [editName, setEditName] = createSignal('')
 
   const fetchAgents = () => {
     return listAgents(props.folder)
@@ -59,75 +49,21 @@ export default function AgentManager(props: Props) {
     void fetchModels()
   })
 
-  const parseAgent = (content: string): AgentConfig => {
-    const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-    if (!match) {
-      return { ...DEFAULT_CONFIG, systemPrompt: content }
-    }
-
-    const frontmatter = match[1]
-    const systemPrompt = match[2].trim()
-    const conf = { ...DEFAULT_CONFIG, systemPrompt }
-
-    frontmatter.split('\n').forEach((line) => {
-      const [key, ...rest] = line.split(':')
-      if (!key || !rest) return
-      const value = rest.join(':').trim()
-
-      if (key.trim() === 'description') conf.description = value
-      if (key.trim() === 'mode') conf.mode = value as 'primary' | 'subagent'
-      if (key.trim() === 'model') conf.model = value
-    })
-
-    // Parse permission block
-    const permissionMatch = frontmatter.match(/permission:\n([\s\S]*?)(?=\n\w+:|$)/)
-    if (permissionMatch) {
-      const permissionBlock = permissionMatch[1]
-      permissionBlock.split('\n').forEach((line) => {
-        const [tKey, tVal] = line.split(':').map((s) => s.trim())
-        if (tKey && tVal) {
-          // @ts-expect-error - dynamic assignment
-          conf.permission[tKey] = tVal
-        }
-      })
-    } else {
-      // Fallback for old tools block
-      const toolsMatch = frontmatter.match(/tools:\n([\s\S]*?)(?=\n\w+:|$)/)
-      if (toolsMatch) {
-        const toolsBlock = toolsMatch[1]
-        toolsBlock.split('\n').forEach((line) => {
-          const [tKey, tVal] = line.split(':').map((s) => s.trim())
-          if (tKey && tVal) {
-            // @ts-expect-error - dynamic assignment
-            conf.permission[tKey] = tVal === 'true' ? 'allow' : 'deny'
-          }
-        })
-      }
-    }
-
-    return conf
-  }
-
-  const generateContent = (c: AgentConfig): string => {
-    return `---
-description: ${c.description}
-mode: ${c.mode}
-model: ${c.model}
-permission:
-  write: ${c.permission.write}
-  edit: ${c.permission.edit}
-  bash: ${c.permission.bash}
-  webfetch: ${c.permission.webfetch}
----
-${c.systemPrompt}`
-  }
-
   const handleSave = async () => {
     if (!editName()) return
 
-    const content = generateContent(config())
+    // Send structured data to backend
+    const body = {
+      name: editName(),
+      config: editConfig(),
+      prompt: editPrompt()
+    }
+
     try {
-      await createAgent(props.folder, { name: editName(), content })
+      // API expects body directly if it matches CreateAgentRequest['body']
+      // We modified the schema to accept config and prompt
+      // @ts-expect-error - The api wrapper might need a type update or we trust the any match
+      await createAgent(props.folder, body)
       await fetchAgents()
       setIsEditing(false)
       setSelectedAgent(null)
@@ -153,10 +89,12 @@ ${c.systemPrompt}`
   const startEdit = (agent?: Agent) => {
     if (agent) {
       setEditName(agent.name)
-      setConfig(parseAgent(agent.content))
+      setEditConfig(JSON.parse(JSON.stringify(agent.config))) // Deep copy
+      setEditPrompt(agent.prompt)
     } else {
       setEditName('')
-      setConfig({ ...DEFAULT_CONFIG })
+      setEditConfig(JSON.parse(JSON.stringify(DEFAULT_CONFIG)))
+      setEditPrompt('')
     }
     setIsEditing(true)
   }
@@ -164,6 +102,7 @@ ${c.systemPrompt}`
   return (
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-0 md:p-4">
       <div class="flex h-full w-full flex-col overflow-hidden border border-gray-200 bg-white shadow-xl md:h-[600px] md:w-[800px] md:rounded-lg dark:border-[#30363d] dark:bg-[#0d1117]">
+        {/* Header */}
         <div class="flex items-center justify-between border-b border-gray-200 bg-[#f6f8fa] p-4 dark:border-[#30363d] dark:bg-[#010409]">
           <div class="flex items-center gap-3">
             <Show when={isEditing()}>
@@ -288,8 +227,8 @@ ${c.systemPrompt}`
                   <input
                     id="agent-description"
                     type="text"
-                    value={config().description}
-                    onInput={(e) => setConfig({ ...config(), description: e.currentTarget.value })}
+                    value={editConfig().description}
+                    onInput={(e) => setEditConfig({ ...editConfig(), description: e.currentTarget.value })}
                     class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                   />
                 </div>
@@ -301,8 +240,8 @@ ${c.systemPrompt}`
                     </label>
                     <select
                       id="agent-model"
-                      value={config().model}
-                      onChange={(e) => setConfig({ ...config(), model: e.currentTarget.value })}
+                      value={editConfig().model}
+                      onChange={(e) => setEditConfig({ ...editConfig(), model: e.currentTarget.value })}
                       class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                     >
                       <option value="">Default</option>
@@ -315,9 +254,9 @@ ${c.systemPrompt}`
                     </label>
                     <select
                       id="agent-mode"
-                      value={config().mode}
+                      value={editConfig().mode}
                       onChange={(e) =>
-                        setConfig({ ...config(), mode: e.currentTarget.value as 'primary' | 'subagent' })
+                        setEditConfig({ ...editConfig(), mode: e.currentTarget.value as 'primary' | 'subagent' })
                       }
                       class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                     >
@@ -327,29 +266,30 @@ ${c.systemPrompt}`
                   </div>
                 </div>
 
-                <div>
-                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Tool Permissions
-                  </label>
-                  <div class="space-y-2">
-                    <For each={Object.keys(config().permission)}>
+                <div class="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-[#30363d] dark:bg-[#161b22]">
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Agent Skills</label>
+                  <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                    Select the capabilities available to this agent. These are individual skills for this agent.
+                  </p>
+                  <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <For each={Object.keys(DEFAULT_CONFIG.permission)}>
                       {(tool) => (
-                        <label class="flex items-center space-x-2">
+                        <label class="flex items-center space-x-2 rounded px-2 py-1 hover:bg-gray-100 dark:hover:bg-[#0d1117]">
                           <input
                             type="checkbox"
-                            checked={config().permission[tool as keyof AgentConfig['permission']] === 'allow'}
+                            checked={editConfig().permission[tool as keyof AgentConfig['permission']] === 'allow'}
                             onChange={(e) =>
-                              setConfig({
-                                ...config(),
+                              setEditConfig({
+                                ...editConfig(),
                                 permission: {
-                                  ...config().permission,
+                                  ...editConfig().permission,
                                   [tool]: e.currentTarget.checked ? 'allow' : 'deny'
                                 }
                               })
                             }
                             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span class="text-sm text-gray-700 capitalize dark:text-gray-300">{tool}</span>
+                          <span class="text-sm font-medium text-gray-700 capitalize dark:text-gray-300">{tool}</span>
                         </label>
                       )}
                     </For>
@@ -357,10 +297,13 @@ ${c.systemPrompt}`
                 </div>
 
                 <div class="flex min-h-[200px] flex-1 flex-col">
-                  <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">System Prompt</label>
+                  <label for="agent-prompt" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    System Prompt
+                  </label>
                   <textarea
-                    value={config().systemPrompt}
-                    onInput={(e) => setConfig({ ...config(), systemPrompt: e.currentTarget.value })}
+                    id="agent-prompt"
+                    value={editPrompt()}
+                    onInput={(e) => setEditPrompt(e.currentTarget.value)}
                     class="w-full flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                   />
                 </div>

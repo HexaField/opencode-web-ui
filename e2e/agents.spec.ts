@@ -58,6 +58,14 @@ test.describe('Agent Management', () => {
     // Fill form
     await page.getByLabel('Name').fill(agentName)
     await page.getByLabel('Description').fill(agentDesc)
+    await page.getByLabel('System Prompt').fill('You are a test agent')
+
+    // Toggle a skill (e.g., bash)
+    // My UI has capitalized labels for keys: "Bash"
+    const bashCheckbox = page.getByLabel('Bash', { exact: true }).or(page.getByLabel('bash', { exact: true }))
+    await expect(bashCheckbox).toBeChecked() // Default is allow
+    await bashCheckbox.uncheck()
+    await expect(bashCheckbox).not.toBeChecked()
 
     // Check model dropdown has options (fetched from backend)
     const modelSelect = page.getByLabel('Model')
@@ -83,6 +91,11 @@ test.describe('Agent Management', () => {
     // Edit agent
     await agentList.getByText(agentName).click()
     await expect(page.getByLabel('Description')).toHaveValue(agentDesc)
+
+    // Verify skill persistence
+    // Re-query the element to avoid stale reference or redeclaration issues
+    const bashCheckboxAfter = page.getByLabel('Bash', { exact: true }).or(page.getByLabel('bash', { exact: true }))
+    await expect(bashCheckboxAfter).not.toBeChecked()
 
     await page.getByLabel('Description').fill(updatedDesc)
     await page.getByRole('button', { name: 'Save Agent' }).click()
