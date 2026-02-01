@@ -8,7 +8,8 @@ export const CreateTaskSchema = z.object({
     description: z.string().optional(),
     parent_id: z.string().optional(),
     status: z.enum(['todo', 'in-progress', 'done']).optional(),
-    dependencies: z.array(z.string()).optional()
+    dependencies: z.array(z.string()).optional(),
+    kind: z.enum(['task', 'plan']).optional()
   })
 })
 
@@ -23,7 +24,8 @@ export const UpdateTaskSchema = z.object({
     status: z.enum(['todo', 'in-progress', 'done']).optional(),
     parent_id: z.string().optional(),
     position: z.number().optional(),
-    dependencies: z.array(z.string()).optional()
+    dependencies: z.array(z.string()).optional(),
+    kind: z.enum(['task', 'plan']).optional()
   })
 })
 

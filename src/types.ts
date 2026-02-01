@@ -40,4 +40,5 @@ export interface Task {
   updated_at: number
   tags: Tag[]
   dependencies: string[] // array of task IDs
+  kind?: 'task' | 'plan'
 }

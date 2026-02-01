@@ -31,6 +31,7 @@ describe('RadicleService', () => {
     await execAsync('git init', { cwd: folder })
     await execAsync('git config user.email "test@example.com"', { cwd: folder })
     await execAsync('git config user.name "Test User"', { cwd: folder })
+    await execAsync('git checkout -b main', { cwd: folder }).catch(() => {})
     await execAsync('git commit --allow-empty -m "Initial commit"', { cwd: folder })
 
     // Initialize radicle
@@ -96,6 +97,16 @@ describe('RadicleService', () => {
     const task = tasks.find((t) => t.id === taskId)
     expect(task?.position).toBe(2)
     expect(task?.parent_id).toBe('some-parent')
+  })
+
+  it('should handle special characters in description', async () => {
+    const specialDescription = 'Description with "quotes", $DOLLAR, and `backticks`'
+    await radicleService.updateTask(folder, taskId, { description: specialDescription })
+
+    // Force refresh or just check
+    const tasks = await radicleService.getTasks(folder)
+    const updatedTask = tasks.find((t) => t.id === taskId)
+    expect(updatedTask?.description).toBe(specialDescription)
   })
 
   it('should add and remove tags', async () => {

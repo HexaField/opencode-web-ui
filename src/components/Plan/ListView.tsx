@@ -1,14 +1,16 @@
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createEffect, createMemo, createSignal, For, Show } from 'solid-js'
 import { Task } from '../../types'
 import DependencyModal from './DependencyModal'
 import StartSessionModal from './StartSessionModal'
+import TaskDescription from './TaskDescription'
 
 interface Props {
   tasks: Task[]
-  onAddTask: (task: { title: string; status?: Task['status']; parent_id?: string }) => void | Promise<void>
+  onAddTask: (task: { title: string; status?: Task['status']; parent_id?: string }) => Promise<Task>
   onUpdateTask: (id: string, updates: Partial<Task>) => void | Promise<void>
   onDeleteTask: (id: string) => void | Promise<void>
   onStartSession?: (sessionTitle: string, agentId: string, prompt: string, taskId?: string) => Promise<void>
+  onOpenTask?: (id: string) => void
 }
 
 interface TaskNode extends Task {
@@ -23,25 +25,10 @@ export default function ListView(props: Props) {
   const [sessionModalTask, setSessionModalTask] = createSignal<Task | null>(null)
 
   const taskTree = createMemo(() => {
-    const map = new Map<string, TaskNode>()
-    const roots: TaskNode[] = []
-
-    // First pass: create nodes
-    props.tasks.forEach((task) => {
-      map.set(task.id, { ...task, children: [] })
-    })
-
-    // Second pass: link children
-    props.tasks.forEach((task) => {
-      const node = map.get(task.id)!
-      if (task.parent_id && map.has(task.parent_id)) {
-        map.get(task.parent_id)!.children.push(node)
-      } else {
-        roots.push(node)
-      }
-    })
-
-    return roots
+    // Return all tasks to show flat list, but kept mapping for typing consistency if needed
+    // The user requested "all issues should be shown in the list, rather than just the root ones"
+    // So we map everything to TaskNode structure but don't filter for roots.
+    return props.tasks.map((task) => ({ ...task, children: [] }))
   })
 
   const handleAddTask = (e: Event) => {
@@ -119,20 +106,20 @@ export default function ListView(props: Props) {
     const [editTitle, setEditTitle] = createSignal(itemProps.task.title)
     const [isAddingSubtask, setIsAddingSubtask] = createSignal(false)
     const [subtaskTitle, setSubtaskTitle] = createSignal('')
-    const [isExpanded, setIsExpanded] = createSignal(false)
-    const [description, setDescription] = createSignal(itemProps.task.description || '')
+    const [isExpanded, setIsExpanded] = createSignal(
+      localStorage.getItem(`task-expanded-${itemProps.task.id}`) === 'true'
+    )
+    const [isEditingDescription, setIsEditingDescription] = createSignal(false)
+
+    createEffect(() => {
+      localStorage.setItem(`task-expanded-${itemProps.task.id}`, String(isExpanded()))
+    })
 
     const handleSave = () => {
       if (editTitle().trim() !== itemProps.task.title) {
         void props.onUpdateTask(itemProps.task.id, { title: editTitle() })
       }
       setIsEditing(false)
-    }
-
-    const handleSaveDescription = () => {
-      if (description() !== (itemProps.task.description || '')) {
-        void props.onUpdateTask(itemProps.task.id, { description: description() })
-      }
     }
 
     const handleAddSubtask = (e: Event) => {
@@ -273,6 +260,18 @@ export default function ListView(props: Props) {
             </Show>
             <button
               class="text-gray-400 hover:text-blue-500"
+              title="Edit Description"
+              onClick={() => {
+                setIsExpanded(true)
+                setIsEditingDescription(true)
+              }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+              </svg>
+            </button>
+            <button
+              class="text-gray-400 hover:text-blue-500"
               title="Manage Dependencies"
               onClick={() => setDependencyModalTask(itemProps.task)}
             >
@@ -323,13 +322,20 @@ export default function ListView(props: Props) {
 
         <Show when={isExpanded()}>
           <div class="mr-2 mb-2 ml-8">
-            <textarea
-              class="w-full resize-y rounded-md border p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117]"
-              rows={3}
-              value={description()}
-              onInput={(e) => setDescription(e.currentTarget.value)}
-              onBlur={handleSaveDescription}
-              placeholder="Add a description..."
+            <TaskDescription
+              task={itemProps.task}
+              isEditing={isEditingDescription()}
+              onSaveEdit={() => setIsEditingDescription(false)}
+              onCancelEdit={() => setIsEditingDescription(false)}
+              onUpdateDescription={async (id, desc) => {
+                void props.onUpdateTask(id, { description: desc })
+              }}
+              onCreateIssueFromItem={async (title) => {
+                const task = await props.onAddTask({ title, status: 'todo', parent_id: itemProps.task.id })
+                if (!task) throw new Error('Failed to create task')
+                return task
+              }}
+              onOpenIssue={(id) => props.onOpenTask?.(id)}
             />
           </div>
         </Show>
@@ -356,10 +362,6 @@ export default function ListView(props: Props) {
             </button>
           </form>
         </Show>
-
-        <div class="ml-6 border-l border-gray-200 pl-2 dark:border-[#30363d]">
-          <For each={itemProps.task.children}>{(child) => <TaskItem task={child} level={itemProps.level + 1} />}</For>
-        </div>
       </div>
     )
   }

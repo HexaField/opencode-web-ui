@@ -28,14 +28,22 @@ export function registerTasksRoutes(app: express.Application) {
       return
     }
     try {
-      const { title, description, parent_id, status, dependencies } = req.body as {
+      const { title, description, parent_id, status, dependencies, kind } = req.body as {
         title: string
         description?: string
         parent_id?: string
         status?: 'todo' | 'in-progress' | 'done'
         dependencies?: string[]
+        kind?: 'task' | 'plan'
       }
-      const task = await radicleService.createTask(folder, { title, description, parent_id, status, dependencies })
+      const task = await radicleService.createTask(folder, {
+        title,
+        description,
+        parent_id,
+        status,
+        dependencies,
+        kind
+      })
       res.json(task)
     } catch (error) {
       console.error(error)
@@ -51,16 +59,25 @@ export function registerTasksRoutes(app: express.Application) {
     }
     try {
       const { id } = req.params as { id: string }
-      const { title, description, status, parent_id, position, dependencies } = req.body as {
+      const { title, description, status, parent_id, position, dependencies, kind } = req.body as {
         title?: string
         description?: string
         status?: 'todo' | 'in-progress' | 'done'
         parent_id?: string
         position?: number
         dependencies?: string[]
+        kind?: 'task' | 'plan'
       }
 
-      await radicleService.updateTask(folder, id, { title, description, status, parent_id, position, dependencies })
+      await radicleService.updateTask(folder, id, {
+        title,
+        description,
+        status,
+        parent_id,
+        position,
+        dependencies,
+        kind
+      })
       res.json({ success: true })
     } catch (error) {
       console.error(error)

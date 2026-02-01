@@ -13,6 +13,7 @@ export function createTasksStore(folder: string) {
     status?: Task['status']
     parent_id?: string
     dependencies?: string[]
+    kind?: 'task' | 'plan'
   }) => {
     const newTask = await createTask(folder, task)
     mutateTasks((prev) => (prev ? [newTask, ...prev] : [newTask]))

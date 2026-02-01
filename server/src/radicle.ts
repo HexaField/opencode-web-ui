@@ -1,4 +1,4 @@
-import { exec as _exec, ExecOptions } from 'child_process'
+import { exec as _exec, execFile as _execFile, ExecFileOptions, ExecOptions } from 'child_process'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { promisify } from 'util'
@@ -6,6 +6,12 @@ import { promisify } from 'util'
 const execPromise = promisify(_exec) as (
   command: string,
   options?: ExecOptions
+) => Promise<{ stdout: string; stderr: string }>
+
+const execFilePromise = promisify(_execFile) as (
+  file: string,
+  args: string[],
+  options?: ExecFileOptions
 ) => Promise<{ stdout: string; stderr: string }>
 
 interface ExecError extends Error {
@@ -30,6 +36,26 @@ async function exec(command: string, options?: ExecOptions): Promise<{ stdout: s
   }
 }
 
+async function execFile(
+  file: string,
+  args: string[],
+  options?: ExecFileOptions
+): Promise<{ stdout: string; stderr: string }> {
+  // Default timeout 10s
+  const opts = { timeout: 10000, ...options }
+  try {
+    return await execFilePromise(file, args, opts)
+  } catch (error) {
+    const execError = error as ExecError
+    const stderr = execError.stderr || ''
+    if (stderr.includes('Passphrase') || stderr.includes('ssh-agent')) {
+      // Allow retry if needed? But usually for execFile we pass args directly.
+      // Keeping similar error handling logic just in case.
+    }
+    throw error
+  }
+}
+
 export interface Task {
   id: string
   title: string
@@ -41,6 +67,7 @@ export interface Task {
   updated_at: number
   tags: Tag[]
   dependencies: string[]
+  kind?: 'task' | 'plan'
 }
 
 export interface Tag {
@@ -64,6 +91,7 @@ interface TaskMetadata {
   parent_id?: string | null
   position?: number
   dependencies?: string[]
+  kind?: 'task' | 'plan'
 }
 
 export class RadicleService {
@@ -95,7 +123,11 @@ export class RadicleService {
   async initRepo(folder: string): Promise<void> {
     const name = path.basename(folder)
     try {
-      await exec(`rad init --name "${name}" --description "Opencode repository" --public --no-confirm`, { cwd: folder })
+      await execFile(
+        'rad',
+        ['init', '--name', name, '--description', 'Opencode repository', '--public', '--no-confirm'],
+        { cwd: folder }
+      )
       // Clear cache
       delete this.ridCache[folder]
     } catch (e) {
@@ -136,7 +168,7 @@ export class RadicleService {
 
     // Fetch details for each (parallel)
     const tasks = await Promise.all(
-      oids.map(async (oid) => {
+      oids.map(async (oid): Promise<Task | null> => {
         try {
           const { stdout: jsonOut } = await exec(
             `rad cob show --repo ${rid} --type xyz.radicle.issue --object ${oid} --format json`,
@@ -177,7 +209,8 @@ export class RadicleService {
             created_at: createdAt,
             updated_at: createdAt, // Radicle doesn't easily give updated_at for the issue itself without parsing all edits
             tags,
-            dependencies: metadata.dependencies || []
+            dependencies: metadata.dependencies || [],
+            kind: metadata.kind || 'task'
           }
         } catch (e) {
           console.error(`Failed to fetch issue ${oid}`, e)
@@ -202,7 +235,8 @@ export class RadicleService {
         created_at: Date.now(),
         updated_at: Date.now(),
         tags: [],
-        dependencies: task.dependencies || []
+        dependencies: task.dependencies || [],
+        kind: task.kind || 'task'
       }
       tasks.push(newTask)
       await this.saveJsonTasks(folder, tasks)
@@ -211,19 +245,18 @@ export class RadicleService {
     const metadata: TaskMetadata = {
       parent_id: task.parent_id,
       position: task.position,
-      dependencies: task.dependencies
+      dependencies: task.dependencies,
+      kind: task.kind
     }
     const description = this.formatDescription(task.description || '', metadata)
 
-    // Escape quotes for shell
-    const safeTitle = (task.title || 'Untitled').replace(/"/g, '\\"')
-    const safeDesc = description.replace(/"/g, '\\"')
-
-    // Use --no-announce to be faster/quieter? Or maybe not.
-    // Using --quiet to avoid TUI output if possible, but rad issue open prints the table.
-    // We need to capture the ID.
-    const cmd = `rad issue open --title "${safeTitle}" --description "${safeDesc}" --no-announce`
-    const { stdout } = await exec(cmd, { cwd: folder })
+    // Use execFile to avoid shell escaping issues
+    // Use --flag=value syntax to prevent arguments starting with - from being interpreted as flags
+    const { stdout } = await execFile(
+      'rad',
+      ['issue', 'open', '--title', task.title || 'Untitled', `--description=${description}`, '--no-announce'],
+      { cwd: folder }
+    )
 
     // Parse ID from output
     // │ Issue   d7f5776ac448173ba0f3e0308f557e3d4ea6053b              │
@@ -251,7 +284,8 @@ export class RadicleService {
       created_at: Date.now(),
       updated_at: Date.now(),
       tags: [],
-      dependencies: task.dependencies || []
+      dependencies: task.dependencies || [],
+      kind: task.kind || 'task'
     }
   }
 
@@ -294,18 +328,17 @@ export class RadicleService {
       const newMetadata: TaskMetadata = {
         parent_id: updates.parent_id !== undefined ? updates.parent_id : metadata.parent_id,
         position: updates.position !== undefined ? updates.position : metadata.position,
-        dependencies: updates.dependencies !== undefined ? updates.dependencies : metadata.dependencies
+        dependencies: updates.dependencies !== undefined ? updates.dependencies : metadata.dependencies,
+        kind: updates.kind !== undefined ? updates.kind : metadata.kind
       }
 
       const finalDesc = this.formatDescription(newDesc, newMetadata)
-      const safeDesc = finalDesc.replace(/"/g, '\\"')
 
-      let cmd = `rad issue edit ${id} --description "${safeDesc}" --no-announce`
+      const args = ['issue', 'edit', id, `--description=${finalDesc}`, '--no-announce']
       if (updates.title) {
-        const safeTitle = updates.title.replace(/"/g, '\\"')
-        cmd += ` --title "${safeTitle}"`
+        args.push('--title', updates.title)
       }
-      await exec(cmd, { cwd: folder })
+      await execFile('rad', args, { cwd: folder })
     }
 
     if (updates.status) {
@@ -372,7 +405,7 @@ export class RadicleService {
       }
       return
     }
-    await exec(`rad issue label ${taskId} --add "${tagName}" --no-announce`, { cwd: folder })
+    await execFile('rad', ['issue', 'label', taskId, '--add', tagName, '--no-announce'], { cwd: folder })
   }
 
   async removeTag(folder: string, taskId: string, tagName: string): Promise<void> {
@@ -385,7 +418,7 @@ export class RadicleService {
       }
       return
     }
-    await exec(`rad issue label ${taskId} --delete "${tagName}" --no-announce`, { cwd: folder })
+    await execFile('rad', ['issue', 'label', taskId, '--delete', tagName, '--no-announce'], { cwd: folder })
   }
 
   // JSON Fallback methods

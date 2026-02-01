@@ -23,7 +23,8 @@ export default function DesktopWorkspace(props: Props) {
   const [currentSessionId, setCurrentSessionId] = createSignal<string | null>(params.get('session'))
 
   // Left sidebar state
-  const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan' | 'terminal' | 'search'>('files')
+  const initialView = (params.get('view') as 'files' | 'changes' | 'plan' | 'terminal' | 'search') || 'files'
+  const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan' | 'terminal' | 'search'>(initialView)
   const [isSidebarOpen, setIsSidebarOpen] = createSignal(true)
   const [sidebarWidth, setSidebarWidth] = createSignal(parseInt(localStorage.getItem('desktop-sidebar-width') || '260'))
   const [navigationTarget, setNavigationTarget] = createSignal<{
@@ -70,6 +71,13 @@ export default function DesktopWorkspace(props: Props) {
       url.searchParams.set('file', activeFile)
     } else {
       url.searchParams.delete('file')
+    }
+
+    const view = leftTab()
+    if (view !== 'files') {
+      url.searchParams.set('view', view)
+    } else {
+      url.searchParams.delete('view')
     }
 
     window.history.replaceState({}, '', url)
@@ -304,33 +312,37 @@ export default function DesktopWorkspace(props: Props) {
         style={{ width: isSidebarOpen() ? `${sidebarWidth()}px` : '0px' }}
       >
         {/* Sidebar Tabs */}
-        <div class="flex shrink-0 items-center gap-1 border-b border-gray-200 p-1 dark:border-[#30363d]">
+        <div
+          class="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-gray-200 p-1 dark:border-[#30363d] [&::-webkit-scrollbar]:hidden"
+          style={{ 'scrollbar-width': 'none' }}
+        >
           <button
-            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'files' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
+            class={`flex-1 rounded-sm px-2 py-1 text-sm ${leftTab() === 'files' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('files')}
           >
             Files
           </button>
           <button
-            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'search' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
+            class={`flex-1 rounded-sm px-2 py-1 text-sm ${leftTab() === 'search' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('search')}
           >
             Search
           </button>
           <button
-            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'changes' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
+            class={`flex-1 rounded-sm px-2 py-1 text-sm ${leftTab() === 'changes' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('changes')}
           >
             Changes
           </button>
           <button
-            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'plan' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
+            data-testid="sidebar-plan-btn"
+            class={`flex-1 rounded-sm px-2 py-1 text-sm ${leftTab() === 'plan' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('plan')}
           >
             Plan
           </button>
           <button
-            class={`flex-1 rounded-sm px-3 py-1 text-sm ${leftTab() === 'terminal' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
+            class={`flex-1 rounded-sm px-2 py-1 text-sm ${leftTab() === 'terminal' ? "bg-white font-medium shadow-sm dark:bg-[#161b22]" : "text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"}`}
             onClick={() => setLeftTab('terminal')}
           >
             Terminal
