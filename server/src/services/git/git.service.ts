@@ -8,11 +8,42 @@ import {
   runGitCommand
 } from '../../git'
 import { validate } from '../../middleware'
+import { radicleService } from '../../radicle'
 import { FolderQuerySchema } from '../common/common.schema'
 import { ConnectSchema } from '../misc/misc.schema'
 import { GitBranchSchema, GitCheckoutSchema, GitCommitSchema, GitPushPullSchema, GitStageSchema } from './git.schema'
 
 export function registerGitRoutes(app: express.Application) {
+  app.get('/api/git/radicle/status', validate(FolderQuerySchema), async (req, res) => {
+    const folder = req.query.folder as string
+    if (!folder) {
+      res.status(400).json({ error: 'Folder required' })
+      return
+    }
+    try {
+      const isRepo = await radicleService.isRepo(folder)
+      res.json({ isRepo })
+    } catch (err) {
+      console.error('Failed to check radicle status:', err)
+      res.status(500).json({ error: String(err) })
+    }
+  })
+
+  app.post('/api/git/radicle/init', async (req, res) => {
+    const folder = req.body.folder as string
+    if (!folder) {
+      res.status(400).json({ error: 'Folder required' })
+      return
+    }
+    try {
+      await radicleService.initRepo(folder)
+      res.json({ success: true })
+    } catch (err) {
+      console.error('Failed to init radicle repo:', err)
+      res.status(500).json({ error: String(err) })
+    }
+  })
+
   app.get('/api/git/repos', validate(FolderQuerySchema), async (req, res) => {
     const folder = req.query.folder as string
     if (!folder) {

@@ -197,3 +197,19 @@ export async function findRepos(folder: string): Promise<string[]> {
   if (!res.ok) throw new Error('Failed to find repos')
   return res.json() as Promise<string[]>
 }
+
+export async function checkRadicleStatus(folder: string): Promise<{ isRepo: boolean }> {
+  const res = await fetch(`${API_BASE}/git/radicle/status?folder=${encodeURIComponent(folder)}`)
+  if (!res.ok) throw new Error('Failed to check radicle status')
+  return res.json()
+}
+
+export async function initRadicleRepo(folder: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/git/radicle/init`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folder })
+  })
+  if (!res.ok) throw new Error('Failed to init radicle repo')
+  await res.json()
+}

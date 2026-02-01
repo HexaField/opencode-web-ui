@@ -1,11 +1,13 @@
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import { getFileDiff } from '../api/files'
 import {
+  checkRadicleStatus,
   commit,
   generateCommitMessage,
   getAheadBehind,
   getCurrentBranch,
   getGitStatus,
+  initRadicleRepo,
   push,
   stageFiles,
   unstageFiles
@@ -29,6 +31,8 @@ export default function RepoControl(props: Props) {
   const [commitError, setCommitError] = createSignal('')
   const [isGenerating, setIsGenerating] = createSignal(false)
   const [aheadBehind, setAheadBehind] = createSignal<{ ahead: number; behind: number }>({ ahead: 0, behind: 0 })
+  const [isRadicleRepo, setIsRadicleRepo] = createSignal<boolean | null>(null)
+  const [isInitializingRadicle, setIsInitializingRadicle] = createSignal(false)
 
   const [expanded, setExpanded] = createSignal<Record<string, boolean>>({})
   const [diffs, setDiffs] = createSignal<Record<string, string | null>>({})
@@ -71,6 +75,28 @@ export default function RepoControl(props: Props) {
     }
   }
 
+  const fetchRadicleStatus = async () => {
+    try {
+      const { isRepo } = await checkRadicleStatus(props.repoPath)
+      setIsRadicleRepo(isRepo)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleInitRadicle = async () => {
+    if (!confirm('Initialize Radicle repository here?')) return
+    setIsInitializingRadicle(true)
+    try {
+      await initRadicleRepo(props.repoPath)
+      await fetchRadicleStatus()
+    } catch (e) {
+      alert('Failed to init radicle repo: ' + String(e))
+    } finally {
+      setIsInitializingRadicle(false)
+    }
+  }
+
   // Periodic refresh for pull count (behind). Run every minute.
   let intervalId: number | undefined
   // Handler for global git updates dispatched by api/git
@@ -79,12 +105,14 @@ export default function RepoControl(props: Props) {
     void fetchStatus()
     void fetchBranches()
     void fetchAheadBehind()
+    void fetchRadicleStatus()
   }
 
   onMount(() => {
     void fetchStatus()
     void fetchBranches()
     void fetchAheadBehind()
+    void fetchRadicleStatus()
 
     intervalId = window.setInterval(() => {
       void fetchAheadBehind()
@@ -195,7 +223,7 @@ export default function RepoControl(props: Props) {
   const unstagedFiles = () => gitFiles().filter((f) => f.x === ' ' || f.x === '?' || (f.x !== ' ' && f.y !== ' '))
 
   return (
-    <div class="flex h-full flex-col space-y-4 border-b border-gray-200 last:border-b-0 dark:border-[#30363d]">
+    <div class="flex h-fit flex-col space-y-4 border-b border-gray-200 last:border-b-0 dark:border-[#30363d]">
       <div class="flex items-center justify-between bg-[#f6f8fa] p-2 text-xs font-bold tracking-wider text-gray-700 uppercase dark:bg-[#161b22] dark:text-gray-400">
         <span>{repoName()}</span>
         <div class="flex items-center space-x-2">
@@ -204,6 +232,16 @@ export default function RepoControl(props: Props) {
             {aheadBehind().behind > 0 && <span class="text-red-500 dark:text-red-400">↓{aheadBehind().behind}</span>}
             {aheadBehind().ahead > 0 && <span class="text-green-500 dark:text-green-400">↑{aheadBehind().ahead}</span>}
           </div>
+          <Show when={isRadicleRepo() === false}>
+            <button
+              onClick={() => void handleInitRadicle()}
+              class="rounded bg-[#ff5555] px-2 py-0.5 text-xs text-white hover:bg-[#ff3333] disabled:opacity-50"
+              title="Initialize Radicle Repository"
+              disabled={isInitializingRadicle()}
+            >
+              {isInitializingRadicle() ? '...' : 'Init Radicle'}
+            </button>
+          </Show>
           <button
             onClick={() => void handlePush()}
             class="rounded p-1 text-gray-600 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-[#21262d]"
