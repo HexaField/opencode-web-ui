@@ -26,7 +26,6 @@ export function createTasksStore(folder: string) {
 
   const updateTaskDetails = async (id: string, updates: Partial<Task>) => {
     // Filter out fields that cannot be updated
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id: _, created_at: __, updated_at: ___, tags: ____, ...rest } = updates
     const validUpdates: UpdateTaskRequest['body'] = {
       ...rest,

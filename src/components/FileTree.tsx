@@ -35,7 +35,6 @@ export default function FileTree(props: Props) {
 
   createEffect(() => {
     // Depend on lastUpdated to trigger refresh
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     props.lastUpdated
     void fetchEntries(props.rootPath).then(setEntries)
     void fetchGitStatus()

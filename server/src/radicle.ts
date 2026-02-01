@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { exec as _exec, ExecOptions } from 'child_process'
 import * as fs from 'fs/promises'
 import * as path from 'path'

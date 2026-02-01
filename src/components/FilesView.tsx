@@ -75,7 +75,7 @@ export default function FilesView(props: Props) {
   // Load file content
   createEffect(() => {
     const file = props.selectedFile
-    const _ = lastUpdated()
+    lastUpdated()
     const ed = editor()
     if (file && ed) {
       readFSFile(file)

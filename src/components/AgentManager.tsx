@@ -62,7 +62,6 @@ export default function AgentManager(props: Props) {
     try {
       // API expects body directly if it matches CreateAgentRequest['body']
       // We modified the schema to accept config and prompt
-      // @ts-expect-error - The api wrapper might need a type update or we trust the any match
       await createAgent(props.folder, body)
       await fetchAgents()
       setIsEditing(false)

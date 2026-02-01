@@ -57,7 +57,6 @@ export function setupTerminalService(server: Server | HttpsServer) {
 
     // Read from WS and write to PTY
     ws.on('message', (message) => {
-      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       const msg = Buffer.isBuffer(message) ? message.toString() : String(message)
       if (msg.startsWith('__resize__:')) {
         try {

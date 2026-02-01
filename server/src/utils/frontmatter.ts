@@ -55,7 +55,6 @@ export function parseAgent(content: string): { config: AgentConfig; prompt: stri
     const value = parts.slice(1).join(':').trim()
 
     if (currentSection === 'permission') {
-      // @ts-expect-error - dynamic assignment
       if (key in config.permission) {
         // @ts-expect-error - dynamic assignment
         config.permission[key] = value

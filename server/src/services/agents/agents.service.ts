@@ -50,7 +50,7 @@ export function registerAgentsRoutes(app: express.Application, manager: Opencode
   app.delete('/api/agents/:name', validate(DeleteAgentSchema), withFolder(manager), async (req, res) => {
     try {
       const folder = (req as AuthenticatedRequest).targetFolder!
-      const { name } = req.params
+      const { name } = req.params as { name: string }
       await manager.deleteAgent(folder, name)
       res.json({ success: true })
     } catch (error) {

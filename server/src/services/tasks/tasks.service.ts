@@ -50,7 +50,7 @@ export function registerTasksRoutes(app: express.Application) {
       return
     }
     try {
-      const { id } = req.params
+      const { id } = req.params as { id: string }
       const { title, description, status, parent_id, position, dependencies } = req.body as {
         title?: string
         description?: string
@@ -75,7 +75,7 @@ export function registerTasksRoutes(app: express.Application) {
       return
     }
     try {
-      const { id } = req.params
+      const { id } = req.params as { id: string }
       await radicleService.deleteTask(folder, id)
       res.json({ success: true })
     } catch (error) {
@@ -123,7 +123,7 @@ export function registerTasksRoutes(app: express.Application) {
       return
     }
     try {
-      const { id } = req.params
+      const { id } = req.params as { id: string }
       const { tag_id } = req.body as { tag_id: string }
       await radicleService.addTag(folder, id, tag_id)
       res.json({ success: true })
@@ -140,7 +140,7 @@ export function registerTasksRoutes(app: express.Application) {
       return
     }
     try {
-      const { id, tagId } = req.params
+      const { id, tagId } = req.params as { id: string; tagId: string }
       await radicleService.removeTag(folder, id, tagId)
       res.json({ success: true })
     } catch (error) {
