@@ -25,7 +25,7 @@ export default function DesktopWorkspace(props: Props) {
   // Left sidebar state
   const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan' | 'terminal' | 'search'>('files')
   const [isSidebarOpen, setIsSidebarOpen] = createSignal(true)
-  const [sidebarWidth, setSidebarWidth] = createSignal(260)
+  const [sidebarWidth, setSidebarWidth] = createSignal(parseInt(localStorage.getItem('desktop-sidebar-width') || '260'))
   const [navigationTarget, setNavigationTarget] = createSignal<{
     path: string
     line: number
@@ -33,7 +33,7 @@ export default function DesktopWorkspace(props: Props) {
   } | null>(null)
 
   // Chat/Right sidebar state
-  const [chatWidth, setChatWidth] = createSignal(350)
+  const [chatWidth, setChatWidth] = createSignal(parseInt(localStorage.getItem('desktop-chat-width') || '350'))
   const [isChatOpen, setIsChatOpen] = createSignal(true)
 
   // Editor state
@@ -178,6 +178,7 @@ export default function DesktopWorkspace(props: Props) {
     const onUp = () => {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
+      localStorage.setItem('desktop-sidebar-width', sidebarWidth().toString())
     }
 
     window.addEventListener('mousemove', onMove)
@@ -196,6 +197,7 @@ export default function DesktopWorkspace(props: Props) {
     const onUp = () => {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
+      localStorage.setItem('desktop-chat-width', chatWidth().toString())
     }
 
     window.addEventListener('mousemove', onMove)
