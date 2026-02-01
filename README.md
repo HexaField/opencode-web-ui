@@ -41,6 +41,16 @@ pnpm dev
 - Client: http://localhost:5173
 - Server: http://localhost:3001
 
+### Production Build
+
+To build and start the production server:
+
+```bash
+pnpm start
+```
+
+- Application: http://localhost:3002
+
 ### Running Tests
 
 - E2E Tests: `pnpm test:e2e`
