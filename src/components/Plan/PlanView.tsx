@@ -1,4 +1,4 @@
-import { createEffect, createSignal, Show } from 'solid-js'
+import { createSignal, Show } from 'solid-js'
 import DAGView from './DAGView'
 import KanbanView from './KanbanView'
 import ListView from './ListView'
@@ -10,17 +10,12 @@ interface Props {
 }
 
 export default function PlanView(props: Props) {
-  console.log('Rendering PlanView')
   const params = new URLSearchParams(window.location.search)
   const folder = params.get('folder') || ''
 
   const { tasks, tags, addTask, updateTaskStatus, updateTaskDetails, removeTask, addTag } = createTasksStore(folder)
   const [subView, setSubView] = createSignal<'list' | 'kanban' | 'dag'>('list')
   const [isTagsModalOpen, setIsTagsModalOpen] = createSignal(false)
-
-  createEffect(() => {
-    console.log('PlanView effect: subView=', subView(), 'tasks.loading=', tasks.loading, 'tasks()=', tasks())
-  })
 
   return (
     <div id="plan-view-container" class="flex h-full w-full flex-col bg-white dark:bg-[#0d1117]">
