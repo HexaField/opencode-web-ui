@@ -44,7 +44,8 @@ export const WorkflowRoleSchema = z.object({
 })
 
 export const WorkflowFlowSchema = z.object({
-  bootstrap: WorkflowStepSchema.optional(),
+  bootstrap: z.union([WorkflowStepSchema, z.array(WorkflowStepSchema)]).optional(),
+  final: z.union([WorkflowStepSchema, z.array(WorkflowStepSchema)]).optional(),
   round: z.object({
     maxRounds: z.number().default(10),
     steps: z.array(WorkflowStepSchema),

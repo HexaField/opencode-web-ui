@@ -32,7 +32,7 @@ export class BackgroundPromptExecutor implements PromptExecutor {
     // Check history to determine if we need to send prompt or just wait
     let knownLastId = ''
     try {
-      const allMsgsRes = await this.client.session.messages({ path: { id: this.sessionId }, query: { limit: 10 } })
+      const allMsgsRes = await this.client.session.messages({ path: { id: this.sessionId }, query: { limit: 100 } })
       const allMsgs = (unwrap(allMsgsRes) as any[]) || []
       const sorted = allMsgs.sort((a, b) => (a.info?.time?.created || 0) - (b.info?.time?.created || 0))
 
@@ -98,109 +98,65 @@ export class BackgroundPromptExecutor implements PromptExecutor {
     }
 
     // 4. Poll for completion
-    let attempts = 0
-    let hasBusied = false
-    
-    // We can rely on message ID to detect new response
-    const checkForNewMessage = async () => {
+    // We wait for the status to transition to 'busy' (optional) and then back to 'idle'.
+    // Or if we see a new message, we are done.
+
+    let pollingLoop = true
+    let hasSeenBusy = false
+    const startTime = Date.now()
+
+    while (pollingLoop) {
+      if (Date.now() - startTime > 300000) throw new Error('Timeout waiting for LLM (5m)') // Safety timeout
+
+      await new Promise((r) => setTimeout(r, 500))
+
+      // 1. Check for new message (Fast Path)
       try {
-        const query: any = { limit: 5 }
+        const query: any = { limit: 100 }
         const allMsgsRes = await this.client.session.messages({ path: { id: this.sessionId }, query })
         const allMsgs = unwrap(allMsgsRes) as any[]
         const sorted = allMsgs.sort((a, b) => (b.info?.time?.created || 0) - (a.info?.time?.created || 0))
-        
         const latest = sorted[0]
-        if (!latest) return null
-        
-        // If the latest message is an assistant message and it is NOT the one we started with
-        const latestId = latest.info?.id || latest.id
-        if (latestId !== knownLastId && (latest.info?.role === 'assistant' || latest.info?.author?.role === 'assistant')) {
-          return latest
+
+        if (latest) {
+          const latestId = latest.info?.id || latest.id
+          const role = latest.info?.role || latest.info?.author?.role
+
+          if (latestId !== knownLastId && role === 'assistant') {
+            // Found new response!
+            return latest.parts
+              .filter((p: any) => p.type === 'text')
+              .map((p: any) => p.text)
+              .join('\n')
+          }
         }
-      } catch (e) {
-        console.warn('Check message error:', e)
-      }
-      return null
-    }
-
-    while (true) {
-      if (attempts > 300) throw new Error('Timeout waiting for LLM') // 5 minutes max
-      await new Promise((r) => setTimeout(r, 1000))
-
-      // Optimization: Check for message existence directly
-      const newMsg = await checkForNewMessage()
-      if (newMsg) {
-        return newMsg.parts
-          .filter((p: any) => p.type === 'text')
-          .map((p: any) => p.text)
-          .join('\n')
+      } catch (err) {
+        console.warn('Error checking messages:', err)
       }
 
-      const statusRes = await this.client.session.status({ path: { id: this.sessionId } })
-      if (statusRes.error) throw statusRes.error
+      // 2. Check Status
+      try {
+        const statusRes = await this.client.session.status({ path: { id: this.sessionId } })
+        if (statusRes.error) continue // Retry
 
-      const status = unwrap(statusRes) as Record<string, { type: string }>
-      const myStatus = status[this.sessionId]
+        const statusMap = unwrap(statusRes) as Record<string, { type: string }>
+        const myStatus = statusMap[this.sessionId]
+        const type = myStatus?.type || 'idle'
 
-      if (myStatus?.type === 'busy') hasBusied = true
-
-      if (!myStatus || myStatus.type !== 'busy') {
-        // If we haven't seen busy yet, we might be too fast?
-        // Or if status is missing, we assume done?
-        if (hasBusied || attempts > 2) {
-          break
+        if (type === 'busy') {
+          hasSeenBusy = true
+        } else if (type === 'idle' && hasSeenBusy) {
+          // It WAS busy, now it is idle.
+          // The message SHOULD be there in the next iteration of the loop (or via consistency check below).
+          // We loop one more time to fetch the message via the "Fast Path" above.
+          // If the message is not found yet, we continue loop until it appears.
+          // But technically, if it's idle, we expect it to be done.
         }
+      } catch (err) {
+        console.warn('Error checking status:', err)
       }
-      attempts++
     }
-
-    // 5. Fetch last message with consistency retries
-    let consistencyAttempts = 0
-    while (consistencyAttempts < 15) {
-      const allMsgsRes = await this.client.session.messages({ path: { id: this.sessionId }, query: { limit: 10 } })
-      const allMsgs = unwrap(allMsgsRes) as any[]
-
-      const lastMsg = allMsgs.sort((a, b) => {
-        const timeA = a.info?.time?.created || 0
-        const timeB = b.info?.time?.created || 0
-        return timeB - timeA
-      })[0]
-
-      // Validate we got a response
-      if (!lastMsg) {
-        // If no messages at all, wait and retry?
-        await new Promise((r) => setTimeout(r, 1000))
-        consistencyAttempts++
-        continue
-      }
-
-      // Ensure we didn't just pick up the old message from before we sent the prompt
-      const lastId = lastMsg.info?.id || lastMsg.id
-      if (lastId === knownLastId) {
-        // We found the SAME message ID as before we started.
-        console.log(`[WorkflowExecutor] Stale ID ($ {lastId}). Waiting for index... (${consistencyAttempts + 1}/15)`)
-        await new Promise((r) => setTimeout(r, 2000))
-        consistencyAttempts++
-        continue
-      }
-
-      const role = lastMsg.info?.author?.role || lastMsg.info?.role
-      if (role === 'user') {
-        // Last message is user? Agent hasn't replied yet.
-        console.log(`[WorkflowExecutor] Last message is USER. Waiting for reply... (${consistencyAttempts + 1}/15)`)
-        await new Promise((r) => setTimeout(r, 2000))
-        consistencyAttempts++
-        continue
-      }
-
-      // Success!
-      return lastMsg.parts
-        .filter((p: any) => p.type === 'text')
-        .map((p: any) => p.text)
-        .join('\n')
-    }
-
-    throw new Error(`Agent did not produce a new message after ${consistencyAttempts} retries. (Stale ID)`)
+    throw new Error('Unreachable')
   }
 }
 
@@ -220,6 +176,7 @@ interface TemplateScope {
   maxRounds: number
   bootstrap?: any
   current?: any
+  final?: any
   currentStepKey?: string
   roundsLog?: any[]
 }
@@ -272,21 +229,36 @@ export class WorkflowEngine {
 
     // BOOTSTRAP
     let bootstrapResult = scope.bootstrap
-    if (workflow.flow.bootstrap && !bootstrapResult) {
-      const stepMsgPromise = this.executeStep(workflow.flow.bootstrap, scope, workflow)
-      bootstrapResult = await stepMsgPromise
+    if (workflow.flow.bootstrap && !scope.state._bootstrapComplete) {
+      // Support array of steps for bootstrap
+      const bootstrapSteps = Array.isArray(workflow.flow.bootstrap)
+        ? workflow.flow.bootstrap
+        : [workflow.flow.bootstrap]
 
-      // Update scope with bootstrap result (globally available)
-      scope.bootstrap = bootstrapResult
-      scope.current = bootstrapResult // Consistent access for state updates
+      const results = {}
 
-      // Apply state updates
-      if (workflow.flow.bootstrap.stateUpdates) {
-        this.applyStateUpdates(workflow.flow.bootstrap.stateUpdates, scope)
+      for (const step of bootstrapSteps) {
+        // Check if this step was already done?
+        // For simplicity, we assume if _bootstrapComplete is false, we run all (? or rely on persistence?)
+        // Ideally we track progress within bootstrap. But user just wants "split into 3".
+        // Let's just run them sequence.
+
+        const result = await this.executeStep(step, scope, workflow)
+        Object.assign(results, { [step.key]: result })
+        scope.current = result
+
+        if (step.stateUpdates) {
+          this.applyStateUpdates(step.stateUpdates, scope)
+        }
       }
+
+      bootstrapResult = results
+      scope.bootstrap = bootstrapResult
+      scope.state._bootstrapComplete = 'true'
+
       await persist()
-    } else if (bootstrapResult) {
-      scope.current = bootstrapResult
+    } else if (scope.bootstrap) {
+      scope.current = scope.bootstrap // Restoration might be tricky if it's an map now.
     }
 
     // ROUNDS
@@ -401,6 +373,30 @@ export class WorkflowEngine {
 
     if (!finalOutcome) {
       finalOutcome = workflow.flow.round.defaultOutcome
+    }
+
+    // console.log('[WorkflowEngine] Final Outcome:', finalOutcome)
+
+    // FINAL
+    if (workflow.flow.final && !scope.state._finalComplete && finalOutcome.outcome === 'done') {
+      console.log('[WorkflowEngine] Executing Final Phase')
+      const finalSteps = Array.isArray(workflow.flow.final) ? workflow.flow.final : [workflow.flow.final]
+
+      const finalResults = {}
+
+      for (const step of finalSteps) {
+        const result = await this.executeStep(step, scope, workflow)
+        Object.assign(finalResults, { [step.key]: result })
+        scope.current = result
+
+        if (step.stateUpdates) {
+          this.applyStateUpdates(step.stateUpdates, scope)
+        }
+      }
+
+      scope.final = finalResults
+      scope.state._finalComplete = 'true'
+      await persist()
     }
 
     // Resolve final reason template

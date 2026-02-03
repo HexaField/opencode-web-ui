@@ -196,7 +196,7 @@ permission:
   "description": "A detailed workflow that goes from Architecture (PRD/ADR) -> Planning -> Phased Implementation -> Final Review.",
   "roles": {
     "architect": {
-      "systemPrompt": "You are a Chief Software Architect. Your job is to analyze requests, gather context, and produce detailed technical documents (PRD, ADR) and a Phased Implementation Plan.\\n\\nYou MUST return a valid JSON object. Do not include markdown formatting or code blocks. Just the raw JSON string.\\n\\nOutput Format (JSON):\\n{\\n  \\"prd\\": \\"Product Requirements Document content...\\",\\n  \\"adr\\": \\"Architecture Decision Record content...\\",\\n  \\"phases\\": [ { \\"title\\": \\"Phase 1\\", \\"description\\": \\"Detailed steps...\\" } ]\\n}",
+      "systemPrompt": "You are a Chief Software Architect. Your job is to analyze requests, gather context, and produce detailed technical documents (PRD, ADR) and a Phased Implementation Plan.\\n\\nYou MUST return a valid JSON object. Do not include markdown formatting or code blocks. Just the raw JSON string.",
       "model": "gpt-4"
     },
     "tech-lead": {
@@ -208,7 +208,11 @@ permission:
       "model": "gpt-4"
     },
     "verifier": {
-      "systemPrompt": "You are the QA Lead. Review the work against the phase requirements.\\n\\nOutput Format (JSON):\\n{\\n  \\"verdict\\": \\"approve\\" | \\"instruct\\",\\n  \\"critique\\": \\"Feedback...\\",\\n  \\"instructions\\": \\"Fixes required...\\"\\n}",
+      "systemPrompt": "You are the QA Lead. Review the work against the phase requirements.\\n\\nIMPORTANT: You MUST explicitly verify that the worker has run necessary checks like:\\n- 'pnpm format' (or equivalent)\\n- 'pnpm lint'\\n- 'pnpm check' (type checking)\\n- 'pnpm test' (if applicable)\\n\\nIf the worker has NOT provided evidence of these checks passing, REJECT the work (verdict: instruct) and tell them to run them.\\n\\nOutput Format (JSON):\\n{\\n  \\"verdict\\": \\"approve\\" | \\"instruct\\",\\n  \\"critique\\": \\"Feedback...\\",\\n  \\"instructions\\": \\"Fixes required...\\"\\n}",
+      "model": "gpt-4"
+    },
+    "reviewer": {
+      "systemPrompt": "You are the Project Maintainer. You perform a final review of the entire implementation sequence.\\nCompare the final codebase state against the original PRD and ADR.\\n\\nOutput Format (JSON):\\n{\\n  \\"completeness\\": \\"analysis...\\",\\n  \\"compliance\\": \\"analysis...\\",\\n  \\"signoff\\": boolean\\n}",
       "model": "gpt-4"
     }
   },
@@ -219,16 +223,35 @@ permission:
     }
   },
   "flow": {
-    "bootstrap": {
-      "key": "architect-plan",
-      "role": "architect",
-      "agent": "plan",
-      "prompt": "User Request: {{user.task}}\\n\\nAnalyze the context and produce a PRD, ADR, and Implementation Phases.",
-      "stateUpdates": {
-        "phases": "{{current.parsed.phases}}"
+    "bootstrap": [
+      {
+        "key": "prd",
+        "role": "architect",
+        "agent": "plan",
+        "prompt": "User Request: {{user.task}}\\n\\nAnalyze the context and produce a PRD (Product Requirements Document).\\n\\nOutput Format (JSON):\\n{\\n  \\"prd\\": \\"Detailed content...\\"\\n}",
+        "stateUpdates": {
+          "prd": "{{current.parsed.prd}}"
+        }
       },
-      "next": "manager"
-    },
+      {
+        "key": "adr",
+        "role": "architect",
+        "agent": "plan",
+        "prompt": "PRD: {{state.prd}}\\n\\nProduce an ADR (Architecture Decision Record) based on the PRD.\\n\\nOutput Format (JSON):\\n{\\n  \\"adr\\": \\"Detailed content...\\"\\n}",
+        "stateUpdates": {
+          "adr": "{{current.parsed.adr}}"
+        }
+      },
+      {
+        "key": "plan",
+        "role": "architect",
+        "agent": "plan",
+        "prompt": "PRD: {{state.prd}}\\nADR: {{state.adr}}\\n\\nProduce a Phased Implementation Plan.\\n\\nOutput Format (JSON):\\n{\\n  \\"phases\\": [ { \\"title\\": \\"Phase 1\\", \\"description\\": \\"Detailed steps...\\" } ]\\n}",
+        "stateUpdates": {
+          "phases": "{{current.parsed.phases}}"
+        }
+      }
+    ],
     "round": {
       "maxRounds": 25,
       "steps": [
@@ -236,7 +259,7 @@ permission:
           "key": "manager",
           "role": "tech-lead",
           "agent": "plan",
-          "prompt": "Plan: {{bootstrap.parsed.phases}}\\n\\nCurrent Phase Index: {{state.phaseIndex}}\\nLast Verifier Outcome: {{state.lastVerifierOutcome}}\\n\\nDetermine next step.",
+          "prompt": "Plan: {{bootstrap.plan.parsed.phases}}\\n\\nCurrent Phase Index: {{state.phaseIndex}}\\nLast Verifier Outcome: {{state.lastVerifierOutcome}}\\n\\nDetermine next step.",
           "stateUpdates": {
             "phaseIndex": "{{current.parsed.phaseIndex}}"
           }
@@ -258,7 +281,7 @@ permission:
           "key": "verifier",
           "role": "verifier",
           "agent": "verifier",
-          "prompt": "Review the work for Phase: {{steps.manager.parsed.phaseTitle}}.\\nWorker Output: {{steps.worker.raw}}",
+          "prompt": "Review the work for Phase: {{steps.manager.parsed.phaseTitle}}.\\n\\nInstructions given to worker:\\n{{steps.manager.parsed.instructions}}\\n\\nWorker Output: {{steps.worker.raw}}",
           "stateUpdates": {
             "lastVerifierOutcome": "{{current.raw}}"
           }
@@ -267,6 +290,15 @@ permission:
       "defaultOutcome": {
         "outcome": "failed",
         "reason": "Max rounds reached without completion"
+      }
+    },
+    "final": {
+      "key": "final-review",
+      "role": "reviewer",
+      "agent": "plan",
+      "prompt": "Original Request: {{user.task}}\\nPRD: {{state.prd}}\\nADR: {{state.adr}}\\n\\nReview the implementation for completeness and compliance.",
+      "stateUpdates": {
+        "finalSignoff": "{{current.parsed.signoff}}"
       }
     }
   }
@@ -350,14 +382,10 @@ export class OpencodeManager {
     try {
       await fs.mkdir(agentsDir, { recursive: true })
 
-      // Seed default agents
+      // Seed default agents (Overwrite to ensure updates apply)
       for (const agent of DEFAULT_AGENTS) {
         const agentPath = path.join(agentsDir, `${agent.name}.md`)
-        try {
-          await fs.access(agentPath)
-        } catch {
-          await fs.writeFile(agentPath, agent.content)
-        }
+        await fs.writeFile(agentPath, agent.content)
       }
 
       const files = await fs.readdir(agentsDir)
