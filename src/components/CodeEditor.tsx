@@ -43,7 +43,7 @@ export default function CodeEditor(props: Props) {
   const [editor, setEditor] = createSignal<monaco.editor.IStandaloneCodeEditor | undefined>(undefined)
   const [isDirty, setIsDirty] = createSignal(false)
   const [isLoaded, setIsLoaded] = createSignal(false)
-  let editorContainer: HTMLDivElement | undefined
+  let editorContainer: HTMLDivElement | undefined = undefined
   const { isDark } = useTheme()
 
   // Update theme

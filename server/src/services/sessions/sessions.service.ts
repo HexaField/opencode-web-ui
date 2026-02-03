@@ -11,9 +11,11 @@ import {
 } from '@opencode-ai/sdk'
 import express from 'express'
 import * as fs from 'fs/promises'
+import * as path from 'path'
 import { AuthenticatedRequest, validate, withClient } from '../../middleware'
 import { OpencodeManager, type OpencodeClient } from '../../opencode'
 import { unwrap } from '../../utils'
+import { WorkflowEngine, BackgroundPromptExecutor } from '../agents/engine'
 import { parseAgent } from '../../utils/frontmatter.js'
 import { FolderQuerySchema } from '../common/common.schema'
 import {
@@ -372,15 +374,129 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
 
       const [providerID, modelID] = model.split('/')
 
-      const agent = (requestBody.agent || metadata.agent || undefined) as string | undefined
+      const agentName = (requestBody.agent || metadata.agent || undefined) as string | undefined
 
+      // Check if Agent is a Workflow
+      let isWorkflow = false
+      let workflowDef: any = null
+      let agentContent = agentName
+
+      if (agentName) {
+        // Try to load agent definition to check mode
+        // This is inefficient to do every prompt, but safe.
+        const agents = await manager.listAgents(folder)
+        const found = agents.find((a) => a.name === agentName)
+        if (found) {
+          const { config, prompt } = parseAgent(found.content)
+          // WE can't use mode='workflow' because SDK rejects it.
+          // Check if prompt is valid JSON with "steps"
+          if (config && config.mode === 'primary') {
+            try {
+              const parsed = JSON.parse(prompt)
+              if (parsed.flow && parsed.flow.round) {
+                isWorkflow = true
+                workflowDef = parsed
+              } else if (parsed.steps && Array.isArray(parsed.steps)) {
+                // Legacy schema - ignore or try to migrate?
+                // For now, assume we updated all agents.
+                // But we can check if we want to support legacy.
+                // console.warn('Legacy workflow schema not supported in this version')
+              }
+            } catch {
+              // Not JSON, normal agent
+            }
+          }
+          // We also need the content (for custom agents)
+          agentContent = found.content
+        }
+      }
+
+      if (isWorkflow && workflowDef) {
+        console.log(`[Workflow Execution] Starting workflow: ${workflowDef.name}`)
+        // Workflow Execution Path
+
+        // 1. Acknowledge user input by sending a dummy response or system message?
+        // We can't easily fake a response from the SDK.
+        // We will instruct the LLM to just acknowledge.
+        const workflowName = workflowDef.name || agentName || 'Workflow'
+        const orchestratorInstruction = `[SYSTEM]: You are acting as the Workflow Orchestrator for "${workflowName}". Reply concisely with "Workflow Started: ${workflowName}" and nothing else.`
+
+        // Hide this orchestration message from the UI by using a special prefix in the text part
+        // The UI will look for this prefix and collapse/hide it.
+        const HIDDEN_PREFIX = '<!-- workflow:system -->\n'
+
+        // Prepend instruction to first text part, or add new text part
+        const startParts = [...requestBody.parts]
+
+        // We create a separate part for the system instruction to keep user intent clean if possible
+        // But the SDK merges adjacent text parts sometimes.
+        // Let's modify the FIRST part to include the hidden instruction.
+        if (startParts.length > 0 && startParts[0].type === 'text') {
+          startParts[0] = {
+            ...startParts[0],
+            text: HIDDEN_PREFIX + orchestratorInstruction + '\n\nUser Request:\n' + startParts[0].text
+          }
+        } else {
+          startParts.unshift({ type: 'text', text: HIDDEN_PREFIX + orchestratorInstruction })
+        }
+
+        await client.session.prompt({
+          path: { id },
+          body: {
+            parts: startParts,
+            model: { providerID, modelID },
+            agent: 'build', // Use generic build agent for orchestration to avoid specific agent behaviors
+            messageID: requestBody.messageID
+          }
+        })
+
+        // 2. Start Engine in background
+        const executor = new BackgroundPromptExecutor(client, id, model)
+        const engine = new WorkflowEngine(executor)
+
+        // Extract text input from parts
+        const textInput = requestBody.parts
+          .filter((p: any) => p.type === 'text')
+          .map((p: any) => p.text)
+          .join('\n')
+
+        const inputs = { task: textInput, runId: id } // Default convention
+
+        // Ensure .opencode/states exists
+        const stateDir = path.join(folder, '.opencode', 'states')
+        await fs.mkdir(stateDir, { recursive: true }).catch(() => {})
+        const stateFile = path.join(stateDir, `${id}.json`)
+
+        // Fire and forget
+        engine.run(workflowDef, inputs, stateFile).catch((err) => {
+          console.error('[Workflow Execution] Workflow failed', err)
+          // Send error to chat
+          const errPrompt = `System Alert: Workflow failed with error: ${err.message}`
+          client.session
+            .prompt({
+              path: { id },
+              body: {
+                parts: [{ type: 'text', text: 'Error in workflow execution.' }], // User message (fake)
+                agent: errPrompt,
+                model: { providerID, modelID }
+              }
+            })
+            .catch((e) => console.error(e))
+        })
+
+        // Return success immediately (the first prompt finishes quickly)
+        res.json({ success: true })
+        return
+      }
+
+      // Standard Execution Path
       const body: SessionPromptData['body'] = {
         parts: requestBody.parts,
         model: {
           providerID,
           modelID
         },
-        agent,
+        agent: agentContent, // Pass full content? Or just name? SDK expects content string usually.
         messageID: requestBody.messageID
       }
 

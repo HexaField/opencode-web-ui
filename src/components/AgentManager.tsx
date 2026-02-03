@@ -253,14 +253,30 @@ export default function AgentManager(props: Props) {
                     </label>
                     <select
                       id="agent-mode"
-                      value={editConfig().mode}
-                      onChange={(e) =>
-                        setEditConfig({ ...editConfig(), mode: e.currentTarget.value as 'primary' | 'subagent' })
+                      value={
+                        editConfig().mode === 'primary' && editPrompt().trim().startsWith('{')
+                          ? 'workflow'
+                          : editConfig().mode
                       }
+                      onChange={(e) => {
+                        const val = e.currentTarget.value
+                        if (val === 'workflow') {
+                          setEditConfig({ ...editConfig(), mode: 'primary' })
+                          if (!editPrompt() || !editPrompt().trim().startsWith('{')) {
+                            setEditPrompt('{\n  "name": "My Workflow",\n  "steps": []\n}')
+                          }
+                        } else {
+                          setEditConfig({
+                            ...editConfig(),
+                            mode: val as 'primary' | 'subagent'
+                          })
+                        }
+                      }}
                       class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
                     >
                       <option value="primary">Primary</option>
                       <option value="subagent">Subagent</option>
+                      <option value="workflow">Workflow</option>
                     </select>
                   </div>
                 </div>
@@ -297,13 +313,20 @@ export default function AgentManager(props: Props) {
 
                 <div class="flex min-h-[200px] flex-1 flex-col">
                   <label for="agent-prompt" class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    System Prompt
+                    {editConfig().mode === 'primary' && editPrompt().trim().startsWith('{')
+                      ? 'Workflow JSON'
+                      : 'System Prompt'}
                   </label>
                   <textarea
                     id="agent-prompt"
                     value={editPrompt()}
                     onInput={(e) => setEditPrompt(e.currentTarget.value)}
                     class="w-full flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 dark:border-[#30363d] dark:bg-[#0d1117] dark:text-gray-100"
+                    placeholder={
+                      editConfig().mode === 'primary' && editPrompt().trim().startsWith('{')
+                        ? '{\n  "name": "My Workflow",\n  "steps": []\n}'
+                        : ''
+                    }
                   />
                 </div>
               </div>

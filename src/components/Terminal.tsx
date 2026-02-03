@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function TerminalComponent(props: Props) {
-  let terminalRef: HTMLDivElement | undefined
+  let terminalRef: HTMLDivElement | undefined = undefined
   let term: Terminal
   let fitAddon: FitAddon
   let socket: WebSocket | null = null
