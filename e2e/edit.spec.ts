@@ -40,7 +40,6 @@ test.describe('Message Editing', () => {
         await route.fulfill({ json: [] })
       } else {
         // POST create session
-        const body = route.request().postDataJSON()
         await route.fulfill({ json: { id: 'session-new', directory: testDir } })
       }
     })

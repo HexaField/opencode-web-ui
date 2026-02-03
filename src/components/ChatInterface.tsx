@@ -154,6 +154,9 @@ export default function ChatInterface(props: Props) {
               nextMessages = [...nextMessages, { ...lastPrev, id: lastPrev.info.id }]
             }
           }
+          // Sort by creation time to ensure correct order
+          nextMessages.sort((a, b) => (a.info.time.created || 0) - (b.info.time.created || 0))
+
           setMessages(reconcile(nextMessages))
         }
       }
@@ -210,6 +213,9 @@ export default function ChatInterface(props: Props) {
                   nextMessages = [...nextMessages, { ...lastPrev, id: lastPrev.info.id }]
                 }
               }
+              // Sort by creation time to ensure correct order
+              nextMessages.sort((a, b) => (a.info.time.created || 0) - (b.info.time.created || 0))
+
               setMessages(reconcile(nextMessages))
             }
           }
@@ -553,113 +559,167 @@ export default function ChatInterface(props: Props) {
                             }
                             fallback={
                               <>
-                                <div
-                                  data-testid={`message-${msg.info.role}`}
-                                  class={`max-w-[85%] rounded-xl border px-2 py-1 shadow-sm md:max-w-[75%] ${
-                                    isUser
-                                      ? "rounded-br-sm border-[#54aeff]/40 bg-[#ddf4ff] text-gray-900 dark:border-[#1f6feb]/40 dark:bg-[#1f6feb]/15 dark:text-gray-100"
-                                      : "rounded-bl-sm border-gray-200 bg-white text-gray-900 dark:border-[#30363d] dark:bg-[#161b22] dark:text-gray-100"
-                                  } `}
-                                >
-                                  <Show
-                                    when={isUser}
-                                    fallback={
-                                      <div>
+                                <Show
+                                  when={!(part as { text: string }).text.startsWith('<!-- workflow:system -->')}
+                                  fallback={(() => {
+                                    const text = (part as { text: string }).text
+                                    const match = text.match(
+                                      /<!-- workflow:system -->\n([\s\S]*?)\n\nUser Request:\n([\s\S]*)/
+                                    )
+                                    if (!match) return null
+                                    const systemText = match[1]
+                                    const userText = match[2]
+                                    return (
+                                      <>
+                                        {/* System Instruction (Left) */}
+                                        <div class="max-w-[85%] self-start rounded-xl rounded-bl-sm border border-gray-200 bg-white px-2 py-1 shadow-sm md:max-w-[75%] dark:border-[#30363d] dark:bg-[#161b22]">
+                                          <div class="mb-1 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+                                            Workflow Scaffolding
+                                          </div>
+                                          <pre class="font-sans text-sm leading-relaxed whitespace-pre-wrap dark:text-gray-100">
+                                            {systemText.replace('[SYSTEM]: ', '')}
+                                          </pre>
+                                        </div>
+                                        {/* User Request (Right) */}
                                         <div
-                                          class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-                                          style={{ 'font-size': '14px' }}
-                                          innerHTML={DOMPurify.sanitize(
-                                            marked.parse((part as { text: string }).text, { async: false })
-                                          )}
-                                        />
-                                      </div>
-                                    }
-                                  >
-                                    <div>
-                                      <pre class="font-sans text-sm leading-relaxed whitespace-pre-wrap">
-                                        {(part as { text: string }).text}
-                                      </pre>
+                                          data-testid="message-user"
+                                          class="max-w-[85%] self-end rounded-xl rounded-br-sm border border-[#54aeff]/40 bg-[#ddf4ff] px-2 py-1 shadow-sm md:max-w-[75%] dark:border-[#1f6feb]/40 dark:bg-[#1f6feb]/15 dark:text-gray-100"
+                                        >
+                                          <div
+                                            class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                                            style={{ 'font-size': '14px' }}
+                                            innerHTML={DOMPurify.sanitize(marked.parse(userText, { async: false }))}
+                                          />
+                                        </div>
+                                      </>
+                                    )
+                                  })()}
+                                >
+                                  <>
+                                    <div
+                                      data-testid={`message-${msg.info.role}`}
+                                      class={`max-w-[85%] rounded-xl border px-2 py-1 shadow-sm md:max-w-[75%] ${
+                                        isUser
+                                          ? "rounded-br-sm border-[#54aeff]/40 bg-[#ddf4ff] text-gray-900 dark:border-[#1f6feb]/40 dark:bg-[#1f6feb]/15 dark:text-gray-100"
+                                          : "rounded-bl-sm border-gray-200 bg-white text-gray-900 dark:border-[#30363d] dark:bg-[#161b22] dark:text-gray-100"
+                                      } `}
+                                    >
+                                      <Show
+                                        when={isUser}
+                                        fallback={
+                                          <div>
+                                            <div
+                                              class="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed break-words [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                                              style={{ 'font-size': '14px' }}
+                                              innerHTML={DOMPurify.sanitize(
+                                                marked.parse((part as { text: string }).text, { async: false })
+                                              )}
+                                            />
+                                          </div>
+                                        }
+                                      >
+                                        <div>
+                                          <pre class="font-sans text-sm leading-relaxed whitespace-pre-wrap">
+                                            {(part as { text: string }).text}
+                                          </pre>
+                                        </div>
+                                      </Show>
                                     </div>
-                                  </Show>
-                                </div>
-
-                                {/* Buttons placed beneath the message, outside the message border, aligned based on sender */}
-                                <div class={`mt-0.5 flex gap-1 ${isUser ? 'self-end' : 'self-start'}`}>
-                                  <Show when={isUser}>
-                                    <button
-                                      class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
-                                      title="Edit this message"
-                                      aria-label="Edit this message"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        startEditing(msg)
-                                      }}
-                                    >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-3 w-3 text-gray-500 dark:text-gray-400"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.5"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
+                                    {/* Buttons placed beneath the message, outside the message border, aligned based on sender */}
+                                    <div class={`mt-0.5 flex gap-1 ${isUser ? 'self-end' : 'self-start'}`}>
+                                      <Show when={isUser}>
+                                        <button
+                                          class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                                          title="Edit this message"
+                                          aria-label="Edit this message"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            startEditing(msg)
+                                          }}
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            class="h-3 w-3 text-gray-500 dark:text-gray-400"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.5"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                          >
+                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                          </svg>
+                                        </button>
+                                        <button
+                                          class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                                          title="Revert to this message"
+                                          aria-label="Revert to this message"
+                                          onClick={(e) => {
+                                            e.stopPropagation()
+                                            void revertTo(msg.info.id)
+                                          }}
+                                        >
+                                          <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            class="h-3 w-3 text-gray-500 dark:text-gray-400"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="1.5"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                          >
+                                            <polyline points="1 4 1 10 7 10" />
+                                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                                          </svg>
+                                        </button>
+                                      </Show>
+                                      <button
+                                        class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
+                                        title="Copy"
+                                        aria-label="Copy message"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          try {
+                                            void navigator.clipboard.writeText((part as { text: string }).text)
+                                          } catch (err) {
+                                            console.error('Copy failed', err)
+                                          }
+                                        }}
                                       >
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                                      </svg>
-                                    </button>
-                                    <button
-                                      class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
-                                      title="Revert to this message"
-                                      aria-label="Revert to this message"
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        void revertTo(msg.info.id)
-                                      }}
-                                    >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-3 w-3 text-gray-500 dark:text-gray-400"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.5"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                      >
-                                        <polyline points="1 4 1 10 7 10" />
-                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                                      </svg>
-                                    </button>
-                                  </Show>
-                                  <button
-                                    class="rounded px-1 pt-0 pb-0.5 hover:bg-gray-100 dark:hover:bg-[#21262d]"
-                                    title="Copy"
-                                    aria-label="Copy message"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      try {
-                                        void navigator.clipboard.writeText((part as { text: string }).text)
-                                      } catch (err) {
-                                        console.error('Copy failed', err)
-                                      }
-                                    }}
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      class="h-3 w-3 text-gray-500 dark:text-gray-400"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      stroke-width="1.5"
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                    >
-                                      <rect x="9" y="4" width="11" height="11" rx="2" />
-                                      <rect x="4" y="9" width="11" height="11" rx="2" />
-                                    </svg>
-                                  </button>
-                                </div>
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          class="h-3 w-3 text-gray-500 dark:text-gray-400"
+                                          viewBox="0 0 24 24"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          stroke-width="1.5"
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                        >
+                                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </>
+                                </Show>
+                                <Show when={(part as { text: string }).text.startsWith('<!-- workflow:system -->')}>
+                                  <div class="mb-2 max-w-[85%] rounded-md border border-gray-200 bg-gray-50 p-2 text-xs text-gray-500 md:max-w-[75%] dark:border-[#30363d] dark:bg-[#161b22] dark:text-gray-400">
+                                    <div class="flex items-center gap-2">
+                                      <span class="i-lucide-workflow h-3 w-3" />
+                                      <span class="font-medium">Workflow System Message</span>
+                                    </div>
+                                    <details>
+                                      <summary class="cursor-pointer hover:text-gray-700 dark:hover:text-gray-300">
+                                        View Details
+                                      </summary>
+                                      <pre class="mt-1 whitespace-pre-wrap">
+                                        {(part as { text: string }).text.replace('<!-- workflow:system -->', '')}
+                                      </pre>
+                                    </details>
+                                  </div>
+                                </Show>
                               </>
                             }
                           >
