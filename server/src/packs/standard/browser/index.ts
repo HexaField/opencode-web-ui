@@ -1,7 +1,7 @@
 import { browser } from './browser-lib.js'
 import * as path from 'path'
 import * as fs from 'fs'
-import { AppPaths } from '../../../config.js'
+// import { AppPaths } from '../../../config.js'
 
 // Helper to ensure screenshots are saved
 const ensureScreenshotPath = (userPath?: string) => {

@@ -21,48 +21,48 @@ export default function DashboardView(props: { onOpen: (path: string) => void })
         </header>
 
         <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Left Column: Projects */}
-            <div class="lg:col-span-2 space-y-8">
-                <section>
-                    <RecentProjects onOpen={props.onOpen} />
-                </section>
+          {/* Left Column: Projects */}
+          <div class="space-y-8 lg:col-span-2">
+            <section>
+              <RecentProjects onOpen={props.onOpen} />
+            </section>
 
-                <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
-                    <section>
-                        <NewProjectWizard onCreated={props.onOpen} />
-                    </section>
-                    <section class="flex h-full flex-col gap-4 rounded-lg border border-gray-200 p-6 shadow-sm dark:border-gray-700">
-                        <h2 class="text-xl font-bold">Open Existing</h2>
-                        <p class="text-sm text-gray-500">Browse your local file system.</p>
+            <div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <section>
+                <NewProjectWizard onCreated={props.onOpen} />
+              </section>
+              <section class="flex h-full flex-col gap-4 rounded-lg border border-gray-200 p-6 shadow-sm dark:border-gray-700">
+                <h2 class="text-xl font-bold">Open Existing</h2>
+                <p class="text-sm text-gray-500">Browse your local file system.</p>
 
-                        {mode() !== 'browse' ? (
-                        <button
-                            onClick={() => setMode('browse')}
-                            class="w-full rounded bg-gray-200 p-2 transition hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700"
-                        >
-                            Browse Filesystem
-                        </button>
-                        ) : (
-                        <div class="min-h-[300px] flex-1 overflow-hidden rounded border">
-                            <FolderBrowser onSelectFolder={props.onOpen} />
-                        </div>
-                        )}
-                        {mode() === 'browse' && (
-                        <button onClick={() => setMode('recent')} class="self-start text-sm text-blue-500 hover:underline">
-                            Cancel
-                        </button>
-                        )}
-                    </section>
-                </div>
+                {mode() !== 'browse' ? (
+                  <button
+                    onClick={() => setMode('browse')}
+                    class="w-full rounded bg-gray-200 p-2 transition hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  >
+                    Browse Filesystem
+                  </button>
+                ) : (
+                  <div class="min-h-[300px] flex-1 overflow-hidden rounded border">
+                    <FolderBrowser onSelectFolder={props.onOpen} />
+                  </div>
+                )}
+                {mode() === 'browse' && (
+                  <button onClick={() => setMode('recent')} class="self-start text-sm text-blue-500 hover:underline">
+                    Cancel
+                  </button>
+                )}
+              </section>
             </div>
+          </div>
 
-            {/* Right Column: Agent Context */}
-            <div class="space-y-8 flex flex-col">
-                 <GlobalChatWidget />
-                 <div class="flex-1 min-h-[300px]">
-                    <AgentMemoryWidget />
-                 </div>
+          {/* Right Column: Agent Context */}
+          <div class="flex flex-col space-y-8">
+            <GlobalChatWidget />
+            <div class="min-h-[300px] flex-1">
+              <AgentMemoryWidget />
             </div>
+          </div>
         </div>
       </div>
     </div>

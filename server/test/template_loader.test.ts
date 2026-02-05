@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TemplateLoader } from '../src/services/templates/template.loader.js'
 import * as fs from 'fs/promises'
-import { AppPaths } from '../src/config.js'
+// import { AppPaths } from '../src/config.js'
 
 vi.mock('fs/promises', () => ({
   readFile: vi.fn(),

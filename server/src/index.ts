@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as https from 'https'
 import * as path from 'path'
-import { app, manager, agent } from './server.js'
+import { app, agent } from './server.js'
 import { setupTerminalService } from './services/terminal/terminal.service.js'
 import { InitService } from './services/init.service.js'
 

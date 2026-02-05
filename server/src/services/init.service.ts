@@ -1,5 +1,6 @@
 import * as fs from 'fs/promises'
 import { AppPaths } from '../config.js'
+import { ragService } from './rag/rag.service.js'
 
 export class InitService {
   static async init() {
@@ -9,6 +10,9 @@ export class InitService {
     await fs.mkdir(AppPaths.telos, { recursive: true })
     await fs.mkdir(AppPaths.packs, { recursive: true })
     await fs.mkdir(AppPaths.config, { recursive: true })
+
+    // Initialize RAG Service
+    await ragService.initialize()
 
     console.log('Initialization complete.')
   }

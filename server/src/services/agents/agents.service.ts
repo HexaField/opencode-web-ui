@@ -11,8 +11,8 @@ import { PersonalAgent } from '../../agent/PersonalAgent.js'
 export function registerAgentsRoutes(app: express.Application, manager: OpencodeManager, agent?: PersonalAgent) {
   app.get('/api/agents/status', async (_req, res) => {
     if (!agent) {
-       res.json({ status: 'idle', reason: 'Agnet not initialized' })
-       return
+      res.json({ status: 'idle', reason: 'Agnet not initialized' })
+      return
     }
     res.json({ status: agent.status })
   })

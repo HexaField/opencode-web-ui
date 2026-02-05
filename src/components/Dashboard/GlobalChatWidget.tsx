@@ -27,30 +27,30 @@ export default function GlobalChatWidget() {
     <div class="flex h-[500px] flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-[#0d1117]">
       <header class="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-2 dark:border-gray-700 dark:bg-[#161b22]">
         <h3 class="font-bold text-gray-700 dark:text-gray-200">Global Assistant</h3>
-        <button 
-            onClick={() => {
-                localStorage.removeItem('pai_global_session')
-                setSessionId(null)
-                // Trigger re-mount or re-fetch logic
-                location.reload() // Simple reset for now
-            }}
-            class="text-xs text-blue-500 hover:underline"
+        <button
+          onClick={() => {
+            localStorage.removeItem('pai_global_session')
+            setSessionId(null)
+            // Trigger re-mount or re-fetch logic
+            location.reload() // Simple reset for now
+          }}
+          class="text-xs text-blue-500 hover:underline"
         >
-            New Session
+          New Session
         </button>
       </header>
       <div class="relative flex-1">
         <Show when={!error()} fallback={<div class="p-4 text-red-500">{error()}</div>}>
-            <Show when={sessionId()} fallback={<div class="p-4 text-gray-400">Loading Assistant...</div>}>
+          <Show when={sessionId()} fallback={<div class="p-4 text-gray-400">Loading Assistant...</div>}>
             <ChatInterface
-                folder="."
-                sessionId={sessionId()!}
-                onSessionChange={(id) => {
-                    setSessionId(id)
-                    localStorage.setItem('pai_global_session', id)
-                }}
+              folder="."
+              sessionId={sessionId()!}
+              onSessionChange={(id) => {
+                setSessionId(id)
+                localStorage.setItem('pai_global_session', id)
+              }}
             />
-            </Show>
+          </Show>
         </Show>
       </div>
     </div>

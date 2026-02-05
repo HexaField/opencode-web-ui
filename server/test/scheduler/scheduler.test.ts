@@ -31,7 +31,7 @@ describe('Scheduler Service', () => {
     const jobs = [{ cron: '0 0 * * *', task: 'Test Task', enabled: true }]
     const scheduleSpy = vi.mocked(cron.schedule)
 
-    scheduleSpy.mockImplementation((expr, func) => {
+    scheduleSpy.mockImplementation((_expr, func) => {
       // @ts-ignore
       func()
       return {} as any

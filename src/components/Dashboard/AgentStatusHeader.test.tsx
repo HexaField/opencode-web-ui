@@ -16,10 +16,10 @@ describe('AgentStatusHeader', () => {
   it('displays Idle status by default', async () => {
     vi.mocked(agentsApi.getAgentStatus).mockResolvedValue({ status: 'idle' })
     render(() => <AgentStatusHeader />)
-    
+
     await waitFor(() => {
-       expect(screen.getByText('System Status:')).toBeTruthy()
-       expect(screen.getByText('Idle')).toBeTruthy()
+      expect(screen.getByText('System Status:')).toBeTruthy()
+      expect(screen.getByText('Idle')).toBeTruthy()
     })
   })
 
@@ -28,7 +28,7 @@ describe('AgentStatusHeader', () => {
     render(() => <AgentStatusHeader />)
 
     await waitFor(() => {
-        expect(screen.getByText('Thinking')).toBeTruthy()
+      expect(screen.getByText('Thinking')).toBeTruthy()
     })
   })
 })

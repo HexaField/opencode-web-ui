@@ -1,4 +1,4 @@
-import { createResource, createSignal, onCleanup } from 'solid-js'
+import { createResource, onCleanup } from 'solid-js'
 import { getAgentStatus } from '../../api/agents'
 
 export default function AgentStatusHeader() {
@@ -14,12 +14,10 @@ export default function AgentStatusHeader() {
       <div class="flex items-center gap-1.5">
         <span
           class={`h-2.5 w-2.5 rounded-full ${
-            status()?.status === 'thinking' ? 'animate-pulse bg-green-500' : 'bg-gray-400'
+            status()?.status === 'thinking' ? "animate-pulse bg-green-500" : 'bg-gray-400'
           }`}
         />
-        <span class="font-bold">
-          {status()?.status === 'thinking' ? 'Thinking' : 'Idle'}
-        </span>
+        <span class="font-bold">{status()?.status === 'thinking' ? 'Thinking' : 'Idle'}</span>
       </div>
     </div>
   )

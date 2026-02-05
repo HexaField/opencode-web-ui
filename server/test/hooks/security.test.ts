@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { toolRegistry } from '../../src/services/tools/tool-registry.js'
 import '../../src/services/security/security.hook.js' // Register hooks
 

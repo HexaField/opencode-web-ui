@@ -23,7 +23,7 @@ describe('Pack: System', () => {
   it('shell_exec should run command and return stdout', async () => {
     // When mocking exec without the custom promisify symbol, promisify returns the first arg.
     // So we pass the object { stdout, stderr } as the first success argument.
-    vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
+    vi.mocked(exec).mockImplementation((_cmd: any, cb: any) => {
       cb(null, { stdout: 'output', stderr: '' })
       return {} as any
     })
@@ -36,7 +36,7 @@ describe('Pack: System', () => {
   it('system_open should use correct command for macOS', async () => {
     vi.mocked(os.platform).mockReturnValue('darwin')
 
-    vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
+    vi.mocked(exec).mockImplementation((_cmd: any, cb: any) => {
       cb(null, { stdout: 'done', stderr: '' })
       return {} as any
     })
@@ -48,7 +48,7 @@ describe('Pack: System', () => {
   it('system_notify should use osascript on macOS', async () => {
     vi.mocked(os.platform).mockReturnValue('darwin')
 
-    vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
+    vi.mocked(exec).mockImplementation((_cmd: any, cb: any) => {
       cb(null, { stdout: 'done', stderr: '' })
       return {} as any
     })

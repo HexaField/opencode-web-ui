@@ -1,10 +1,10 @@
 import { For } from 'solid-js'
 
 export interface ProjectCardProps {
-    name: string
-    path: string
-    tags?: string[]
-    onOpen: (path: string) => void
+  name: string
+  path: string
+  tags?: string[]
+  onOpen: (path: string) => void
 }
 
 export default function ProjectCard(props: ProjectCardProps) {

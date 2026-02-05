@@ -18,28 +18,28 @@ describe('GlobalChatWidget', () => {
     vi.resetAllMocks()
     localStorage.clear()
   })
-  
+
   afterEach(() => cleanup())
 
   it('initializes a new session if none exists', async () => {
     vi.mocked(sessionsApi.createSession).mockResolvedValue({ id: 'ses_new', slug: 'new-session' } as any)
-    
+
     render(() => <GlobalChatWidget />)
-    
+
     await waitFor(() => {
-        expect(sessionsApi.createSession).toHaveBeenCalled()
-        expect(screen.getByTestId('chat-interface')).toBeTruthy()
+      expect(sessionsApi.createSession).toHaveBeenCalled()
+      expect(screen.getByTestId('chat-interface')).toBeTruthy()
     })
   })
 
   it('restores existing session from local storage', async () => {
     localStorage.setItem('pai_global_session', 'ses_existing')
-    
+
     render(() => <GlobalChatWidget />)
-    
+
     await waitFor(() => {
-        expect(sessionsApi.createSession).not.toHaveBeenCalled()
-        expect(screen.getByTestId('chat-interface')).toBeTruthy()
+      expect(sessionsApi.createSession).not.toHaveBeenCalled()
+      expect(screen.getByTestId('chat-interface')).toBeTruthy()
     })
   })
 })
