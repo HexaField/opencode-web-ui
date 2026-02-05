@@ -1,0 +1,36 @@
+[
+  {
+    "name": "fs_read_file",
+    "description": "Read contents of a file",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "description": "Absolute path to the file" }
+      },
+      "required": ["path"]
+    }
+  },
+  {
+    "name": "fs_write_file",
+    "description": "Write text to a file",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "description": "Absolute path to the file" },
+        "content": { "type": "string", "description": "Content to write" }
+      },
+      "required": ["path", "content"]
+    }
+  },
+  {
+    "name": "fs_list_dir",
+    "description": "List contents of a directory",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "description": "Absolute path to the directory" }
+      },
+      "required": ["path"]
+    }
+  }
+]

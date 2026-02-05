@@ -13,11 +13,11 @@ import { registerMiscRoutes } from './services/misc/misc.service.js'
 import { registerSessionsRoutes } from './services/sessions/sessions.service.js'
 import { registerTasksRoutes } from './services/tasks/tasks.service.js'
 
-const app = express()
+export const app = express()
 app.use(cors())
 app.use(bodyParser.json())
 
-const manager = new OpencodeManager()
+export const manager = new OpencodeManager()
 
 // Register routes
 registerMiscRoutes(app, manager)
@@ -75,11 +75,3 @@ app.get(/(.*)/, async (req, res) => {
     res.status(404).send('Not found')
   }
 })
-
-// Cleanup on exit
-process.on('SIGINT', () => {
-  manager.shutdown()
-  process.exit()
-})
-
-export { app, manager }

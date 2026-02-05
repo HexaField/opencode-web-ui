@@ -1,0 +1,6 @@
+{
+  "name": "pai-browser-pack",
+  "version": "1.0.0",
+  "description": "Browser automation using Playwright (from PAI)",
+  "dependencies": ["playwright"]
+}
