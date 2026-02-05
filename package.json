@@ -26,6 +26,7 @@
     "@opencode-ai/sdk": "1.1.43",
     "@types/dompurify": "^3.2.0",
     "@types/marked": "^6.0.0",
+    "@xenova/transformers": "^2.17.2",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "better-sqlite3": "^12.6.2",
@@ -39,6 +40,7 @@
     "node-cron": "^4.2.1",
     "node-pty": "^1.1.0",
     "playwright": "^1.58.1",
+    "sharp": "^0.34.5",
     "solid-js": "1.9.10",
     "uuid": "^13.0.0",
     "ws": "^8.19.0",
@@ -86,5 +88,10 @@
       "oxfmt --write"
     ]
   },
-  "packageManager": "pnpm@10.21.0"
+  "packageManager": "pnpm@10.21.0",
+  "pnpm": {
+    "overrides": {
+      "sharp": "^0.34.5"
+    }
+  }
 }
