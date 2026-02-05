@@ -27,7 +27,10 @@
     "parameters": {
       "type": "object",
       "properties": {
-        "path": { "type": "string", "description": "Path to save screenshot to (optional, defaults to returning buffer as base64 internally? No, agent usually works with paths)" },
+        "path": {
+          "type": "string",
+          "description": "Path to save screenshot to (optional, defaults to returning buffer as base64 internally? No, agent usually works with paths)"
+        },
         "selector": { "type": "string", "description": "Selector to screenshot (optional)" }
       }
     }

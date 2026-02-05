@@ -31,18 +31,16 @@ export class SchedulerService {
     const timetablePath = path.join(AppPaths.config, 'schedule.json')
     try {
       if (!fs.existsSync(AppPaths.config)) {
-          fs.mkdirSync(AppPaths.config, { recursive: true })
+        fs.mkdirSync(AppPaths.config, { recursive: true })
       }
-      
+
       if (fs.existsSync(timetablePath)) {
         const config: ScheduleConfig = JSON.parse(fs.readFileSync(timetablePath, 'utf-8'))
         this.registerJobs(config.jobs)
       } else {
         console.warn('[Scheduler] No schedule.json found. Creating default.')
         const defaultConfig: ScheduleConfig = {
-          jobs: [
-            { cron: '0 8 * * *', task: 'Runs morning briefing', enabled: true }
-          ]
+          jobs: [{ cron: '0 8 * * *', task: 'Runs morning briefing', enabled: true }]
         }
         fs.writeFileSync(timetablePath, JSON.stringify(defaultConfig, null, 2))
         this.registerJobs(defaultConfig.jobs)

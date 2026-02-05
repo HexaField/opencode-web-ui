@@ -5,15 +5,15 @@ import { AppPaths } from '../../../config.js'
 
 // Helper to ensure screenshots are saved
 const ensureScreenshotPath = (userPath?: string) => {
-    if (userPath) return userPath;
-    // Default to a timestamped file in the user's workspace or temp
-    // Using AppPaths.packs is not right. Maybe a 'downloads' or 'screenshots' folder?
-    // For now, let's use process.cwd() + '/screenshots'
-    const screenshotDir = path.join(process.cwd(), 'screenshots')
-    if (!fs.existsSync(screenshotDir)) {
-        fs.mkdirSync(screenshotDir, { recursive: true })
-    }
-    return path.join(screenshotDir, `screenshot-${Date.now()}.png`)
+  if (userPath) return userPath
+  // Default to a timestamped file in the user's workspace or temp
+  // Using AppPaths.packs is not right. Maybe a 'downloads' or 'screenshots' folder?
+  // For now, let's use process.cwd() + '/screenshots'
+  const screenshotDir = path.join(process.cwd(), 'screenshots')
+  if (!fs.existsSync(screenshotDir)) {
+    fs.mkdirSync(screenshotDir, { recursive: true })
+  }
+  return path.join(screenshotDir, `screenshot-${Date.now()}.png`)
 }
 
 export const browser_launch = async (args: any) => {
@@ -31,7 +31,7 @@ export const browser_navigate = async (args: any) => {
 
 export const browser_screenshot = async (args: any) => {
   const finalPath = ensureScreenshotPath(args.path)
-  
+
   await browser.screenshot({
     path: finalPath,
     selector: args.selector

@@ -2,12 +2,12 @@ import { bus, Events } from '../event-bus.js'
 
 export class SecurityService {
   private static instance: SecurityService
-  
+
   // Simple blacklist for PoC
   private blacklist = [
     'rm -rf /',
     ':(){ :|:& };:', // Fork bomb
-    '> /dev/sda',    // Wipe drive
+    '> /dev/sda', // Wipe drive
     'mkfs'
   ]
 
@@ -23,18 +23,18 @@ export class SecurityService {
   }
 
   private setupHooks() {
-    bus.on(Events.TOOL_PRE_EXECUTE, async (payload: { name: string, args: any }) => {
+    bus.on(Events.TOOL_PRE_EXECUTE, async (payload: { name: string; args: any }) => {
       await this.checkSecurity(payload)
     })
   }
 
-  async checkSecurity(payload: { name: string, args: any }) {
+  async checkSecurity(payload: { name: string; args: any }) {
     const { name, args } = payload
-    
+
     // Intercept shell commands
     if (name === 'shell_exec') {
       const command = args.command as string
-      
+
       if (!command) return
 
       if (this.isDangerous(command)) {
@@ -44,7 +44,7 @@ export class SecurityService {
   }
 
   private isDangerous(command: string): boolean {
-    return this.blacklist.some(pattern => command.includes(pattern))
+    return this.blacklist.some((pattern) => command.includes(pattern))
   }
 }
 

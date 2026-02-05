@@ -128,7 +128,7 @@ export class PlaywrightBrowser {
    */
   private attachPageListeners(page: Page): void {
     // Capture console logs
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       this.consoleLogs.push({
         type: msg.type(),
         text: msg.text(),
@@ -137,7 +137,7 @@ export class PlaywrightBrowser {
     })
 
     // Capture network requests
-    page.on('request', request => {
+    page.on('request', (request) => {
       const timestamp = Date.now()
       this.requestTimings.set(request.url(), timestamp)
       this.networkLogs.push({
@@ -151,7 +151,7 @@ export class PlaywrightBrowser {
     })
 
     // Capture network responses
-    page.on('response', async response => {
+    page.on('response', async (response) => {
       const url = response.url()
       const requestTime = this.requestTimings.get(url)
       const timestamp = Date.now()
@@ -179,7 +179,7 @@ export class PlaywrightBrowser {
     })
 
     // Capture dialogs
-    page.on('dialog', async dialog => {
+    page.on('dialog', async (dialog) => {
       this.pendingDialog = {
         type: dialog.type() as DialogInfo['type'],
         message: dialog.message(),
@@ -288,7 +288,7 @@ export class PlaywrightBrowser {
     const page = this.ensurePage()
 
     if (selector) {
-      return await page.locator(selector).textContent() || ''
+      return (await page.locator(selector).textContent()) || ''
     }
 
     return await page.evaluate(() => document.body.innerText)
@@ -306,9 +306,7 @@ export class PlaywrightBrowser {
   }): Promise<string> {
     const page = this.ensurePage()
 
-    let html = options?.selector
-      ? await page.locator(options.selector).innerHTML()
-      : await page.content()
+    let html = options?.selector ? await page.locator(options.selector).innerHTML() : await page.content()
 
     if (options?.removeScripts) {
       html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -332,11 +330,14 @@ export class PlaywrightBrowser {
   /**
    * Save page as PDF
    */
-  async savePdf(path: string, options?: {
-    format?: 'A4' | 'Letter' | 'Legal' | 'Tabloid'
-    printBackground?: boolean
-    margin?: { top?: string; right?: string; bottom?: string; left?: string }
-  }): Promise<Buffer> {
+  async savePdf(
+    path: string,
+    options?: {
+      format?: 'A4' | 'Letter' | 'Legal' | 'Tabloid'
+      printBackground?: boolean
+      margin?: { top?: string; right?: string; bottom?: string; left?: string }
+    }
+  ): Promise<Buffer> {
     const page = this.ensurePage()
 
     return await page.pdf({
@@ -445,7 +446,7 @@ export class PlaywrightBrowser {
    */
   async setDevice(device: string): Promise<void> {
     const page = this.ensurePage()
-    const devices = await import('playwright').then(m => m.devices)
+    const devices = await import('playwright').then((m) => m.devices)
     const deviceConfig = devices[device]
 
     if (!deviceConfig) {
@@ -501,11 +502,11 @@ export class PlaywrightBrowser {
     let logs = [...this.consoleLogs]
 
     if (options?.type && options.type !== 'all') {
-      logs = logs.filter(log => log.type === options.type)
+      logs = logs.filter((log) => log.type === options.type)
     }
 
     if (options?.search) {
-      logs = logs.filter(log => log.text.includes(options.search!))
+      logs = logs.filter((log) => log.text.includes(options.search!))
     }
 
     if (options?.limit) {
@@ -564,33 +565,31 @@ export class PlaywrightBrowser {
 
     // Filter by type
     if (options?.type && options.type !== 'all') {
-      logs = logs.filter(log => log.type === options.type)
+      logs = logs.filter((log) => log.type === options.type)
     }
 
     // Filter by URL pattern
     if (options?.urlPattern) {
-      const pattern = options.urlPattern instanceof RegExp
-        ? options.urlPattern
-        : new RegExp(options.urlPattern)
-      logs = logs.filter(log => pattern.test(log.url))
+      const pattern = options.urlPattern instanceof RegExp ? options.urlPattern : new RegExp(options.urlPattern)
+      logs = logs.filter((log) => pattern.test(log.url))
     }
 
     // Filter by method
     if (options?.method) {
       const methods = Array.isArray(options.method) ? options.method : [options.method]
-      logs = logs.filter(log => methods.includes(log.method))
+      logs = logs.filter((log) => methods.includes(log.method))
     }
 
     // Filter by status (responses only)
     if (options?.status) {
       const statuses = Array.isArray(options.status) ? options.status : [options.status]
-      logs = logs.filter(log => log.status && statuses.includes(log.status))
+      logs = logs.filter((log) => log.status && statuses.includes(log.status))
     }
 
     // Filter by resource type
     if (options?.resourceType) {
       const types = Array.isArray(options.resourceType) ? options.resourceType : [options.resourceType]
-      logs = logs.filter(log => log.resourceType && types.includes(log.resourceType))
+      logs = logs.filter((log) => log.resourceType && types.includes(log.resourceType))
     }
 
     // Limit results
@@ -626,7 +625,7 @@ export class PlaywrightBrowser {
     totalSize: number
     avgDuration: number
   } {
-    const responses = this.networkLogs.filter(l => l.type === 'response')
+    const responses = this.networkLogs.filter((l) => l.type === 'response')
 
     const byStatus: Record<number, number> = {}
     const byResourceType: Record<string, number> = {}
@@ -649,7 +648,7 @@ export class PlaywrightBrowser {
     }
 
     return {
-      totalRequests: this.networkLogs.filter(l => l.type === 'request').length,
+      totalRequests: this.networkLogs.filter((l) => l.type === 'request').length,
       totalResponses: responses.length,
       byStatus,
       byResourceType,
@@ -697,7 +696,7 @@ export class PlaywrightBrowser {
 
     // The dialog was already stored, we need to wait for the next one if already handled
     // This is a simplification - for more complex cases, we'd queue dialogs
-    page.once('dialog', async dialog => {
+    page.once('dialog', async (dialog) => {
       if (action === 'accept') {
         await dialog.accept(promptText)
       } else {
@@ -715,10 +714,13 @@ export class PlaywrightBrowser {
   /**
    * Wait for text to appear or disappear
    */
-  async waitForText(text: string, options?: {
-    state?: 'visible' | 'hidden'
-    timeout?: number
-  }): Promise<void> {
+  async waitForText(
+    text: string,
+    options?: {
+      state?: 'visible' | 'hidden'
+      timeout?: number
+    }
+  ): Promise<void> {
     const page = this.ensurePage()
     const locator = page.getByText(text)
 
@@ -804,10 +806,13 @@ export class PlaywrightBrowser {
   /**
    * Wait for element
    */
-  async waitForSelector(selector: string, options?: {
-    state?: 'attached' | 'detached' | 'visible' | 'hidden'
-    timeout?: number
-  }): Promise<void> {
+  async waitForSelector(
+    selector: string,
+    options?: {
+      state?: 'attached' | 'detached' | 'visible' | 'hidden'
+      timeout?: number
+    }
+  ): Promise<void> {
     const page = this.ensurePage()
     await page.waitForSelector(selector, {
       state: options?.state,
@@ -818,10 +823,7 @@ export class PlaywrightBrowser {
   /**
    * Wait for navigation
    */
-  async waitForNavigation(options?: {
-    url?: string | RegExp
-    timeout?: number
-  }): Promise<void> {
+  async waitForNavigation(options?: { url?: string | RegExp; timeout?: number }): Promise<void> {
     const page = this.ensurePage()
     await page.waitForURL(options?.url || '**/*', {
       timeout: options?.timeout
@@ -840,7 +842,7 @@ export class PlaywrightBrowser {
    * Wait fixed time (use sparingly)
    */
   async wait(ms: number): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, ms))
+    await new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   // ============================================
@@ -850,9 +852,12 @@ export class PlaywrightBrowser {
   /**
    * Wait for specific response
    */
-  async waitForResponse(urlPattern: string | RegExp, options?: {
-    timeout?: number
-  }): Promise<{ status: number; body: string }> {
+  async waitForResponse(
+    urlPattern: string | RegExp,
+    options?: {
+      timeout?: number
+    }
+  ): Promise<{ status: number; body: string }> {
     const page = this.ensurePage()
 
     const response = await page.waitForResponse(urlPattern, {

@@ -5,58 +5,58 @@ import * as os from 'os'
 
 // Mocking child_process
 vi.mock('child_process', () => {
-    const execMock = vi.fn()
-    return {
-        exec: execMock,
-        default: { exec: execMock }
-    }
+  const execMock = vi.fn()
+  return {
+    exec: execMock,
+    default: { exec: execMock }
+  }
 })
 
 // Mocking os
 vi.mock('os', () => {
-    return {
-        platform: vi.fn()
-    }
+  return {
+    platform: vi.fn()
+  }
 })
 
 describe('Pack: System', () => {
-    it('shell_exec should run command and return stdout', async () => {
-        // When mocking exec without the custom promisify symbol, promisify returns the first arg.
-        // So we pass the object { stdout, stderr } as the first success argument.
-        vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
-            cb(null, { stdout: 'output', stderr: '' })
-            return {} as any
-        })
-
-        const result = await shell_exec({ command: 'echo hello' })
-        expect(exec).toHaveBeenCalledWith('echo hello', expect.any(Function))
-        expect(result).toBe('output')
+  it('shell_exec should run command and return stdout', async () => {
+    // When mocking exec without the custom promisify symbol, promisify returns the first arg.
+    // So we pass the object { stdout, stderr } as the first success argument.
+    vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
+      cb(null, { stdout: 'output', stderr: '' })
+      return {} as any
     })
 
-    it('system_open should use correct command for macOS', async () => {
-        vi.mocked(os.platform).mockReturnValue('darwin')
+    const result = await shell_exec({ command: 'echo hello' })
+    expect(exec).toHaveBeenCalledWith('echo hello', expect.any(Function))
+    expect(result).toBe('output')
+  })
 
-        vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
-            cb(null, { stdout: 'done', stderr: '' })
-            return {} as any
-        })
+  it('system_open should use correct command for macOS', async () => {
+    vi.mocked(os.platform).mockReturnValue('darwin')
 
-        await system_open({ target: 'file.txt' })
-        expect(exec).toHaveBeenCalledWith('open "file.txt"', expect.any(Function))
+    vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
+      cb(null, { stdout: 'done', stderr: '' })
+      return {} as any
     })
 
-    it('system_notify should use osascript on macOS', async () => {
-        vi.mocked(os.platform).mockReturnValue('darwin')
+    await system_open({ target: 'file.txt' })
+    expect(exec).toHaveBeenCalledWith('open "file.txt"', expect.any(Function))
+  })
 
-        vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
-            cb(null, { stdout: 'done', stderr: '' })
-            return {} as any
-        })
+  it('system_notify should use osascript on macOS', async () => {
+    vi.mocked(os.platform).mockReturnValue('darwin')
 
-        await system_notify({ message: 'Hello' })
-        expect(exec).toHaveBeenCalledWith(
-            expect.stringContaining('osascript -e \'display notification "Hello"'),
-            expect.any(Function)
-        )
+    vi.mocked(exec).mockImplementation((cmd: any, cb: any) => {
+      cb(null, { stdout: 'done', stderr: '' })
+      return {} as any
     })
+
+    await system_notify({ message: 'Hello' })
+    expect(exec).toHaveBeenCalledWith(
+      expect.stringContaining('osascript -e \'display notification "Hello"'),
+      expect.any(Function)
+    )
+  })
 })

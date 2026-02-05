@@ -10,53 +10,46 @@ vi.mock('fs/promises', () => ({
 }))
 
 describe('WorkspaceRegistry', () => {
-    
-    beforeEach(() => {
-        vi.resetAllMocks()
+  beforeEach(() => {
+    vi.resetAllMocks()
+  })
+
+  it('should initialize workspaces.json if missing', async () => {
+    // Mock access to throw (file not found)
+    vi.mocked(fs.access).mockRejectedValue(new Error('ENOENT'))
+
+    await WorkspaceRegistry.init()
+
+    expect(fs.writeFile).toHaveBeenCalledWith(AppPaths.workspaces, JSON.stringify({ workspaces: [] }, null, 2), 'utf-8')
+  })
+
+  it('should register a new workspace', async () => {
+    // Mock reading empty list
+    vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({ workspaces: [] }))
+
+    await WorkspaceRegistry.registerWorkspace('/tmp/project')
+
+    expect(fs.writeFile).toHaveBeenCalled()
+    const writeCall = vi.mocked(fs.writeFile).mock.calls[0]
+    const data = JSON.parse(writeCall[1] as string)
+
+    expect(data.workspaces).toHaveLength(1)
+    expect(data.workspaces[0]).toMatchObject({
+      path: '/tmp/project',
+      name: 'project'
     })
+  })
 
-    it('should initialize workspaces.json if missing', async () => {
-        // Mock access to throw (file not found)
-        vi.mocked(fs.access).mockRejectedValue(new Error('ENOENT'))
-        
-        await WorkspaceRegistry.init()
-        
-        expect(fs.writeFile).toHaveBeenCalledWith(
-            AppPaths.workspaces,
-            JSON.stringify({ workspaces: [] }, null, 2),
-            'utf-8'
-        )
-    })
+  it('should update lastOpened for existing workspace', async () => {
+    const existing = [{ path: '/tmp/project', name: 'project', lastOpened: 'old-date', tags: [] }]
+    vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({ workspaces: existing }))
 
-    it('should register a new workspace', async () => {
-        // Mock reading empty list
-        vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({ workspaces: [] }))
-        
-        await WorkspaceRegistry.registerWorkspace('/tmp/project')
+    await WorkspaceRegistry.registerWorkspace('/tmp/project')
 
-        expect(fs.writeFile).toHaveBeenCalled()
-        const writeCall = vi.mocked(fs.writeFile).mock.calls[0]
-        const data = JSON.parse(writeCall[1] as string)
-        
-        expect(data.workspaces).toHaveLength(1)
-        expect(data.workspaces[0]).toMatchObject({
-            path: '/tmp/project',
-            name: 'project'
-        })
-    })
+    const writeCall = vi.mocked(fs.writeFile).mock.calls[0]
+    const data = JSON.parse(writeCall[1] as string)
 
-    it('should update lastOpened for existing workspace', async () => {
-        const existing = [
-            { path: '/tmp/project', name: 'project', lastOpened: 'old-date', tags: [] }
-        ]
-        vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify({ workspaces: existing }))
-
-        await WorkspaceRegistry.registerWorkspace('/tmp/project')
-
-        const writeCall = vi.mocked(fs.writeFile).mock.calls[0]
-        const data = JSON.parse(writeCall[1] as string)
-        
-        expect(data.workspaces).toHaveLength(1)
-        expect(data.workspaces[0].lastOpened).not.toBe('old-date')
-    })
+    expect(data.workspaces).toHaveLength(1)
+    expect(data.workspaces[0].lastOpened).not.toBe('old-date')
+  })
 })

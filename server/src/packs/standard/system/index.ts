@@ -16,7 +16,7 @@ export async function shell_exec(args: { command: string }) {
   }
 }
 
-export async function system_open(args: { target: string, app?: string }) {
+export async function system_open(args: { target: string; app?: string }) {
   const platform = os.platform()
   let command = ''
 
@@ -41,10 +41,10 @@ export async function system_open(args: { target: string, app?: string }) {
   }
 }
 
-export async function system_notify(args: { message: string, title?: string }) {
+export async function system_notify(args: { message: string; title?: string }) {
   const platform = os.platform()
   const title = args.title || 'Personal Agent'
-  
+
   // Sanitize inputs to prevent injection (basic)
   const safeMessage = args.message.replace(/"/g, '\\"')
   const safeTitle = title.replace(/"/g, '\\"')

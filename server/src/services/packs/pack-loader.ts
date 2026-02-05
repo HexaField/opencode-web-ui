@@ -33,10 +33,10 @@ export class PackLoader {
     }
 
     // Look for manifest.json files 2 levels deep (category/pack/manifest.json or just pack/manifest.json)
-    const manifests = await fg('**/manifest.json', { 
-      cwd: rootDir, 
+    const manifests = await fg('**/manifest.json', {
+      cwd: rootDir,
       absolute: true,
-      deep: 3 
+      deep: 3
     })
 
     for (const manifestPath of manifests) {

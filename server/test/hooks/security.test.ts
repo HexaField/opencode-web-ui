@@ -3,7 +3,6 @@ import { toolRegistry } from '../../src/services/tools/tool-registry.js'
 import '../../src/services/security/security.hook.js' // Register hooks
 
 describe('Security System (Hooks)', () => {
-  
   beforeEach(() => {
     // Register a mock implementation of shell_exec
     // The security hook listens for 'shell_exec' specifically
@@ -31,15 +30,14 @@ describe('Security System (Hooks)', () => {
   })
 
   it('blocks fork bombs', async () => {
-      await expect(async () => {
-        await toolRegistry.executeTool('shell_exec', { command: ':(){ :|:& };:' })
-      }).rejects.toThrow(/Security Policy/)
-  })
-  
-  it('blocks mkfs', async () => {
-      await expect(async () => {
-        await toolRegistry.executeTool('shell_exec', { command: 'mkfs.ext4 /dev/sda' })
-      }).rejects.toThrow(/Security Policy/)
+    await expect(async () => {
+      await toolRegistry.executeTool('shell_exec', { command: ':(){ :|:& };:' })
+    }).rejects.toThrow(/Security Policy/)
   })
 
+  it('blocks mkfs', async () => {
+    await expect(async () => {
+      await toolRegistry.executeTool('shell_exec', { command: 'mkfs.ext4 /dev/sda' })
+    }).rejects.toThrow(/Security Policy/)
+  })
 })

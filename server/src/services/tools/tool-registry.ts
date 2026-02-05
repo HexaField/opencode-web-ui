@@ -49,7 +49,7 @@ export class ToolRegistry {
 
       // Post-execution hooks (Logging, Learning)
       await bus.emitAsync(Events.TOOL_POST_EXECUTE, { name, args, result })
-      
+
       return result
     } catch (error) {
       throw error

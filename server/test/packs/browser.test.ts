@@ -18,10 +18,10 @@ vi.mock('../../src/packs/standard/browser/browser-lib.js', () => {
 })
 
 vi.mock('fs', () => {
-    return {
-        existsSync: vi.fn().mockReturnValue(true),
-        mkdirSync: vi.fn()
-    }
+  return {
+    existsSync: vi.fn().mockReturnValue(true),
+    mkdirSync: vi.fn()
+  }
 })
 
 describe('Pack: Browser', () => {
@@ -39,12 +39,14 @@ describe('Pack: Browser', () => {
     // If path is provided
     await browser_screenshot({ path: '/tmp/shot.png' })
     expect(browser.screenshot).toHaveBeenCalledWith({ path: '/tmp/shot.png', selector: undefined })
-    
+
     // If path is NOT provided (default logic in index.ts)
     // We mocked Date.now? No, but it should generate a path.
-    await browser_screenshot({ })
-    expect(browser.screenshot).toHaveBeenCalledWith(expect.objectContaining({ 
-        path: expect.stringContaining('screenshot-') 
-    }))
+    await browser_screenshot({})
+    expect(browser.screenshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: expect.stringContaining('screenshot-')
+      })
+    )
   })
 })

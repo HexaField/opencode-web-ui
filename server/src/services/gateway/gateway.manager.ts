@@ -28,9 +28,9 @@ export class GatewayManager {
     const authPath = path.join(AppPaths.config, 'auth.json')
     try {
       if (!fs.existsSync(AppPaths.config)) {
-          fs.mkdirSync(AppPaths.config, { recursive: true })
+        fs.mkdirSync(AppPaths.config, { recursive: true })
       }
-      
+
       if (fs.existsSync(authPath)) {
         const config: AuthConfig = JSON.parse(fs.readFileSync(authPath, 'utf-8'))
         this.whitelist = new Set(config.whitelist)
@@ -75,17 +75,17 @@ export class GatewayManager {
     // We wrap this in a promise that resolves when the agent responds?
     // For now, the implementation plan says "Queues messages".
     // We'll emit an event.
-    
+
     bus.emit(Events.GATEWAY_MESSAGE, msg)
   }
 
   async sendResponse(userId: string, content: string, platform?: string) {
     if (platform) {
-        const adapter = this.adapters.get(platform)
-        if (adapter) {
-            await adapter.sendMessage(userId, content)
-            return
-        }
+      const adapter = this.adapters.get(platform)
+      if (adapter) {
+        await adapter.sendMessage(userId, content)
+        return
+      }
     }
 
     // If no platform specified or specific adapter failed, try to find one that knows this user?
@@ -93,8 +93,8 @@ export class GatewayManager {
     // Or we broadcast? No, that's spammy.
     // We'll default to the first one if we can't find it, or error.
     if (!platform) {
-         console.warn(`[Gateway] No platform specified for response to ${userId}`)
-         return
+      console.warn(`[Gateway] No platform specified for response to ${userId}`)
+      return
     }
     console.warn(`[Gateway] Adapter not found for platform: ${platform}`)
   }

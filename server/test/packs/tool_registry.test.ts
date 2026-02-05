@@ -34,12 +34,15 @@ describe('ToolRegistry', () => {
   it('should execute a tool', async () => {
     const name = 'exec_tool_' + Date.now()
     const impl = vi.fn().mockResolvedValue('result')
-    
-    registry.registerTool({
-      name,
-      description: 'desc',
-      parameters: { type: 'object', properties: {} }
-    }, impl)
+
+    registry.registerTool(
+      {
+        name,
+        description: 'desc',
+        parameters: { type: 'object', properties: {} }
+      },
+      impl
+    )
 
     const result = await registry.executeTool(name, { foo: 'bar' })
     expect(result).toBe('result')

@@ -26,7 +26,7 @@ export class PersonalAgent {
     bus.on(Events.AGENT_STOP, () => {
       console.log('Event received: AGENT_STOP')
     })
-    
+
     // Plan 5: Gateway & Scheduler Handlers
     bus.on(Events.SCHEDULE_TRIGGER, (payload: any) => {
       console.log('Event received: SCHEDULE_TRIGGER', payload)
@@ -52,7 +52,7 @@ export class PersonalAgent {
     const ws = await WorkspaceRegistry.getWorkspace(process.cwd())
     let wsContext = ''
     if (ws) {
-        wsContext = `
+      wsContext = `
 CURRENT PROJECT: ${ws.name}
 PATH: ${ws.path}
 Tags: ${ws.tags.join(', ')}

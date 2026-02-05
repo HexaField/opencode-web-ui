@@ -12,6 +12,7 @@ import { registerGitRoutes } from './services/git/git.service.js'
 import { registerMiscRoutes } from './services/misc/misc.service.js'
 import { registerSessionsRoutes } from './services/sessions/sessions.service.js'
 import { registerTasksRoutes } from './services/tasks/tasks.service.js'
+import { registerWorkspacesRoutes } from './services/workspaces/workspaces.service.js'
 
 export const app = express()
 app.use(cors())
@@ -26,6 +27,7 @@ registerAgentsRoutes(app, manager)
 registerFilesRoutes(app, manager)
 registerGitRoutes(app)
 registerTasksRoutes(app)
+registerWorkspacesRoutes(app)
 
 // Serve static files
 const __filename = fileURLToPath(import.meta.url)
