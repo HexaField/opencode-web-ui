@@ -3,6 +3,8 @@ import { bus, Events } from '../services/event-bus.js'
 import { learningService } from '../services/memory/learning.service.js'
 import { packLoader } from '../services/packs/pack-loader.js'
 import { toolRegistry } from '../services/tools/tool-registry.js'
+import { WorkspaceRegistry } from '../services/workspaces/workspace.registry.js'
+import { ProjectInitializer } from '../services/workspaces/project.initializer.js'
 // Ensure security hooks are loaded
 import '../services/security/security.hook.js'
 
@@ -46,8 +48,19 @@ export class PersonalAgent {
     const tools = toolRegistry.getAllDefinitions()
     const toolsPrompt = tools.map((t) => `- ${t.name}: ${t.description}`).join('\n')
 
-    this.systemPrompt = `You are a personal OS agent.
+    // 3. Load Workspace Context
+    const ws = await WorkspaceRegistry.getWorkspace(process.cwd())
+    let wsContext = ''
+    if (ws) {
+        wsContext = `
+CURRENT PROJECT: ${ws.name}
+PATH: ${ws.path}
+Tags: ${ws.tags.join(', ')}
+`
+    }
 
+    this.systemPrompt = `You are a personal OS agent.
+${wsContext}
 AVAILABLE TOOLS:
 ${toolsPrompt}
 
@@ -61,6 +74,12 @@ ${lessons}`
     console.log('Agent Runtime Started')
     // Manager is ready
     if (this.manager) console.log('Manager connected')
+
+    // Initialize/Analyze Project if needed
+    await ProjectInitializer.ensureInitialized(process.cwd())
+
+    // Register Current Workspace
+    await WorkspaceRegistry.registerWorkspace(process.cwd())
 
     // Load Packs
     await packLoader.loadPacks()
@@ -82,7 +101,7 @@ ${lessons}`
   }
 
   private tick() {
-    console.log('Agent Tick')
+    // console.log('Agent Tick')
     bus.emit(Events.AGENT_TICK)
     // Future logic goes here
   }

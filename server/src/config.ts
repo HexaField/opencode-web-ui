@@ -7,5 +7,7 @@ export const AppPaths = {
   memory: path.join(USER_DATA_ROOT, 'MEMORY'),
   telos: path.join(USER_DATA_ROOT, 'TELOS'),
   packs: path.join(USER_DATA_ROOT, 'PACKS'),
-  config: path.join(USER_DATA_ROOT, 'CONFIG')
+  config: path.join(USER_DATA_ROOT, 'CONFIG'),
+  workspaces: path.join(USER_DATA_ROOT, 'MEMORY', 'workspaces.json'),
+  templates: path.join(USER_DATA_ROOT, 'TEMPLATES')
 }
