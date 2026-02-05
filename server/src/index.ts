@@ -1,10 +1,9 @@
 import * as fs from 'fs'
 import * as https from 'https'
 import * as path from 'path'
-import { app, manager } from './server.js'
+import { app, manager, agent } from './server.js'
 import { setupTerminalService } from './services/terminal/terminal.service.js'
 import { InitService } from './services/init.service.js'
-import { PersonalAgent } from './agent/PersonalAgent.js'
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err)
@@ -22,7 +21,6 @@ async function bootstrap() {
   // Initialize Agent Subsystems
   await InitService.init()
 
-  const agent = new PersonalAgent(manager)
   agent.start()
 
   const keyPath = path.join(process.cwd(), 'server/certs/server.key')

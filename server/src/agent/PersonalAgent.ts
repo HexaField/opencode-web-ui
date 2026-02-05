@@ -13,6 +13,7 @@ export class PersonalAgent {
   private tickIntervalMs: number = 5000 // 5 seconds
   // System prompt is stored here for future use by the agent execution loop
   public systemPrompt: string = ''
+  public status: 'idle' | 'thinking' = 'idle'
 
   constructor(private manager: OpencodeManager) {
     this.setupListeners()

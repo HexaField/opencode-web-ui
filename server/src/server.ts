@@ -6,6 +6,7 @@ import * as http from 'http'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { OpencodeManager } from './opencode.js'
+import { PersonalAgent } from './agent/PersonalAgent.js'
 import { registerAgentsRoutes } from './services/agents/agents.service.js'
 import { registerFilesRoutes } from './services/files/files.service.js'
 import { registerGitRoutes } from './services/git/git.service.js'
@@ -19,11 +20,12 @@ app.use(cors())
 app.use(bodyParser.json())
 
 export const manager = new OpencodeManager()
+export const agent = new PersonalAgent(manager)
 
 // Register routes
 registerMiscRoutes(app, manager)
 registerSessionsRoutes(app, manager)
-registerAgentsRoutes(app, manager)
+registerAgentsRoutes(app, manager, agent)
 registerFilesRoutes(app, manager)
 registerGitRoutes(app)
 registerTasksRoutes(app)
