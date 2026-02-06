@@ -23,7 +23,10 @@ describe('Workspaces API', () => {
       const res = await request(app).get('/api/workspaces')
 
       expect(res.status).toBe(200)
-      expect(res.body).toEqual({ workspaces: mockWorkspaces })
+      expect(res.body).toEqual({
+        workspaces: mockWorkspaces,
+        homePath: expect.any(String)
+      })
     })
   })
 

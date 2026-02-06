@@ -2,12 +2,13 @@ import express from 'express'
 import { WorkspaceRegistry } from './workspace.registry.js'
 import { TemplateLoader } from '../templates/template.loader.js'
 import { scaffold_project } from '../../packs/standard/scaffold/index.js'
+import { AppPaths } from '../../config.js'
 
 export function registerWorkspacesRoutes(app: express.Application) {
   app.get('/api/workspaces', async (_req, res) => {
     try {
       const workspaces = await WorkspaceRegistry.getWorkspaces()
-      res.json({ workspaces })
+      res.json({ workspaces, homePath: AppPaths.root })
     } catch (e) {
       res.status(500).json({ error: String(e) })
     }

@@ -9,10 +9,19 @@ export interface WorkspaceMetadata {
   techStack?: string[]
 }
 
-export async function getRecentWorkspaces(): Promise<WorkspaceMetadata[]> {
+export interface DashboardData {
+  workspaces: WorkspaceMetadata[]
+  homePath: string
+}
+
+export async function getDashboardData(): Promise<DashboardData> {
   const res = await fetch(`${API_BASE}/workspaces`)
   if (!res.ok) throw new Error('Failed to load workspaces')
-  const data = await res.json()
+  return await res.json()
+}
+
+export async function getRecentWorkspaces(): Promise<WorkspaceMetadata[]> {
+  const data = await getDashboardData()
   return data.workspaces
 }
 

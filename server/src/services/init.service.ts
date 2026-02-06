@@ -10,6 +10,8 @@ export class InitService {
     await fs.mkdir(AppPaths.telos, { recursive: true })
     await fs.mkdir(AppPaths.packs, { recursive: true })
     await fs.mkdir(AppPaths.config, { recursive: true })
+    await fs.mkdir(AppPaths.docs, { recursive: true })
+    await fs.mkdir(AppPaths.media, { recursive: true })
 
     // Initialize RAG Service
     await ragService.initialize()
