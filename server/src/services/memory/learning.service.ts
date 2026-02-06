@@ -34,6 +34,10 @@ export class LearningService {
       throw error
     }
   }
+
+  public async setLearnedLessons(content: string): Promise<void> {
+    await fs.writeFile(this.learnedPath, content, 'utf8')
+  }
 }
 
 export const learningService = new LearningService()

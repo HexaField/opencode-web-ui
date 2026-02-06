@@ -1,24 +1,32 @@
 import { describe, it, expect, vi } from 'vitest'
 import { schedulerService } from '../../src/services/scheduler/scheduler.service.js'
-import { bus, Events } from '../../src/services/event-bus.js'
 import * as cron from 'node-cron'
 
 vi.mock('node-cron', () => {
   return {
     schedule: vi.fn(),
-    ScheduledTask: class {}
+    ScheduledTask: class {
+      stop() {}
+    }
+  }
+})
+
+// Mock JobExecutor
+vi.mock('../../src/services/scheduler/job.executor.js', () => {
+  return {
+    JobExecutor: class {
+      execute = vi.fn().mockResolvedValue(undefined)
+    }
   }
 })
 
 describe('Scheduler Service', () => {
   it('initializes correctly', () => {
     expect(schedulerService).toBeDefined()
-    expect(bus).toBeDefined()
-    expect(typeof bus.on).toBe('function')
   })
 
   it('registers a job via manual registration', () => {
-    const jobs = [{ cron: '0 0 * * *', task: 'Test Task', enabled: true }]
+    const jobs: any[] = [{ cron: '0 0 * * *', name: 'Test Task', action: 'agent_workflow', enabled: true }]
     const scheduleSpy = vi.mocked(cron.schedule)
 
     const service = schedulerService as any
@@ -27,22 +35,26 @@ describe('Scheduler Service', () => {
     expect(scheduleSpy).toHaveBeenCalledWith('0 0 * * *', expect.any(Function))
   })
 
-  it('emits event when job triggers', () => {
-    const jobs = [{ cron: '0 0 * * *', task: 'Test Task', enabled: true }]
+  it('triggers executor when job fires', () => {
+    const jobs: any[] = [{ cron: '0 0 * * *', name: 'Test Task', action: 'agent_workflow', enabled: true }]
     const scheduleSpy = vi.mocked(cron.schedule)
 
     scheduleSpy.mockImplementation((_expr, func) => {
       // @ts-ignore
       func()
-      return {} as any
+      return { stop: () => {} } as any
     })
 
-    const listener = vi.fn()
-    bus.on(Events.SCHEDULE_TRIGGER, listener)
-
     const service = schedulerService as any
+    // Reset executor mock - access the instance on the service
+    // Does service.executor exist? yes.
+    // If we want to spy on it, we might need to grab it from the instance
+
+    // Create spy on the actual instance method
+    const executeSpy = vi.spyOn(service.executor, 'execute')
+
     service.registerJobs(jobs)
 
-    expect(listener).toHaveBeenCalledWith({ task: 'Test Task' })
+    expect(executeSpy).toHaveBeenCalled()
   })
 })

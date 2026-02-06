@@ -58,3 +58,13 @@ export async function getAgentMemory(): Promise<{ lessons: string }> {
   if (!res.ok) throw new Error('Failed to get memory')
   return res.json()
 }
+
+export async function saveAgentMemory(lessons: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/agents/memory`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lessons })
+  })
+  if (!res.ok) throw new Error('Failed to save memory')
+  return res.json()
+}

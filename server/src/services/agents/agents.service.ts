@@ -26,6 +26,20 @@ export function registerAgentsRoutes(app: express.Application, manager: Opencode
     }
   })
 
+  app.post('/api/agents/memory', async (req, res) => {
+    try {
+      const { lessons } = req.body
+      if (typeof lessons !== 'string') {
+        res.status(400).json({ error: 'lessons must be a string' })
+        return
+      }
+      await learningService.setLearnedLessons(lessons)
+      res.json({ success: true })
+    } catch (error) {
+      res.status(500).json({ error: String(error) })
+    }
+  })
+
   app.get('/api/agents', validate(FolderQuerySchema), withFolder(manager), async (req, res) => {
     try {
       const folder = (req as AuthenticatedRequest).targetFolder!

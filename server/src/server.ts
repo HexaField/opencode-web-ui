@@ -16,6 +16,7 @@ import { registerTasksRoutes } from './services/tasks/tasks.service.js'
 import { registerWorkspacesRoutes } from './services/workspaces/workspaces.service.js'
 import { registerRagRoutes } from './services/rag/rag.routes.js'
 import { registerReflectionRoutes } from './services/reflection/reflection.routes.js'
+import { ReflectionListener } from './services/reflection/reflection.listener.js'
 
 export const app = express()
 app.use(cors())
@@ -23,6 +24,10 @@ app.use(bodyParser.json())
 
 export const manager = new OpencodeManager()
 export const agent = new PersonalAgent(manager)
+
+// Listeners
+const reflectionListener = new ReflectionListener(manager)
+reflectionListener.register()
 
 // Register routes
 registerMiscRoutes(app, manager)

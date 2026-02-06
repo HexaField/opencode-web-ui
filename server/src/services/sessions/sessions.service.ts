@@ -28,6 +28,8 @@ import {
   UpdateSessionSchema
 } from './sessions.schema'
 
+import { bus, Events } from '../event-bus.js'
+
 interface SessionWithHistory extends Session {
   history?: { info: Message; parts: Part[] }[]
 }
@@ -349,6 +351,25 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
     } catch (error) {
       console.error(error)
       console.error('SDK Event Stream Error:', error)
+    }
+  })
+
+  app.post('/api/sessions/:id/archive', validate(GetSessionSchema), withClient(manager), async (req, res) => {
+    try {
+      const { id } = req.params as { id: string }
+      const client = (req as AuthenticatedRequest).opencodeClient!
+
+      // 1. Get History
+      const history = await getSessionHistory(client, id)
+
+      // 2. Emit Event
+      bus.emit(Events.SESSION_ARCHIVED, { sessionId: id, history })
+
+      // 3. Mark locally? For now just return success.
+      res.json({ success: true, message: 'Session archived and scheduled for analysis' })
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: String(error) })
     }
   })
 
