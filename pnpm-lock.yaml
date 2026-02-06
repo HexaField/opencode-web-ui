@@ -12,8 +12,8 @@ importers:
   .:
     dependencies:
       '@opencode-ai/sdk':
-        specifier: 1.1.43
-        version: 1.1.43
+        specifier: 1.1.53
+        version: 1.1.53
       '@types/dompurify':
         specifier: ^3.2.0
         version: 3.2.0
@@ -690,8 +690,8 @@ packages:
     resolution: {integrity: sha512-7OsC1gNORBEawOa5+j2pXN9vsicaIOH5cPXxoR6fJOmH6/EXpJB2CajXOu1fPRFun2m1lktEFX11+P89hqO/og==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  '@opencode-ai/sdk@1.1.43':
-    resolution: {integrity: sha512-JuZjc7anMVXHOwbsQ/vwyhu76fjMAv5DFdkE9rPNuZtU5s268ySrghVJUK/0igtZEQ/NmtnzbtEVBHgkonLZKg==}
+  '@opencode-ai/sdk@1.1.53':
+    resolution: {integrity: sha512-RUIVnPOP1CyyU32FrOOYuE7Ge51lOBuhaFp2NSX98ncApT7ffoNetmwzqrhOiJQgZB1KrbCHLYOCK6AZfacxag==}
 
   '@oxfmt/darwin-arm64@0.23.0':
     resolution: {integrity: sha512-shGng2EjBspvuqtFtcjcKf0WoZ9QCdL8iLYgdOoKSiSQ9pPyLJ4jQf62yhm4b2PpZNVcV/20gV6d8SyKzg6SZQ==}
@@ -3199,7 +3199,7 @@ snapshots:
     dependencies:
       semver: 7.7.3
 
-  '@opencode-ai/sdk@1.1.43': {}
+  '@opencode-ai/sdk@1.1.53': {}
 
   '@oxfmt/darwin-arm64@0.23.0':
     optional: true
