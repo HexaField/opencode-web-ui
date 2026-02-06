@@ -21,14 +21,25 @@ export default function Workspace(props: Props) {
   const [view, setView] = createSignal<'chat' | 'changes' | 'files' | 'plan' | 'terminal'>(
     (params.get('view') as 'chat' | 'changes' | 'files' | 'plan' | 'terminal') || 'chat'
   )
-  const [selectedFile, setSelectedFile] = createSignal<string | null>(params.get('file'))
+  // Initialize from storage or URL param
+  const savedFile = localStorage.getItem(`workspace-mobile-file-${props.folder}`)
+  const [selectedFile, setSelectedFile] = createSignal<string | null>(params.get('file') || savedFile)
   const [isSettingsOpen, setIsSettingsOpen] = createSignal(false)
+
+  // Persist to storage
+  createEffect(() => {
+    const f = selectedFile()
+    if (f) {
+      localStorage.setItem(`workspace-mobile-file-${props.folder}`, f)
+    } else {
+      localStorage.removeItem(`workspace-mobile-file-${props.folder}`)
+    }
+  })
 
   createEffect(() => {
     const sid = currentSessionId()
     const v = view()
     console.log('Current View:', v)
-    const f = selectedFile()
     const url = new URL(window.location.href)
 
     if (sid) {
@@ -43,11 +54,7 @@ export default function Workspace(props: Props) {
       url.searchParams.delete('view')
     }
 
-    if (f) {
-      url.searchParams.set('file', f)
-    } else {
-      url.searchParams.delete('file')
-    }
+    url.searchParams.delete('file')
 
     window.history.replaceState({}, '', url)
 
