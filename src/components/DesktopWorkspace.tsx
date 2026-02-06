@@ -70,7 +70,7 @@ export default function DesktopWorkspace(props: Props) {
   createEffect(() => {
     const state = {
       panes: panes(),
-      activePaneIndex: activePaneIndex(),
+      activePaneIndex: activePaneIndex()
     }
     localStorage.setItem(`workspace-state-${props.folder}`, JSON.stringify(state))
   })
