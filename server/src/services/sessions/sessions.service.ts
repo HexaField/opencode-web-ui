@@ -210,7 +210,6 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
 
       const allStatuses = unwrap(result) as Record<string, { type: string }>
       const sessionStatus = allStatuses[id]
-      console.log(sessionStatus)
 
       if (!sessionStatus) {
         res.json({ status: 'idle' })
