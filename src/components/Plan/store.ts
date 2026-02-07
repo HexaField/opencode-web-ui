@@ -1,5 +1,6 @@
 import { createResource } from 'solid-js'
 import { UpdateTaskRequest } from '../../../server/types'
+import { authRadicle } from '../../api/git'
 import { createTag, createTask, deleteTask, getTags, getTasks, updateTask } from '../../api/tasks'
 import { Task } from '../../types'
 
@@ -15,9 +16,24 @@ export function createTasksStore(folder: string) {
     dependencies?: string[]
     kind?: 'task' | 'plan'
   }) => {
-    const newTask = await createTask(folder, task)
-    mutateTasks((prev) => (prev ? [newTask, ...prev] : [newTask]))
-    return newTask
+    try {
+      const newTask = await createTask(folder, task)
+      mutateTasks((prev) => (prev ? [newTask, ...prev] : [newTask]))
+      return newTask
+    } catch (e: any) {
+      if (e.message && e.message.includes('Radicle authentication failed')) {
+        const pass = prompt('Radicle passphrase required:')
+        if (pass) {
+          await authRadicle(pass)
+          // Retry
+          const newTask = await createTask(folder, task)
+          mutateTasks((prev) => (prev ? [newTask, ...prev] : [newTask]))
+          return newTask
+        }
+      }
+      alert('Failed to add task: ' + String(e))
+      throw e
+    }
   }
 
   const updateTaskStatus = async (id: string, status: Task['status']) => {

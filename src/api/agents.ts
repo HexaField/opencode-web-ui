@@ -46,3 +46,25 @@ export async function deleteAgent(folder: string, name: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete agent')
   return res.json() as Promise<void>
 }
+
+export async function getAgentStatus(): Promise<{ status: 'idle' | 'thinking' }> {
+  const res = await fetch(`${API_BASE}/agents/status`)
+  if (!res.ok) throw new Error('Failed to get status')
+  return res.json()
+}
+
+export async function getAgentMemory(): Promise<{ lessons: string }> {
+  const res = await fetch(`${API_BASE}/agents/memory`)
+  if (!res.ok) throw new Error('Failed to get memory')
+  return res.json()
+}
+
+export async function saveAgentMemory(lessons: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/agents/memory`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lessons })
+  })
+  if (!res.ok) throw new Error('Failed to save memory')
+  return res.json()
+}

@@ -37,6 +37,8 @@ export default defineConfig(({ mode }) => {
       }
     },
     test: {
+      globals: true,
+      setupFiles: ['./server/test/setup.ts'],
       exclude: ['e2e/**', 'node_modules/**', '.opencode/**'],
       testTimeout: 60000,
       hookTimeout: 60000,

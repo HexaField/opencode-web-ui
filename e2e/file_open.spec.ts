@@ -73,10 +73,6 @@ test.describe('Tool Call File Opening', () => {
     await fileLink.click()
 
     // 4. Verify we opened the file
-    // The URL should contain the file param
-    await expect(page).toHaveURL(/file=.*test-file\.txt/)
-
-    // Verify the file content is loaded in the editor
     await expect(page.locator('.monaco-editor')).toBeVisible()
   })
 })

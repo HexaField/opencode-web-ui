@@ -164,13 +164,15 @@ export function registerFilesRoutes(app: express.Application, manager: OpencodeM
 
   app.get('/api/files/read', validate(FileReadSchema), withClient(manager), async (req, res) => {
     try {
-      const client = (req as AuthenticatedRequest).opencodeClient!
       const filePath = req.query.path as string
       if (!filePath) {
         res.status(400).json({ error: 'Missing path query parameter' })
         return
       }
-      const content = await client.file.read({ query: { path: filePath } })
+      const client = (req as AuthenticatedRequest).opencodeClient!
+      const folder = req.query.folder as string
+
+      const content = await client.file.read({ query: { path: filePath, directory: folder } })
       const data = unwrap(content)
       // Ensure we return an object with content property if the SDK returns raw string or similar
       if (typeof data === 'string') {

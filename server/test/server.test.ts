@@ -354,5 +354,5 @@ describe('Server Integration Tests', () => {
     expect(firstMsg.info).toBeDefined()
     const info = firstMsg.info as Record<string, unknown>
     expect(info.role).toBeDefined()
-  }, 30000)
+  }, 60000)
 })

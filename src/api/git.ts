@@ -213,3 +213,13 @@ export async function initRadicleRepo(folder: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to init radicle repo')
   await res.json()
 }
+
+export async function authRadicle(passphrase: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/git/radicle/auth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ passphrase })
+  })
+  if (!res.ok) throw new Error('Failed to auth radicle')
+  await res.json()
+}

@@ -1,6 +1,6 @@
 import { createEffect, createSignal } from 'solid-js'
 import DesktopWorkspace from './components/DesktopWorkspace'
-import FolderBrowser from './components/FolderBrowser'
+import DashboardView from './components/Dashboard/DashboardView'
 import Workspace from './components/Workspace'
 import { ThemeProvider } from './theme'
 
@@ -37,11 +37,7 @@ function App() {
             <DesktopWorkspace folder={folder()!} onBack={() => setFolder(null)} />
           )
         ) : (
-          <div class="flex h-full items-center justify-center p-4">
-            <div class="w-full max-w-2xl">
-              <FolderBrowser onSelectFolder={setFolder} />
-            </div>
-          </div>
+          <DashboardView onOpen={setFolder} />
         )}
       </div>
     </ThemeProvider>

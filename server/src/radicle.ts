@@ -3,6 +3,8 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import { promisify } from 'util'
 
+let cachedPassphrase: string | undefined
+
 const execPromise = promisify(_exec) as (
   command: string,
   options?: ExecOptions
@@ -22,6 +24,9 @@ interface ExecError extends Error {
 async function exec(command: string, options?: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   // Default timeout 10s
   const opts = { timeout: 10000, ...options }
+  if (cachedPassphrase) {
+    opts.env = { ...process.env, ...opts.env, RAD_PASSPHRASE: cachedPassphrase }
+  }
   try {
     return await execPromise(command, opts)
   } catch (error) {
@@ -43,14 +48,18 @@ async function execFile(
 ): Promise<{ stdout: string; stderr: string }> {
   // Default timeout 10s
   const opts = { timeout: 10000, ...options }
+  if (cachedPassphrase) {
+    opts.env = { ...process.env, ...opts.env, RAD_PASSPHRASE: cachedPassphrase }
+  }
   try {
     return await execFilePromise(file, args, opts)
   } catch (error) {
     const execError = error as ExecError
     const stderr = execError.stderr || ''
     if (stderr.includes('Passphrase') || stderr.includes('ssh-agent')) {
-      // Allow retry if needed? But usually for execFile we pass args directly.
-      // Keeping similar error handling logic just in case.
+      throw new Error(
+        `Radicle authentication failed. Please set RAD_PASSPHRASE or ensure agent is running.\nOriginal error: ${execError.message}\nStderr: ${stderr}`
+      )
     }
     throw error
   }
@@ -96,6 +105,10 @@ interface TaskMetadata {
 
 export class RadicleService {
   private ridCache: Record<string, string> = {}
+
+  setPassphrase(pass: string) {
+    cachedPassphrase = pass
+  }
 
   private async getRid(folder: string): Promise<string> {
     if (this.ridCache[folder]) return this.ridCache[folder]
