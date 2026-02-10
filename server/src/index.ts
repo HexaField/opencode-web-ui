@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as https from 'https'
 import * as path from 'path'
-import { app, agent } from './server.js'
+import { app, agent, manager } from './server.js'
 import { setupTerminalService } from './services/terminal/terminal.service.js'
 import { InitService } from './services/init.service.js'
 
@@ -35,10 +35,12 @@ async function bootstrap() {
     }
     server = https.createServer(options, app).listen(Number(port), host, () => {
       console.log(`Server running on https://${host}:${port}`)
+      if (process.send) process.send('ready')
     })
   } else {
     server = app.listen(Number(port), host, () => {
       console.log(`Server running on http://${host}:${port}`)
+      if (process.send) process.send('ready')
     })
   }
 
@@ -46,16 +48,28 @@ async function bootstrap() {
 
   server.on('error', (err) => {
     console.error('Server failed to start:', err)
+    process.exit(1)
   })
 
   // Graceful Shutdown
-  const shutdown = () => {
-    console.log('Shutting down...')
+  const shutdown = async () => {
+    console.log('Shutting down server...')
     agent.stop()
+    
+    // Allow manager to clean up workers
+    await manager.shutdown()
+    
     if (server) {
       server.close(() => {
+        console.log('HTTP server closed.')
         process.exit(0)
       })
+      
+      // Force exit if server.close hangs
+      setTimeout(() => { 
+        console.error('Forcing exit after timeout')
+        process.exit(1) 
+      }, 5000).unref()
     } else {
       process.exit(0)
     }

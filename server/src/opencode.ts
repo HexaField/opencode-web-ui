@@ -497,10 +497,31 @@ export class OpencodeManager {
     }
   }
 
-  shutdown() {
-    for (const child of this.processes.values()) {
-      child.kill()
-    }
+  async shutdown() {
+    console.log(`Shutting down ${this.processes.size} worker processes...`)
+    const promises = Array.from(this.processes.values()).map((child) => {
+      return new Promise<void>((resolve) => {
+        if (child.exitCode !== null) {
+          resolve()
+          return
+        }
+
+        const timeout = setTimeout(() => {
+          console.warn(`Force killing worker (pid ${child.pid})...`)
+          child.kill('SIGKILL')
+          resolve()
+        }, 3000) // Give 3 seconds to cleanup
+
+        child.once('exit', () => {
+          clearTimeout(timeout)
+          resolve()
+        })
+
+        child.kill('SIGTERM')
+      })
+    })
+
+    await Promise.all(promises)
     this.clients.clear()
     this.processes.clear()
   }
