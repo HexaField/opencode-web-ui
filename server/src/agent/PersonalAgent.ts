@@ -1,6 +1,7 @@
 import { OpencodeManager } from '../opencode.js'
 import { bus, Events } from '../services/event-bus.js'
-import { learningService } from '../services/memory/learning.service.js'
+// import { learningService } from '../services/memory/learning.service.js' // Legacy
+import { ContextLoader } from '../services/memory/context_loader.js'
 import { packLoader } from '../services/packs/pack-loader.js'
 import { toolRegistry } from '../services/tools/tool-registry.js'
 import { WorkspaceRegistry } from '../services/workspaces/workspace.registry.js'
@@ -42,14 +43,18 @@ export class PersonalAgent {
   }
 
   public async refreshContext() {
-    // 1. Load Lessons
-    const lessons = await learningService.getLearnedLessons()
+    // 1. Load PAI Principles & Identity
+    const principles = await ContextLoader.loadPrinciples()
+    const memoryMd = await ContextLoader.loadMemoryMd()
+    
+    // 2. Load Warm Memory (Journals)
+    const journals = await ContextLoader.loadRecentJournals()
 
-    // 2. Load Tools
+    // 3. Load Tools
     const tools = toolRegistry.getAllDefinitions()
     const toolsPrompt = tools.map((t) => `- ${t.name}: ${t.description}`).join('\n')
 
-    // 3. Load Workspace Context
+    // 4. Load Workspace Context
     const ws = await WorkspaceRegistry.getWorkspace(process.cwd())
     let wsContext = ''
     if (ws) {
@@ -60,13 +65,22 @@ Tags: ${ws.tags.join(', ')}
 `
     }
 
-    this.systemPrompt = `You are a personal OS agent.
+    // Construct the System Prompt (The "Mind")
+    this.systemPrompt = `
+${principles}
+
+## YOUR IDENTITY (MEMORY.md)
+${memoryMd}
+
+## WORKSPACE CONTEXT
 ${wsContext}
-AVAILABLE TOOLS:
+
+## AVAILABLE TOOLS
 ${toolsPrompt}
 
-LESSONS LEARNED:
-${lessons}`
+## RECENT JOURNALS (Context)
+${journals}
+`
 
     console.log('Agent Context Refreshed')
   }

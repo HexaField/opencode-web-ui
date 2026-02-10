@@ -25,31 +25,50 @@ export class DatabaseService {
     return DatabaseService.instance
   }
 
+  // For testing purposes
+  static resetInstance() {
+    DatabaseService.instance = undefined as any
+  }
+
   private initSchema() {
+    this.db.pragma('foreign_keys = ON');
+
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS documents (
-        id TEXT PRIMARY KEY,
+      CREATE TABLE IF NOT EXISTS files (
+        id INTEGER PRIMARY KEY,
+        path TEXT UNIQUE NOT NULL,
+        last_modified INTEGER NOT NULL,
+        hash TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS chunks (
+        id INTEGER PRIMARY KEY,
+        file_id INTEGER,
         content TEXT NOT NULL,
-        metadata TEXT,
-        created_at TEXT NOT NULL
+        start_line INTEGER,
+        end_line INTEGER,
+        embedding BLOB,
+        FOREIGN KEY(file_id) REFERENCES files(id) ON DELETE CASCADE
       );
 
-      CREATE VIRTUAL TABLE IF NOT EXISTS documents_fts USING fts5(
+      CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
         content,
-        metadata
+        content='chunks',
+        content_rowid='id'
       );
 
-      CREATE TRIGGER IF NOT EXISTS documents_ai AFTER INSERT ON documents BEGIN
-        INSERT INTO documents_fts(rowid, content, metadata) VALUES (new.rowid, new.content, new.metadata);
+      -- FTS Triggers
+      CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN
+        INSERT INTO chunks_fts(rowid, content) VALUES (new.id, new.content);
       END;
 
-      CREATE TRIGGER IF NOT EXISTS documents_ad AFTER DELETE ON documents BEGIN
-        INSERT INTO documents_fts(documents_fts, rowid, content, metadata) VALUES('delete', old.rowid, old.content, old.metadata);
+      CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN
+        INSERT INTO chunks_fts(chunks_fts, rowid, content) VALUES('delete', old.id, old.content);
       END;
 
-      CREATE TRIGGER IF NOT EXISTS documents_au AFTER UPDATE ON documents BEGIN
-        INSERT INTO documents_fts(documents_fts, rowid, content, metadata) VALUES('delete', old.rowid, old.content, old.metadata);
-        INSERT INTO documents_fts(rowid, content, metadata) VALUES (new.rowid, new.content, new.metadata);
+      CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks BEGIN
+        INSERT INTO chunks_fts(chunks_fts, rowid, content) VALUES('delete', old.id, old.content);
+        INSERT INTO chunks_fts(rowid, content) VALUES (new.id, new.content);
       END;
     `)
   }

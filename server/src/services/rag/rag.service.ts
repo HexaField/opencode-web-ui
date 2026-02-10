@@ -1,21 +1,20 @@
 import * as path from 'path'
 import * as fs from 'fs/promises'
 import { AppPaths } from '../../config.js'
-import { VectorStore } from './vector.store.js'
 import { IndexerService } from './indexer.service.js'
+import { HybridSearcher } from './hybrid_searcher.js'
+import { dbService } from '../memory/db.js'
 import { toolRegistry } from '../tools/tool-registry.js'
 import { ToolDefinition } from '../../types/packs.js'
 
 export class RagService {
   private static instance: RagService
-  public vectorStore: VectorStore
+  public searcher: HybridSearcher
   public indexer: IndexerService
-  private vectorsPath: string
 
   private constructor() {
-    this.vectorsPath = path.join(AppPaths.memory, 'vectors')
-    this.vectorStore = new VectorStore(this.vectorsPath)
-    this.indexer = new IndexerService(this.vectorStore, AppPaths.memory)
+    this.indexer = new IndexerService(AppPaths.memory)
+    this.searcher = new HybridSearcher(dbService.getDb())
   }
 
   static getInstance(): RagService {
@@ -26,14 +25,12 @@ export class RagService {
   }
 
   public async initialize() {
-    await fs.mkdir(this.vectorsPath, { recursive: true })
-    await this.vectorStore.initialize()
-
     // Register Tool
     this.registerSearchTool()
 
     // Initial Indexing (non-blocking)
-    this.indexer.initialize().catch((err) => console.error('RAG Init Error:', err))
+    // We only trigger sync if DB is empty? No, delta sync handles it.
+    this.indexer.sync().catch((err) => console.error('RAG Init Error:', err))
   }
 
   private registerSearchTool() {
@@ -56,18 +53,14 @@ export class RagService {
     toolRegistry.registerTool(def, async (args: { query: string }) => {
       console.log('[RAG] Searching for:', args.query)
       try {
-        const results = await this.vectorStore.search(args.query, 5)
+        const results = await this.searcher.search(args.query, { limit: 5 })
         if (results.length === 0) return 'No relevant information found in knowledge base.'
 
         return results
           .map((r) => {
-            const meta = r.metadata || {}
-            let source = 'Unknown'
-            if (meta.type === 'readme') source = `README: ${meta.workspace}`
-            else if (meta.type === 'memory') source = `Memory: ${meta.id || meta.source}`
-            else if (meta.type === 'meta') source = `Project Info: ${meta.workspace}`
-
-            return `--- Source: ${source} ---\n${r.content}\n`
+            // Relativize path for display if possible, or just show filename
+            const filename = path.basename(r.filePath)
+            return `--- Source: ${filename} (Score: ${r.score.toFixed(3)}) ---\n${r.content}\n`
           })
           .join('\n')
       } catch (error: any) {

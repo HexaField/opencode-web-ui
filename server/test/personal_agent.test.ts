@@ -25,9 +25,11 @@ vi.mock('../src/services/workspaces/workspace.registry.js', () => ({
   }
 }))
 
-vi.mock('../src/services/memory/learning.service.js', () => ({
-  learningService: {
-    getLearnedLessons: vi.fn().mockResolvedValue([])
+vi.mock('../src/services/memory/context_loader.js', () => ({
+  ContextLoader: {
+    loadPrinciples: vi.fn().mockResolvedValue('Mock Principles'),
+    loadMemoryMd: vi.fn().mockResolvedValue('Mock Memory'),
+    loadRecentJournals: vi.fn().mockResolvedValue('Mock Journals')
   }
 }))
 

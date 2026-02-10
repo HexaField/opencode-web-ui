@@ -10,7 +10,7 @@ export function registerRagRoutes(app: express.Application) {
     }
 
     try {
-      const results = await ragService.vectorStore.search(query, 10)
+      const results = await ragService.searcher.search(query, { limit: 10 })
       res.json({ results })
     } catch (error) {
       console.error('RAG Search Error:', error)
@@ -21,12 +21,11 @@ export function registerRagRoutes(app: express.Application) {
   app.post('/api/rag/index', async (req, res) => {
     // Manually trigger re-indexing
     try {
-      await ragService.indexer.indexMemory()
-      // If we provided a workspace path body
-      const { workspacePath } = req.body
-      if (workspacePath) {
-        await ragService.indexer.indexWorkspace(workspacePath)
-      }
+      // Sync memory
+      await ragService.indexer.sync()
+      
+      // Workspace indexing is currently paused in V2 architecture (Principles: User Memory First)
+      
       res.json({ success: true })
     } catch (error) {
       console.error('RAG Index Error:', error)
