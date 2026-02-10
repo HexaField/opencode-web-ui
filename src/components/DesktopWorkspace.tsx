@@ -22,6 +22,28 @@ export default function DesktopWorkspace(props: Props) {
   const params = new URLSearchParams(window.location.search)
   const [currentSessionId, setCurrentSessionId] = createSignal<string | null>(params.get('session'))
 
+  createEffect(() => {
+    const prompt = params.get('initialPrompt')
+    if (prompt && !currentSessionId()) {
+      const agent = params.get('agent') || undefined
+      const model = params.get('model') || undefined
+      const url = new URL(window.location.href)
+      url.searchParams.delete('initialPrompt')
+      url.searchParams.delete('agent')
+      url.searchParams.delete('model')
+      window.history.replaceState({}, '', url)
+
+      createSession(props.folder, { agent, model })
+        .then(async (session) => {
+          setCurrentSessionId(session.id)
+          await promptSession(props.folder, session.id, {
+            parts: [{ type: 'text', text: prompt }]
+          })
+        })
+        .catch((e) => console.error('Failed to initialize session from prompt', e))
+    }
+  })
+
   // Left sidebar state
   const initialView = (params.get('view') as 'files' | 'changes' | 'plan' | 'terminal' | 'search') || 'files'
   const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan' | 'terminal' | 'search'>(initialView)
