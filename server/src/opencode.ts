@@ -145,14 +145,14 @@ You are a planning agent. Analyze the request and provide a plan. Do not modify 
     name: 'general',
     content: `---
 description: A general-purpose agent for researching complex questions.
-mode: subagent
+mode: primary
 permission:
   write: allow
   edit: allow
   bash: allow
   webfetch: allow
 ---
-You are a general purpose subagent.`
+You are a general purpose agent.`
   },
   {
     name: 'worker',

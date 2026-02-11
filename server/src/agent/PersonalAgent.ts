@@ -46,7 +46,7 @@ export class PersonalAgent {
     // 1. Load PAI Principles & Identity
     const principles = await ContextLoader.loadPrinciples()
     const memoryMd = await ContextLoader.loadMemoryMd()
-    
+
     // 2. Load Warm Memory (Journals)
     const journals = await ContextLoader.loadRecentJournals()
 

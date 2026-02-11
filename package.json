@@ -13,7 +13,7 @@
     "start:server": "tsx --env-file=.env.prod server/src/index.ts",
     "start:test": "concurrently \"pnpm run start:server\" \"pnpm run dev:client\"",
     "start": "pnpm run build && tsx --env-file=.env.prod server/src/index.ts",
-    "restart": "pnpm run build && pm2 restart ecosystem.config.cjs",
+    "daemon:restart": "pnpm run build && pm2 restart ecosystem.config.cjs --update-env && pm2 save",
     "stop": "pm2 stop opencode-web-ui",
     "logs": "pm2 logs opencode-web-ui",
     "test": "vitest run",

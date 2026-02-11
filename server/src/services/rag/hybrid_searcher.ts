@@ -53,9 +53,9 @@ export class HybridSearcher {
 
     // Process Vector ranks
     vectorResults.forEach((item, index) => {
-        // If we are only using vectors, we might want to use the raw similarity score
-        // But for hybrid, rank is more stable.
-        // Let's stick to RRF for consistency in hybrid mode.
+      // If we are only using vectors, we might want to use the raw similarity score
+      // But for hybrid, rank is more stable.
+      // Let's stick to RRF for consistency in hybrid mode.
       const rank = index + 1
       const score = 1 / (k + rank)
       scores.set(item.id, (scores.get(item.id) || 0) + score)
@@ -63,9 +63,9 @@ export class HybridSearcher {
 
     // If only one method was used, we might want to preserve the original sort
     // But RRF is monotonic so sorting by RRF score preserves rank order of the single source.
-    
+
     // exception: valid vector search might return 0 results if cache empty? No, scan returns all.
-    
+
     const sortedIds = Array.from(scores.entries())
       .sort((a, b) => b[1] - a[1]) // Descending score
       .slice(0, limit)
@@ -81,7 +81,7 @@ export class HybridSearcher {
       // Simple FTS query. Note: FTS5 syntax rules apply (OR, AND, quotes).
       // We might want to sanitize the query or use 'NEAR'.
       // For now, simpler is better: treat as phrase or bag of words.
-      
+
       const statement = this.db.prepare(`
         SELECT rowid 
         FROM chunks_fts 
@@ -89,9 +89,9 @@ export class HybridSearcher {
         ORDER BY rank 
         LIMIT ?
       `)
-      
+
       // Wrapping in quotes for phrase search or simple sanitation
-      // "path/to/file" chars might break it. 
+      // "path/to/file" chars might break it.
       // Let's attempt a raw query but fall back if it fails?
       // A safer bet for general text is sanitation.
       const sanitized = query.replace(/"/g, '""')
@@ -99,7 +99,7 @@ export class HybridSearcher {
       // Let's stick to phrase for strong keyword matches, or natural language if unquoted?
       // Just passing the raw string often fails in FTS5 if it has symbols.
       // Let's try standard sanitization.
-      
+
       const rows = statement.all(ftsQuery, limit) as { rowid: number }[]
       return rows.map((r) => r.rowid)
     } catch (err) {
@@ -111,13 +111,13 @@ export class HybridSearcher {
   private async searchVectors(query: string, limit: number): Promise<{ id: number; score: number }[]> {
     const vector = await EmbeddingService.getInstance().embed(query)
     if (!vector) {
-        console.warn('Embedding generation failed')
-        return []
+      console.warn('Embedding generation failed')
+      return []
     }
 
     const vectors = await this.getVectors()
     console.log(`Searching ${vectors.length} vectors`)
-    
+
     // Compute Cosine Similarity
     // TODO: move to optimized loop or WASM if slow. JS loop is fine for <100k.
     const results = vectors.map((v) => {
@@ -132,14 +132,14 @@ export class HybridSearcher {
 
   private async getVectors(): Promise<VectorEntry[]> {
     const now = Date.now()
-    if (this.cache && (now - this.lastCacheUpdate < this.CACHE_TTL)) {
+    if (this.cache && now - this.lastCacheUpdate < this.CACHE_TTL) {
       return this.cache
     }
 
     const statement = this.db.prepare('SELECT id, embedding FROM chunks WHERE embedding IS NOT NULL')
     const rows = statement.all() as { id: number; embedding: Buffer }[]
-    
-    this.cache = rows.map(r => ({
+
+    this.cache = rows.map((r) => ({
       id: r.id,
       embedding: new Float32Array(r.embedding.buffer, r.embedding.byteOffset, r.embedding.byteLength / 4)
     }))
@@ -155,22 +155,24 @@ export class HybridSearcher {
       JOIN files f ON c.file_id = f.id
       WHERE c.id IN (${placeholders})
     `)
-    
+
     const rows = stmt.all(...ids) as any[]
-    
+
     // Map back to guarantee order and attach score
-    return ids.map((id) => {
-      const row = rows.find((r) => r.id === id)
-      if (!row) return null
-      return {
-        id: row.id,
-        content: row.content,
-        filePath: row.path,
-        startLine: row.start_line,
-        endLine: row.end_line,
-        score: scores.get(id) || 0
-      }
-    }).filter((r): r is SearchResult => r !== null)
+    return ids
+      .map((id) => {
+        const row = rows.find((r) => r.id === id)
+        if (!row) return null
+        return {
+          id: row.id,
+          content: row.content,
+          filePath: row.path,
+          startLine: row.start_line,
+          endLine: row.end_line,
+          score: scores.get(id) || 0
+        }
+      })
+      .filter((r): r is SearchResult => r !== null)
   }
 
   private cosineSimilarity(a: Float32Array, b: Float32Array): number {
@@ -179,9 +181,9 @@ export class HybridSearcher {
     let normA = 0
     let normB = 0
     for (let i = 0; i < a.length; i++) {
-        dot += a[i] * b[i]
-        normA += a[i] * a[i]
-        normB += b[i] * b[i]
+      dot += a[i] * b[i]
+      normA += a[i] * a[i]
+      normB += b[i] * b[i]
     }
     // Check for zero vectors
     if (normA === 0 || normB === 0) return 0

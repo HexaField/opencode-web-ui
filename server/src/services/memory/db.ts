@@ -31,7 +31,7 @@ export class DatabaseService {
   }
 
   private initSchema() {
-    this.db.pragma('foreign_keys = ON');
+    this.db.pragma('foreign_keys = ON')
 
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS files (

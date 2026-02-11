@@ -23,9 +23,9 @@ export function registerRagRoutes(app: express.Application) {
     try {
       // Sync memory
       await ragService.indexer.sync()
-      
+
       // Workspace indexing is currently paused in V2 architecture (Principles: User Memory First)
-      
+
       res.json({ success: true })
     } catch (error) {
       console.error('RAG Index Error:', error)

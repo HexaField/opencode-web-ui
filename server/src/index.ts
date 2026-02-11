@@ -54,25 +54,24 @@ async function bootstrap() {
   // Graceful Shutdown
   const shutdown = async () => {
     console.log('Shutting down server...')
-    agent.stop()
-    
-    // Allow manager to clean up workers
-    await manager.shutdown()
-    
+
+    // 1. Stop accepting new connections immediately
     if (server) {
       server.close(() => {
         console.log('HTTP server closed.')
-        process.exit(0)
       })
-      
-      // Force exit if server.close hangs
-      setTimeout(() => { 
-        console.error('Forcing exit after timeout')
-        process.exit(1) 
-      }, 5000).unref()
-    } else {
-      process.exit(0)
+      // Close all open connections associated with the server
+      server.closeAllConnections?.()
     }
+
+    // 2. Stop Agent Loop
+    agent.stop()
+
+    // 3. Clean up Worker Processes
+    await manager.shutdown()
+
+    console.log('Cleanup complete via shutdown handler.')
+    process.exit(0)
   }
 
   process.on('SIGINT', shutdown)
