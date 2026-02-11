@@ -318,6 +318,7 @@ export class OpencodeManager {
 
     // Resolve absolute path
     const absFolder = path.resolve(folder)
+    const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
     return new Promise((resolve, reject) => {
       const currentFile = fileURLToPath(import.meta.url)
@@ -326,6 +327,7 @@ export class OpencodeManager {
       // We use process.execPath (node) and tsx loader
       const child = spawn(process.execPath, ['--import', 'tsx/esm', currentFile], {
         env: { ...process.env, OPENCODE_WORKER_DIR: absFolder },
+        cwd: projectRoot, // Force CWD to project root to find node_modules
         stdio: ['ignore', 'pipe', 'pipe'] // Capture stderr
       })
 

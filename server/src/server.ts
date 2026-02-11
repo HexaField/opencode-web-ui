@@ -31,7 +31,7 @@ reflectionListener.register()
 
 // Register routes
 registerMiscRoutes(app, manager)
-registerSessionsRoutes(app, manager)
+registerSessionsRoutes(app, manager, agent)
 registerAgentsRoutes(app, manager, agent)
 registerFilesRoutes(app, manager)
 registerGitRoutes(app)

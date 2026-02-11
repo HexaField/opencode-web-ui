@@ -13,11 +13,11 @@ const dbMocks = vi.hoisted(() => ({
 vi.mock('../../src/services/memory/db', () => ({
   DatabaseService: {
     getInstance: () => ({
-      db: {
+      getDb: () => ({
         prepare: dbMocks.prepare,
         transaction: dbMocks.transaction,
         exec: dbMocks.exec
-      }
+      })
     })
   }
 }))

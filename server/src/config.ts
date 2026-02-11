@@ -3,8 +3,11 @@ import * as path from 'path'
 
 export const USER_DATA_ROOT = process.env.OPENCODE_USER_DATA || path.join(os.homedir(), '.opencode')
 
+export const AGENTS_DASHBOARD_ROOT = path.join(USER_DATA_ROOT, 'AGENT')
+
 export const AppPaths = {
   root: USER_DATA_ROOT,
+  agents_dashboard: AGENTS_DASHBOARD_ROOT,
   memory: path.join(USER_DATA_ROOT, 'MEMORY'),
   telos: path.join(USER_DATA_ROOT, 'TELOS'),
   packs: path.join(USER_DATA_ROOT, 'PACKS'),

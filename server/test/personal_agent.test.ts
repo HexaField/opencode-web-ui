@@ -35,7 +35,17 @@ vi.mock('../src/services/memory/context_loader.js', () => ({
 
 vi.mock('../src/services/tools/tool-registry.js', () => ({
   toolRegistry: {
-    getAllDefinitions: vi.fn().mockReturnValue([])
+    getAllDefinitions: vi.fn().mockReturnValue([]),
+    registerTool: vi.fn()
+  }
+}))
+
+vi.mock('../src/services/skills/skills.service.js', () => ({
+  skillsService: {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    getLoaderTool: vi.fn().mockReturnValue({ name: 'skill', execute: vi.fn() }),
+    getCreatorTool: vi.fn().mockReturnValue({ name: 'create_skill', execute: vi.fn() }),
+    listSkills: vi.fn().mockReturnValue([])
   }
 }))
 

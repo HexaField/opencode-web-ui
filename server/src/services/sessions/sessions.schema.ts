@@ -39,7 +39,8 @@ export const SessionPromptSchema = z.object({
     parts: z.array(z.any()), // TODO: Define stricter types for parts
     model: z.string().optional(),
     agent: z.string().optional(),
-    messageID: z.string().optional()
+    messageID: z.string().optional(),
+    skipAgentRun: z.boolean().optional()
   })
 })
 

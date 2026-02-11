@@ -44,6 +44,7 @@ export function registerAgentsRoutes(app: express.Application, manager: Opencode
     try {
       const folder = (req as AuthenticatedRequest).targetFolder!
       const rawAgents = await manager.listAgents(folder)
+
       const agents = rawAgents.map((agent) => {
         const { config, prompt } = parseAgent(agent.content)
         return {
