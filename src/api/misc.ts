@@ -18,3 +18,10 @@ export async function listModels(): Promise<string[]> {
   if (!res.ok) throw new Error('Failed to list models')
   return res.json() as Promise<string[]>
 }
+
+export async function searchKnowledgeBase(query: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/rag/search?q=${encodeURIComponent(query)}`)
+  if (!res.ok) throw new Error('Search failed')
+  const json = await res.json()
+  return json.results
+}

@@ -44,6 +44,16 @@ export function registerGitRoutes(app: express.Application) {
     }
   })
 
+  app.post('/api/git/radicle/auth', async (req, res) => {
+    const { passphrase } = req.body
+    if (!passphrase) {
+      res.status(400).json({ error: 'Passphrase required' })
+      return
+    }
+    radicleService.setPassphrase(passphrase)
+    res.json({ success: true })
+  })
+
   app.get('/api/git/repos', validate(FolderQuerySchema), async (req, res) => {
     const folder = req.query.folder as string
     if (!folder) {

@@ -22,6 +22,28 @@ export default function DesktopWorkspace(props: Props) {
   const params = new URLSearchParams(window.location.search)
   const [currentSessionId, setCurrentSessionId] = createSignal<string | null>(params.get('session'))
 
+  createEffect(() => {
+    const prompt = params.get('initialPrompt')
+    if (prompt && !currentSessionId()) {
+      const agent = params.get('agent') || undefined
+      const model = params.get('model') || undefined
+      const url = new URL(window.location.href)
+      url.searchParams.delete('initialPrompt')
+      url.searchParams.delete('agent')
+      url.searchParams.delete('model')
+      window.history.replaceState({}, '', url)
+
+      createSession(props.folder, { agent, model })
+        .then(async (session) => {
+          setCurrentSessionId(session.id)
+          await promptSession(props.folder, session.id, {
+            parts: [{ type: 'text', text: prompt }]
+          })
+        })
+        .catch((e) => console.error('Failed to initialize session from prompt', e))
+    }
+  })
+
   // Left sidebar state
   const initialView = (params.get('view') as 'files' | 'changes' | 'plan' | 'terminal' | 'search') || 'files'
   const [leftTab, setLeftTab] = createSignal<'files' | 'changes' | 'plan' | 'terminal' | 'search'>(initialView)
@@ -38,14 +60,42 @@ export default function DesktopWorkspace(props: Props) {
   const [isChatOpen, setIsChatOpen] = createSignal(true)
 
   // Editor state
-  const [panes, setPanes] = createSignal<string[]>([])
-  const [activePaneIndex, setActivePaneIndex] = createSignal(0)
+  const savedStateStr = localStorage.getItem(`workspace-state-${props.folder}`)
+  let initialPanes: string[] = []
+  let initialActivePaneIndex = 0
 
-  // Initialize from URL param 'file' for the first pane
-  const initialFile = params.get('file')
-  if (initialFile && panes().length === 0) {
-    setPanes([initialFile])
+  if (savedStateStr) {
+    try {
+      const saved = JSON.parse(savedStateStr)
+      if (Array.isArray(saved.panes)) initialPanes = saved.panes
+      if (typeof saved.activePaneIndex === 'number') initialActivePaneIndex = saved.activePaneIndex
+    } catch (e) {
+      console.error('Failed to parse workspace state', e)
+    }
   }
+
+  // Allow URL override for deep linking, but don't rely on it for state persistence
+  const initialFile = params.get('file')
+  if (initialFile) {
+    if (!initialPanes.includes(initialFile)) {
+      initialPanes = [...initialPanes, initialFile]
+      initialActivePaneIndex = initialPanes.length - 1
+    } else {
+      initialActivePaneIndex = initialPanes.indexOf(initialFile)
+    }
+  }
+
+  const [panes, setPanes] = createSignal<string[]>(initialPanes)
+  const [activePaneIndex, setActivePaneIndex] = createSignal(initialActivePaneIndex)
+
+  // Persist editor state
+  createEffect(() => {
+    const state = {
+      panes: panes(),
+      activePaneIndex: activePaneIndex()
+    }
+    localStorage.setItem(`workspace-state-${props.folder}`, JSON.stringify(state))
+  })
 
   const [isSettingsOpen, setIsSettingsOpen] = createSignal(false)
 
@@ -65,13 +115,7 @@ export default function DesktopWorkspace(props: Props) {
       url.searchParams.delete('session')
     }
 
-    // We update 'file' param to be the active pane's file
-    const activeFile = panes()[activePaneIndex()]
-    if (activeFile) {
-      url.searchParams.set('file', activeFile)
-    } else {
-      url.searchParams.delete('file')
-    }
+    url.searchParams.delete('file')
 
     const view = leftTab()
     if (view !== 'files') {

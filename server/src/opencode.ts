@@ -145,14 +145,14 @@ You are a planning agent. Analyze the request and provide a plan. Do not modify 
     name: 'general',
     content: `---
 description: A general-purpose agent for researching complex questions.
-mode: subagent
+mode: primary
 permission:
   write: allow
   edit: allow
   bash: allow
   webfetch: allow
 ---
-You are a general purpose subagent.`
+You are a general purpose agent.`
   },
   {
     name: 'worker',
@@ -318,6 +318,7 @@ export class OpencodeManager {
 
     // Resolve absolute path
     const absFolder = path.resolve(folder)
+    const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
     return new Promise((resolve, reject) => {
       const currentFile = fileURLToPath(import.meta.url)
@@ -326,6 +327,7 @@ export class OpencodeManager {
       // We use process.execPath (node) and tsx loader
       const child = spawn(process.execPath, ['--import', 'tsx/esm', currentFile], {
         env: { ...process.env, OPENCODE_WORKER_DIR: absFolder },
+        cwd: projectRoot, // Force CWD to project root to find node_modules
         stdio: ['ignore', 'pipe', 'pipe'] // Capture stderr
       })
 
@@ -497,10 +499,31 @@ export class OpencodeManager {
     }
   }
 
-  shutdown() {
-    for (const child of this.processes.values()) {
-      child.kill()
-    }
+  async shutdown() {
+    console.log(`Shutting down ${this.processes.size} worker processes...`)
+    const promises = Array.from(this.processes.values()).map((child) => {
+      return new Promise<void>((resolve) => {
+        if (child.exitCode !== null) {
+          resolve()
+          return
+        }
+
+        const timeout = setTimeout(() => {
+          console.warn(`Force killing worker (pid ${child.pid})...`)
+          child.kill('SIGKILL')
+          resolve()
+        }, 3000) // Give 3 seconds to cleanup
+
+        child.once('exit', () => {
+          clearTimeout(timeout)
+          resolve()
+        })
+
+        child.kill('SIGTERM')
+      })
+    })
+
+    await Promise.all(promises)
     this.clients.clear()
     this.processes.clear()
   }

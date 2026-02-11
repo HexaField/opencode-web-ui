@@ -1,0 +1,23 @@
+[
+  {
+    "name": "list_templates",
+    "description": "List available project templates",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "scaffold_project",
+    "description": "Create a new project from a template. For monorepo, clones from GitHub.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "template": { "type": "string", "description": "Template id (e.g. \"monorepo\")" },
+        "path": { "type": "string", "description": "Target directory path" }
+      },
+      "required": ["template", "path"]
+    }
+  }
+]

@@ -6,26 +6,39 @@ import * as http from 'http'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { OpencodeManager } from './opencode.js'
+import { PersonalAgent } from './agent/PersonalAgent.js'
 import { registerAgentsRoutes } from './services/agents/agents.service.js'
 import { registerFilesRoutes } from './services/files/files.service.js'
 import { registerGitRoutes } from './services/git/git.service.js'
 import { registerMiscRoutes } from './services/misc/misc.service.js'
 import { registerSessionsRoutes } from './services/sessions/sessions.service.js'
 import { registerTasksRoutes } from './services/tasks/tasks.service.js'
+import { registerWorkspacesRoutes } from './services/workspaces/workspaces.service.js'
+import { registerRagRoutes } from './services/rag/rag.routes.js'
+import { registerReflectionRoutes } from './services/reflection/reflection.routes.js'
+import { ReflectionListener } from './services/reflection/reflection.listener.js'
 
-const app = express()
+export const app = express()
 app.use(cors())
 app.use(bodyParser.json())
 
-const manager = new OpencodeManager()
+export const manager = new OpencodeManager()
+export const agent = new PersonalAgent(manager)
+
+// Listeners
+const reflectionListener = new ReflectionListener(manager)
+reflectionListener.register()
 
 // Register routes
 registerMiscRoutes(app, manager)
-registerSessionsRoutes(app, manager)
-registerAgentsRoutes(app, manager)
+registerSessionsRoutes(app, manager, agent)
+registerAgentsRoutes(app, manager, agent)
 registerFilesRoutes(app, manager)
 registerGitRoutes(app)
 registerTasksRoutes(app)
+registerWorkspacesRoutes(app)
+registerRagRoutes(app)
+registerReflectionRoutes(app, manager)
 
 // Serve static files
 const __filename = fileURLToPath(import.meta.url)
@@ -75,11 +88,3 @@ app.get(/(.*)/, async (req, res) => {
     res.status(404).send('Not found')
   }
 })
-
-// Cleanup on exit
-process.on('SIGINT', () => {
-  manager.shutdown()
-  process.exit()
-})
-
-export { app, manager }

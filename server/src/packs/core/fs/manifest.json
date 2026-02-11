@@ -1,0 +1,6 @@
+{
+  "name": "pai-fs-pack",
+  "version": "1.0.0",
+  "description": "Safe file system operations",
+  "permissions": ["fs.read", "fs.write"]
+}

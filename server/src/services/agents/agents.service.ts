@@ -5,11 +5,46 @@ import { parseAgent, serializeAgent, type AgentConfig } from '../../utils/frontm
 import { FolderQuerySchema } from '../common/common.schema'
 import { CreateAgentSchema, DeleteAgentSchema } from './agents.schema'
 
-export function registerAgentsRoutes(app: express.Application, manager: OpencodeManager) {
+import { learningService } from '../memory/learning.service.js'
+import { PersonalAgent } from '../../agent/PersonalAgent.js'
+
+export function registerAgentsRoutes(app: express.Application, manager: OpencodeManager, agent?: PersonalAgent) {
+  app.get('/api/agents/status', async (_req, res) => {
+    if (!agent) {
+      res.json({ status: 'idle', reason: 'Agnet not initialized' })
+      return
+    }
+    res.json({ status: agent.status })
+  })
+
+  app.get('/api/agents/memory', async (_req, res) => {
+    try {
+      const lessons = await learningService.getLearnedLessons()
+      res.json({ lessons })
+    } catch (error) {
+      res.status(500).json({ error: String(error) })
+    }
+  })
+
+  app.post('/api/agents/memory', async (req, res) => {
+    try {
+      const { lessons } = req.body
+      if (typeof lessons !== 'string') {
+        res.status(400).json({ error: 'lessons must be a string' })
+        return
+      }
+      await learningService.setLearnedLessons(lessons)
+      res.json({ success: true })
+    } catch (error) {
+      res.status(500).json({ error: String(error) })
+    }
+  })
+
   app.get('/api/agents', validate(FolderQuerySchema), withFolder(manager), async (req, res) => {
     try {
       const folder = (req as AuthenticatedRequest).targetFolder!
       const rawAgents = await manager.listAgents(folder)
+
       const agents = rawAgents.map((agent) => {
         const { config, prompt } = parseAgent(agent.content)
         return {

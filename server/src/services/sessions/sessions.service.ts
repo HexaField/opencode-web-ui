@@ -13,6 +13,7 @@ import express from 'express'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import { AuthenticatedRequest, validate, withClient } from '../../middleware'
+
 import { OpencodeManager, type OpencodeClient } from '../../opencode'
 import { unwrap } from '../../utils'
 import { WorkflowEngine, BackgroundPromptExecutor } from '../agents/engine'
@@ -27,6 +28,10 @@ import {
   UnrevertSessionSchema,
   UpdateSessionSchema
 } from './sessions.schema'
+
+import { AGENTS_DASHBOARD_ROOT } from '../../config.js'
+import { bus, Events } from '../event-bus.js'
+import { PersonalAgent } from '../../agent/PersonalAgent.js'
 
 interface SessionWithHistory extends Session {
   history?: { info: Message; parts: Part[] }[]
@@ -85,7 +90,7 @@ const getSessionHistory = async (client: OpencodeClient, sessionID: string, dept
   return messages
 }
 
-export function registerSessionsRoutes(app: express.Application, manager: OpencodeManager) {
+export function registerSessionsRoutes(app: express.Application, manager: OpencodeManager, agent?: PersonalAgent) {
   app.get('/api/sessions', validate(FolderQuerySchema), withClient(manager), async (req, res) => {
     try {
       const client = (req as AuthenticatedRequest).opencodeClient!
@@ -208,7 +213,6 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
 
       const allStatuses = unwrap(result) as Record<string, { type: string }>
       const sessionStatus = allStatuses[id]
-      console.log(sessionStatus)
 
       if (!sessionStatus) {
         res.json({ status: 'idle' })
@@ -352,6 +356,25 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
     }
   })
 
+  app.post('/api/sessions/:id/archive', validate(GetSessionSchema), withClient(manager), async (req, res) => {
+    try {
+      const { id } = req.params as { id: string }
+      const client = (req as AuthenticatedRequest).opencodeClient!
+
+      // 1. Get History
+      const history = await getSessionHistory(client, id)
+
+      // 2. Emit Event
+      bus.emit(Events.SESSION_ARCHIVED, { sessionId: id, history })
+
+      // 3. Mark locally? For now just return success.
+      res.json({ success: true, message: 'Session archived and scheduled for analysis' })
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: String(error) })
+    }
+  })
+
   app.post('/api/sessions/:id/prompt', validate(SessionPromptSchema), withClient(manager), async (req, res) => {
     try {
       const client = (req as AuthenticatedRequest).opencodeClient!
@@ -364,6 +387,28 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
         model?: string
         agent?: string
         messageID?: string
+        skipAgentRun?: boolean
+      }
+
+      const agentName = (requestBody.agent || metadata.agent || undefined) as string | undefined
+
+      if (folder === AGENTS_DASHBOARD_ROOT && !requestBody.skipAgentRun) {
+        const textInput = requestBody.parts
+          .filter((p: any) => p.type === 'text')
+          .map((p: any) => p.text)
+          .join('\n')
+
+        if (agent) {
+          agent.runForSession(id, textInput).catch((err) => {
+            console.error('[Personal Agent] Error:', err)
+          })
+        } else {
+          console.warn('[Personal Agent] Agent singleton not available')
+        }
+
+        // Respond with success to unblock UI
+        res.json({ success: true, status: 'thinking' })
+        return
       }
 
       const model = (requestBody.model || metadata.model) as string | undefined
@@ -373,8 +418,6 @@ export function registerSessionsRoutes(app: express.Application, manager: Openco
       }
 
       const [providerID, modelID] = model.split('/')
-
-      const agentName = (requestBody.agent || metadata.agent || undefined) as string | undefined
 
       // Check if Agent is a Workflow
       let isWorkflow = false
