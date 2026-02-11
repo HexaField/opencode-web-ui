@@ -11,9 +11,9 @@ The goal is to transition from a fragmented "Session" model to a **Two-Tier Memo
 This architecture is explicitly designed to satisfy `PRINCIPLES.md`:
 
 | Principle | Implementation in Memory Architecture |
-| :--- | :--- |
+| :-- | :-- |
 | **User/System Separation** | **Strict Isolation**: The "Engine" (`server/src`) is the System. The "Memory" (`~/.opencode/MEMORY/`) is the User. We treat the User folder as "Sacred"—the system reads/appends but never destroys user decisions ensuring portability. |
-| **User Centricity** | The memory structure is human-readable (Markdown). It is designed for *you* to read and edit, not just for the machine. Your `MEMORY.md` defines the Assistant's `TELOS`. |
+| **User Centricity** | The memory structure is human-readable (Markdown). It is designed for _you_ to read and edit, not just for the machine. Your `MEMORY.md` defines the Assistant's `TELOS`. |
 | **Determinism First** | **Code > Agents**: Retrieval is handled by a deterministic Hybrid Search algorithm (TypeScript), not by asking an LLM to "find relevant info." We use code to fetch facts, then LLMs to synthesize them. |
 | **Persistent Identity** | The system enables "Warm Storage" (Daily Journals) and "Cold Storage" (Knowledge Base), ensuring the Assistant learns and maintains context over weeks/years, not just single sessions. |
 
@@ -33,6 +33,7 @@ We establish `~/.opencode/MEMORY` as the dedicated **USER** partition.
 ```
 
 **Workflow Rules:**
+
 1.  **Read-Only System**: The `SYSTEM` (codebase) updates `knowledge.db` automatically but treats `.md` files as the Source of Truth.
 2.  **Agent Edits**: The Agent can append to `journals/` or propose updates to `MEMORY.md` (active learning), but `MEMORY.md` changes should be explicit significant events (the "Outer Loop").
 
@@ -41,12 +42,13 @@ We establish `~/.opencode/MEMORY` as the dedicated **USER** partition.
 We reject complex native dependencies (`sqlite-vec`) in favor of a portable, deterministic TypeScript implementation.
 
 ### 4.1 Tech Stack
-*   **Database**: `better-sqlite3` (Existing, robust).
-*   **Search Logic**: **Hybrid Fusion** (Deterministic Algorithm).
-    *   30% Keyword Match (FTS5).
-    *   70% Semantic Match (Cosine Similarity).
-*   **Vector Operations**: Implemented in pure JavaScript (using `Buffer` / `Float32Array`).
-    *   *Finding*: For personal knowledge bases (< 100k chunks), brute-force JS cosine similarity is sufficiently fast (< 50ms) and avoids the fragility of C++ vector extensions.
+
+- **Database**: `better-sqlite3` (Existing, robust).
+- **Search Logic**: **Hybrid Fusion** (Deterministic Algorithm).
+  - 30% Keyword Match (FTS5).
+  - 70% Semantic Match (Cosine Similarity).
+- **Vector Operations**: Implemented in pure JavaScript (using `Buffer` / `Float32Array`).
+  - _Finding_: For personal knowledge bases (< 100k chunks), brute-force JS cosine similarity is sufficiently fast (< 50ms) and avoids the fragility of C++ vector extensions.
 
 ### 4.2 Database Schema (`knowledge.db`)
 
@@ -89,18 +91,21 @@ To satisfy the **Persistent Identity** principle, we implement a "Pre-compaction
 ## 6. Implementation Roadmap
 
 ### Phase 1: Storage Layer (Deterministic Foundation)
-*   [x] Refactor `db.ts` to support the `files` / `chunks` schema.
-*   [x] Implement `IndexerService` to watch `~/.opencode/MEMORY/**/*.md`.
-    *   One-way sync: Markdown -> SQLite.
+
+- [x] Refactor `db.ts` to support the `files` / `chunks` schema.
+- [x] Implement `IndexerService` to watch `~/.opencode/MEMORY/**/*.md`.
+  - One-way sync: Markdown -> SQLite.
 
 ### Phase 2: Retrieval Logic (Code > Agents)
-*   [x] Implement `HybridSearcher` class.
-    *   `search(query)`: Executes standard FTS5 query AND vector scan.
-    *   Fusion logic implemented in pure TypeScript.
-*   [x] Replace current `search_knowledge_base` tool with this engine.
+
+- [x] Implement `HybridSearcher` class.
+  - `search(query)`: Executes standard FTS5 query AND vector scan.
+  - Fusion logic implemented in pure TypeScript.
+- [x] Replace current `search_knowledge_base` tool with this engine.
 
 ### Phase 3: The Assistant's Mind (Context Loading)
-*   [x] Update `PersonalAgent` structure.
-    *   **System Prompt**: `MEMORY.md` + Principles.
-    *   **Context Window**: `journals/{yesterday}.md` + `journals/{today}.md` + Recent Messages.
-*   [x] Enables the Assistant to "wake up" knowing what happened yesterday.
+
+- [x] Update `PersonalAgent` structure.
+  - **System Prompt**: `MEMORY.md` + Principles.
+  - **Context Window**: `journals/{yesterday}.md` + `journals/{today}.md` + Recent Messages.
+- [x] Enables the Assistant to "wake up" knowing what happened yesterday.
