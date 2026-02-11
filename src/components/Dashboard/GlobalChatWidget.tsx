@@ -1,6 +1,6 @@
 import { createSignal, onMount, Show } from 'solid-js'
 import ChatInterface from '../ChatInterface'
-import { createSession } from '../../api/sessions'
+import { createSession, getSession } from '../../api/sessions'
 
 export default function GlobalChatWidget() {
   const [sessionId, setSessionId] = createSignal<string | null>(null)
@@ -9,11 +9,25 @@ export default function GlobalChatWidget() {
   onMount(async () => {
     try {
       const saved = localStorage.getItem('pai_global_session')
+      let validSessionId: string | null = null
+
       if (saved) {
-        setSessionId(saved)
+        try {
+          await getSession('.', saved)
+          validSessionId = saved
+        } catch {
+          console.warn('Saved global session invalid or expired, creating new one.')
+        }
+      }
+
+      if (validSessionId) {
+        setSessionId(validSessionId)
       } else {
         // Create a 'general' session in the current working directory (System Context)
-        const s = await createSession('.', { agent: 'general' })
+        const s = await createSession('.', {
+          agent: 'Default',
+          model: 'github-copilot/gemini-3-pro'
+        })
         setSessionId(s.id)
         localStorage.setItem('pai_global_session', s.id)
       }
@@ -39,7 +53,7 @@ export default function GlobalChatWidget() {
           New Session
         </button>
       </header>
-      <div class="relative flex-1">
+      <div class="relative min-h-0 flex-1 overflow-hidden">
         <Show when={!error()} fallback={<div class="p-4 text-red-500">{error()}</div>}>
           <Show when={sessionId()} fallback={<div class="p-4 text-gray-400">Loading Assistant...</div>}>
             <ChatInterface
