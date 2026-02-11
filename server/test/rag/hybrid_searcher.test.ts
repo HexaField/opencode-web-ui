@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { HybridSearcher } from '../../src/services/rag/hybrid_searcher'
-import { EmbeddingService } from '../../src/services/rag/embedding.service'
 
 import Database from 'better-sqlite3'
 
@@ -56,7 +55,7 @@ describe('HybridSearcher', () => {
     // Default Mock Implementation for `prepare`
     mocks.prepare.mockImplementation((sql: string) => {
       return {
-        all: (...args: any[]) => {
+        all: (..._args: any[]) => {
           if (sql.includes('SELECT rowid')) {
             // FTS Query Response
             return [{ rowid: 10 }, { rowid: 20 }]

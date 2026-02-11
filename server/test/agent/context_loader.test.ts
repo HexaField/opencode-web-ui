@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import * as path from 'path'
 import { ContextLoader } from '../../src/services/memory/context_loader'
 import { AppPaths } from '../../src/config'
@@ -19,8 +19,6 @@ vi.mock('fs/promises', () => {
 })
 
 describe('ContextLoader', () => {
-  const mockMemoryPath = '/mock/memory'
-
   // We mock AppPaths to point to our test location
   // Since AppPaths is an object, we can't easily reassign properties if they are consts
   // but we can rely on fs mocks to intercept calls to whatever path is constructed.

@@ -18,7 +18,7 @@ export function registerRagRoutes(app: express.Application) {
     }
   })
 
-  app.post('/api/rag/index', async (req, res) => {
+  app.post('/api/rag/index', async (_req, res) => {
     // Manually trigger re-indexing
     try {
       // Sync memory

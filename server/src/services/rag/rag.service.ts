@@ -1,5 +1,4 @@
 import * as path from 'path'
-import * as fs from 'fs/promises'
 import { AppPaths } from '../../config.js'
 import { IndexerService } from './indexer.service.js'
 import { HybridSearcher } from './hybrid_searcher.js'
