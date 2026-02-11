@@ -13,7 +13,7 @@ export default function GlobalChatWidget() {
 
       if (saved) {
         try {
-          await getSession('.', saved)
+          await getSession('AGENT', saved)
           validSessionId = saved
         } catch {
           console.warn('Saved global session invalid or expired, creating new one.')
@@ -23,10 +23,10 @@ export default function GlobalChatWidget() {
       if (validSessionId) {
         setSessionId(validSessionId)
       } else {
-        // Create a 'general' session in the current working directory (System Context)
-        const s = await createSession('.', {
+        // Create a 'general' session in the System Context
+        const s = await createSession('AGENT', {
           agent: 'Default',
-          model: 'github-copilot/gemini-3-pro'
+          model: 'github-copilot/gemini-3-pro-preview'
         })
         setSessionId(s.id)
         localStorage.setItem('pai_global_session', s.id)
@@ -57,7 +57,7 @@ export default function GlobalChatWidget() {
         <Show when={!error()} fallback={<div class="p-4 text-red-500">{error()}</div>}>
           <Show when={sessionId()} fallback={<div class="p-4 text-gray-400">Loading Assistant...</div>}>
             <ChatInterface
-              folder="."
+              folder="AGENT"
               sessionId={sessionId()!}
               onSessionChange={(id) => {
                 setSessionId(id)
